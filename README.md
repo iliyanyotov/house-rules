@@ -1,22 +1,20 @@
 # House Rules
 
-Claude Code skills for well-made software. Language-agnostic discipline, TypeScript-flavored craft.
+Claude Code skills for writing software that holds up.
 
-> ⚠️ Work in progress. Skills are still being authored — names and scope may still shift.
+> ⚠️ Work in progress. Skills are being authored; names and scope may shift.
 
 ## Why
 
-Most engineering "best practices" are either too abstract to act on or too tied to one framework to survive a stack change. AI pair-programmers make the gap worse — a model that hasn't been told *the boundary parses, the interior trusts* will sprinkle `z.parse()` through four layers.
-
-This repo is the explicit version: small, sharp, citation-heavy rules that fire only when their trigger matches what Claude is doing.
+Ask a model to wire up billing and you'll get a user ID as `string`, a price as `number`, and a duration as `number` — and the compiler will happily let you bill someone $30 minutes.
 
 ## What's in it
 
-Type-driven correctness, module shape, resilience, testing discipline, change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Next.js / Drizzle / Vercel; the rules are language-agnostic. Current index: [`skills/`](./skills/).
+Type-driven correctness, module shape, resilience, testing discipline, change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Node.js / Postgres; the rules themselves are language-agnostic.
 
 ## How a skill works
 
-Each skill is one `SKILL.md` with two parts:
+Each skill is one `SKILL.md`:
 
 ```yaml
 ---
@@ -30,16 +28,16 @@ description: Use when accepting external input. Use when tempted to call `z.pars
 ...
 ```
 
-Claude Code indexes the `description:` from every skill. When your work matches one of those triggers, the skill loads into context and Claude follows it. **You don't invoke skills manually** — they fire on relevance. You can also call one by name: *"use `parse-dont-validate` on this handler."*
+Claude Code indexes the `description:` from every installed skill and loads the matching one into context when your work fits the trigger. Skills fire on relevance; you can also invoke one by name: *"use `parse-dont-validate` on this handler."*
 
 ## Writing or fixing one
 
-Every skill follows [`SKILL_TEMPLATE.md`](./SKILL_TEMPLATE.md): trigger-only frontmatter, one of three body shapes (posture / pattern reference / technical rule), generic examples (no real project names), and 2–4 citations. Run new skills through the checklist at the bottom of the template before opening a PR.
+Every skill follows [`SKILL_TEMPLATE.md`](./SKILL_TEMPLATE.md): trigger-only frontmatter, one of three body shapes (posture, pattern reference, or technical rule), generic examples, 2–4 citations. Run new skills through the checklist at the bottom of the template before opening a PR.
 
-The bar for changes: *"show me the code where this rule would have prevented the bug."*
+Bar for changes: show me the code where this rule would have prevented the bug.
 
 ## Status
 
-Authored from a curated reading list ([`docs/skill-source-inventory.md`](docs/skill-source-inventory.md)) and validated against real projects ([`docs/validations/`](docs/validations/)) before each release.
+Authored from a curated reading list and validated against real projects before each release.
 
 MIT — see [LICENSE](LICENSE).
