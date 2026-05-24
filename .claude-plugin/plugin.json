@@ -1,0 +1,19 @@
+{
+  "name": "house-rules",
+  "version": "0.1.0",
+  "description": "Claude Code skills for well-made software. Language-agnostic discipline and TypeScript-flavored craft.",
+  "author": {
+    "name": "Iliyan Yotov",
+    "email": "iliyan.yotov@gmail.com"
+  },
+  "homepage": "https://github.com/iliyan-yotov/house-rules",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "skills",
+    "code-quality",
+    "typescript",
+    "discipline",
+    "best-practices"
+  ]
+}
