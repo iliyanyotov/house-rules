@@ -1,12 +1,8 @@
 # House Rules
 
-Claude Code skills for writing software that holds up.
+**Claude Code skills for writing software that holds up.**
 
-> ⚠️ Work in progress. Skills are being authored; names and scope may shift.
-
-## Why
-
-Ask a model to wire up billing and you'll get a user ID as `string`, a price as `number`, and a duration as `number` — and the compiler will happily let you bill someone $30 minutes.
+Every skill comes from the same four places: the books and talks worth re-reading, the bugs that woke someone up at 3am and stayed memorable a year later, the refactors of code nobody planned to inherit, and the patterns that kept showing up no matter how the team was shaped — solo, small, large, distributed, in-person, fast-iteration, or a long-running product.
 
 ## What's in it
 
@@ -35,9 +31,5 @@ Claude Code indexes the `description:` from every installed skill and loads the 
 Every skill follows [`SKILL_TEMPLATE.md`](./SKILL_TEMPLATE.md): trigger-only frontmatter, one of three body shapes (posture, pattern reference, or technical rule), generic examples, 2–4 citations. Run new skills through the checklist at the bottom of the template before opening a PR.
 
 Bar for changes: show me the code where this rule would have prevented the bug.
-
-## Status
-
-Authored from a curated reading list and validated against real projects before each release.
 
 MIT — see [LICENSE](LICENSE).
