@@ -5,13 +5,27 @@ description: Use when you've been refactoring or debugging the same problem for 
 
 # Revert and Redo on Confusion
 
-## The Iron Rule
+## Overview
 
-**When you've been stuck on a change for ~30 minutes with no clear forward path, revert your working copy to the last known-good state and start over with the lessons you learned. Don't dig deeper. Don't make "just one more attempt." The clean restart is almost always faster than the rescue dive.**
+**When you've been stuck on a change for ~30 minutes with no clear forward path, revert your working copy to the last known-good state and start over with the lessons you learned.** Don't dig deeper. Don't make "just one more attempt." The clean restart is almost always faster than the rescue dive.
 
 This rule fights one of the most expensive failure modes in software: the spiral of partial changes that each make sense in isolation but compound into a working copy nobody — including you — understands.
 
-## Why This Rule
+This is the library's one **meta-process rule**. The others govern the shape of code; this one governs the shape of *the change-making process itself*. It's narrower in trigger and broader in applicability — every engineer hits the muddled-diff spiral; this rule names it and provides the exit.
+
+## The Iron Rule
+
+```
+NEVER push past ~30 minutes of muddled diff without a hypothesis. Revert and redo from green.
+```
+
+**No exceptions:**
+- Not for "I've already spent 30 minutes — reverting is wasted work"
+- Not for "I'm so close — five more minutes"
+- Not for "reverting loses my insight"
+- Not for "senior devs push through"
+
+## Why
 
 After 30 minutes of frustrated work, three things are simultaneously true:
 
@@ -20,10 +34,11 @@ After 30 minutes of frustrated work, three things are simultaneously true:
 3. **The cost has anchored you.** "I've spent 30 minutes; if I revert, I waste that time." This is the sunk-cost fallacy. The next 30 minutes you spend on the muddled copy will be *more* expensive than the next 30 minutes on a fresh start, because you'll be debugging *both* the bug and your own changes.
 
 The clean restart is fast precisely *because* of what the last 30 minutes taught you:
+
 - You now know which approach doesn't work.
 - You know the shape of the data, the API of the dependency, the layout of the file.
 - You know which test cases matter.
-- Your hands have rehearsed the keystrokes; rewriting from scratch is 5x faster than the first time.
+- Your hands have rehearsed the keystrokes; rewriting from scratch is 5× faster than the first time.
 
 The 30 minutes weren't wasted — they were *paid learning*. The revert collects the dividend.
 
@@ -41,7 +56,7 @@ You are violating the rule if any of these are true:
 - You started fixing one bug and are now in code unrelated to it.
 - You're afraid to look at `git diff` because the diff is "complicated."
 
-## The Correct Pattern
+## The Pattern
 
 ### Commit the green state before you start changing
 
@@ -49,7 +64,7 @@ Every refactor or debugging session starts from a known-good state. **Commit it.
 
 ```bash
 # Before starting work — confirm everything passes.
-bun test && bun run type-check && bun run lint
+npm test && npm run type-check && npm run lint
 
 # Now commit.
 git add -A
@@ -113,18 +128,18 @@ For exploratory work where you genuinely don't know if your approach will pan ou
 
 The cost of branching is zero (in Git). The cost of *not* branching when you're unsure is the muddled diff you'll have to revert.
 
-### Concrete: a stuck refactor
+### A worked example
 
-Suppose you're refactoring `SpawningPeriods` from useState sprawl to a discriminated union. You start:
+Suppose you're refactoring a stateful component from useState sprawl to a discriminated union. You start:
 
 ```
 00:00 — Commit green state.
 00:00 — Begin refactor. Replace 3 useState with 1.
-00:10 — Tests fail; React strict mode complains about the timer cleanup.
+00:10 — Tests fail; a timer cleanup is misbehaving.
 00:15 — Try one fix. Tests still failing differently now.
-00:25 — Realize the onExpire callback was reading stale state. Try a useRef.
-00:32 — Tests passing, but Storybook stories are broken.
-00:45 — Fixing Storybook. Add a prop. Then remove it. Then add a different one.
+00:25 — Realize the onExpire callback was reading stale state. Try a ref.
+00:32 — Tests passing, but a downstream consumer is broken.
+00:45 — Fixing the consumer. Add a prop. Then remove it. Then add a different one.
 01:00 — TIMER. Run `git diff`. The diff is 200 lines of half-finished changes.
        Some are unrelated (you renamed a file you didn't mean to).
 ```
@@ -132,12 +147,13 @@ Suppose you're refactoring `SpawningPeriods` from useState sprawl to a discrimin
 At 01:00 you have two options:
 
 - **Bad:** keep going. Your `git diff` doesn't compose any coherent story. You'll spend the next hour untangling.
-- **Good:** `git reset --hard HEAD`. Note: "I learned the timer's onExpire reads stale state because the useEffect captured the closure. The fix is to use a ref for the latest period. Storybook needs the static-date code split — that's a separate concern."
+- **Good:** `git reset --hard HEAD`. Note: "I learned the timer's onExpire reads stale state because the useEffect captured the closure. The fix is to use a ref for the latest value. The downstream consumer needs its own concern split — that's a separate PR."
 
 Then redo. The second pass takes 25 minutes because you skip:
+
 - The wrong fix at 00:15 (which fought stale-closure with a useEffect change).
 - The accidental file rename.
-- The Storybook half-fix.
+- The downstream half-fix.
 
 **Net time:** 60 min muddled + 60 min untangle = 120 min. Or: 60 min muddled + 25 min clean redo = 85 min. The revert paid back instantly.
 
@@ -169,8 +185,6 @@ Flow built on a wrong model produces wrong work. The "flow" of the last 30 minut
 
 ## Red Flags
 
-Stop and re-read the rule when you see these:
-
 - You've changed your mind about the approach mid-edit.
 - You're reading the test output and the result doesn't match either your code OR the original code.
 - You can't summarize what your in-progress change does in one sentence.
@@ -181,10 +195,12 @@ Stop and re-read the rule when you see these:
 - A colleague or AI assistant asks "what are you trying to do?" and your answer is convoluted.
 - 30 minutes has passed since the last successful test run.
 
+**All of these mean: stop, revert, capture the lesson in words, then start fresh.**
+
 ## Common Rationalizations
 
 | Excuse | Reality |
-|--------|---------|
+|---|---|
 | "I'm 95% done" | If you were 95% done, you wouldn't be feeling stuck. The 95% feeling is the *first* place the spiral lies. |
 | "Reverting wastes my work" | The *learning* isn't in the diff. Capture it in words and revert the code. |
 | "It's faster to fix than to redo" | When you're confused, the redo is faster than the fix. The redo skips the dead ends. |
@@ -194,12 +210,6 @@ Stop and re-read the rule when you see these:
 
 ## Reference
 
-The pattern of small steps with frequent rollback is implicit in Kent Beck's *Test-Driven Development by Example*: when the test goes from red to *more* red (worse failures), the move is to revert the last change. Beck's framing: *"When in doubt, throw it away. It only took 10 minutes to write."*
-
-Michael Feathers, *Working Effectively with Legacy Code* — implicit in the "scratch refactor" pattern: try a refactor, learn from how it fails, throw the work away, plan the real refactor with the learning. The throw-away isn't wasted; it's a probe.
-
-The Pragmatic Programmer — Hunt and Thomas — phrase a related idea: *"Tracer bullets"* (try a thin slice end-to-end, learn from where it fails, then aim properly). The revert is the act of *not aiming a second time without re-zeroing*.
-
-The 30-minute timer specifically is folk wisdom, often attributed (probably incorrectly) to George Pólya's *How to Solve It* — but the underlying claim is: don't push past the point where your effort is producing forward motion. Reset your perspective.
-
-Adjacent rules: [[tidy-first-separate-commits]] (the commits that make reverting cheap), [[tdd]] (the green state you revert *to* is "tests pass"), [[small-changesets]] (smaller changes mean less to revert), [[characterization-tests-first-for-legacy]] (the test suite is the safety net that confirms the revert restored the known-good state), [[kiss]] (the rescue dive is almost always a complexity spiral; the revert restores simplicity).
+- Kent Beck, *Test-Driven Development by Example* (2002) — when the test goes from red to *more* red (worse failures), the move is to revert the last change. Beck's framing: *"When in doubt, throw it away. It only took 10 minutes to write."*
+- Michael Feathers, *Working Effectively with Legacy Code* (2004) — implicit in the "scratch refactor" pattern: try a refactor, learn from how it fails, throw the work away, plan the real refactor with the learning.
+- Andy Hunt & Dave Thomas, *The Pragmatic Programmer* (1999) — *"Tracer bullets"*: try a thin slice end-to-end, learn from where it fails, then aim properly. The revert is the act of *not aiming a second time without re-zeroing*.
