@@ -58,25 +58,27 @@ You are violating the rule if any of these are true:
 
 ## The Pattern
 
-### Commit the green state before you start changing
+### Start from a clean checkpoint
 
-Every refactor or debugging session starts from a known-good state. **Commit it.** This is your safety harness:
+Every refactor or debugging session starts from a known-good state. Confirm the tree is clean, then isolate the experiment:
 
 ```bash
 # Before starting work — confirm everything passes.
 npm test && npm run type-check && npm run lint
 
-# Now commit.
-git add -A
-git commit -m "wip: green state before X refactor"
+# Confirm there are no unrelated local changes.
+git status --short
+
+# Isolate the risky attempt.
+git switch -c experiment/x-refactor
 ```
 
-Now any disaster is one `git reset --hard HEAD` away from recoverable.
+Now the risky work is on a throwaway branch. If it goes sideways, the main branch stays clean.
 
-If you can't commit dirty state (work-in-progress on top of someone else's branch), `git stash` works too:
+If `git status --short` is not empty, **do not sweep it into a WIP commit.** Those changes may belong to someone else, especially in a human/AI shared workspace. Either finish the current work first or create a separate worktree from the clean base:
 
 ```bash
-git stash push -m "wip: green state before X refactor"
+git worktree add ../x-refactor-worktree -b experiment/x-refactor
 ```
 
 ### The 30-minute timer
@@ -89,21 +91,18 @@ Set a literal timer when you start a change you're unsure about. When it rings:
 
 The timer is the anti-anchor. Without it, you'll always feel "5 more minutes" away from a fix. With it, you have an external prompt to check in.
 
-### The clean revert
+### The clean restart
 
 ```bash
-# Nuclear option: discard everything since the safety commit.
-git reset --hard HEAD
-
-# Or, more surgical — revert just one file.
-git checkout HEAD -- src/path/to/file.ts
-
-# If you used stash:
-git stash drop  # discard the muddled state
-# (your safety state is the working tree, not the stash)
+# Preserve the muddled attempt before discarding it.
+git diff > /tmp/x-refactor-muddled-attempt.patch
 ```
 
-After the revert: **don't immediately start typing**. Sit for 60 seconds. Write down (in a scratch file, a comment, or your head) what you learned from the failed attempt:
+For a human working alone: discard the experiment branch or restore only the files you intentionally touched, after saving the patch above.
+
+For an AI agent: **do not discard working-tree changes unless the user explicitly asks for that exact discard.** Preserve the diff, explain the proposed restart, and wait for approval.
+
+After the restart: **don't immediately start typing**. Sit for 60 seconds. Write down (in a scratch file, a comment, or your head) what you learned from the failed attempt:
 
 - What approach doesn't work?
 - Why didn't it work? (Wrong model? Missing knowledge? Hidden dependency?)
@@ -121,7 +120,7 @@ This is a sign your mental model is right *this time*. If the second attempt als
 
 For exploratory work where you genuinely don't know if your approach will pan out:
 
-1. Branch off: `git checkout -b experiment-A`
+1. Branch off: `git switch -c experiment-A`
 2. Do the work. Don't worry about commit hygiene; this is a scratch space.
 3. If it works: cherry-pick the *good* changes onto main; abandon the branch.
 4. If it doesn't: abandon the branch. **You haven't muddled `main` at all.**
@@ -147,7 +146,7 @@ Suppose you're refactoring a stateful component from useState sprawl to a discri
 At 01:00 you have two options:
 
 - **Bad:** keep going. Your `git diff` doesn't compose any coherent story. You'll spend the next hour untangling.
-- **Good:** `git reset --hard HEAD`. Note: "I learned the timer's onExpire reads stale state because the useEffect captured the closure. The fix is to use a ref for the latest value. The downstream consumer needs its own concern split — that's a separate PR."
+- **Good:** save the diff, abandon the muddled attempt, and note: "I learned the timer's onExpire reads stale state because the useEffect captured the closure. The fix is to use a ref for the latest value. The downstream consumer needs its own concern split — that's a separate PR."
 
 Then redo. The second pass takes 25 minutes because you skip:
 

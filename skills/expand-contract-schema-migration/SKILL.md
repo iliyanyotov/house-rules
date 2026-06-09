@@ -7,7 +7,7 @@ description: Use when writing a Drizzle migration that drops a column, renames a
 
 ## Overview
 
-**A schema change that is not purely additive happens in at least two deploys.** First the **expand** deploy (add the new shape; write both; read either) lands and stabilizes. Only then does the **contract** deploy (stop writing the old shape; drop it) lands. Never combine expand and contract in one PR.
+**A schema change that is not purely additive happens in at least two deploys.** First the **expand** deploy (add the new shape; write both; read either) lands and stabilizes. Only then does the **contract** deploy (stop writing the old shape; drop it) land. Never combine expand and contract in one PR.
 
 The "two deploys" framing assumes any modern deploy model where old and new instances overlap for seconds-to-minutes during rollout. Even if you don't believe in rollback, you can't avoid the overlap window — old code and new code run side-by-side, against the same database, while traffic shifts. That overlap is what the rule protects.
 
@@ -58,7 +58,7 @@ This pattern is named "expand/contract" in *Refactoring Databases* (Ambler & Sad
 
 You are violating the rule if any of these are true:
 
-- A Drizzle migration in the same PR as the code that depends on it.
+- A destructive or backfill-required Drizzle migration in the same PR as the code that depends on the final shape.
 - A migration drops a column, narrows a type, adds `NOT NULL` to an existing column, or removes an enum value.
 - The migration's "down" function would corrupt data (e.g., dropping a column whose data was never copied elsewhere).
 - The PR description says "deploy migration first, then code" — informal sequencing instead of a structured expand/contract.

@@ -52,12 +52,12 @@ You are violating the rule if any of these are true:
 
 ```ts
 // ❌ N+1: one query for orders, then N queries for customers.
-const orders = await db.select().from(orders);
+const orderRows = await db.select().from(ordersTable);
 
 const ordersWithCustomers = await Promise.all(
-  orders.map(async (order) => {
-    const customer = await db.select().from(customers)
-      .where(eq(customers.id, order.customerId));
+  orderRows.map(async (order) => {
+    const customer = await db.select().from(customersTable)
+      .where(eq(customersTable.id, order.customerId));
     return { ...order, customerName: customer[0].name };
   })
 );
@@ -67,11 +67,11 @@ const ordersWithCustomers = await Promise.all(
 ```ts
 // ✅ One query with a JOIN.
 const ordersWithCustomers = await db.select({
-  order: orders,
-  customerName: customers.name,
+  order: ordersTable,
+  customerName: customersTable.name,
 })
-  .from(orders)
-  .innerJoin(customers, eq(customers.id, orders.customerId));
+  .from(ordersTable)
+  .innerJoin(customersTable, eq(customersTable.id, ordersTable.customerId));
 // Total queries: 1. Constant regardless of row count.
 ```
 
@@ -81,12 +81,12 @@ Most query builders express this naturally — Drizzle's `.innerJoin`, query bui
 
 ```ts
 // ❌ N+1: one query for users, then N queries for their order counts.
-const users = await db.select().from(users);
+const userRows = await db.select().from(usersTable);
 const usersWithCounts = await Promise.all(
-  users.map(async (user) => {
+  userRows.map(async (user) => {
     const count = await db.select({ count: sql<number>`count(*)` })
-      .from(orders)
-      .where(eq(orders.userId, user.id));
+      .from(ordersTable)
+      .where(eq(ordersTable.userId, user.id));
     return { ...user, orderCount: count[0].count };
   })
 );
@@ -95,35 +95,35 @@ const usersWithCounts = await Promise.all(
 ```ts
 // ✅ One query with GROUP BY.
 const usersWithCounts = await db.select({
-  user: users,
-  orderCount: sql<number>`count(${orders.id})`,
+  user: usersTable,
+  orderCount: sql<number>`count(${ordersTable.id})`,
 })
-  .from(users)
-  .leftJoin(orders, eq(orders.userId, users.id))
-  .groupBy(users.id);
+  .from(usersTable)
+  .leftJoin(ordersTable, eq(ordersTable.userId, usersTable.id))
+  .groupBy(usersTable.id);
 ```
 
 ### Multiple relations — fetch them all in one shot
 
 ```ts
 // ❌ N+1 squared: one query per order × two relations per order.
-const orders = await db.select().from(orders);
-for (const order of orders) {
-  const customer = await db.select().from(customers).where(eq(customers.id, order.customerId));
-  const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+const orderRows = await db.select().from(ordersTable);
+for (const order of orderRows) {
+  const customer = await db.select().from(customersTable).where(eq(customersTable.id, order.customerId));
+  const items = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
   // ...
 }
 ```
 
 ```ts
 // ✅ Three queries total: orders, customers in one batch, items in one batch.
-const orderList = await db.select().from(orders);
+const orderList = await db.select().from(ordersTable);
 const customerIds = orderList.map((o) => o.customerId);
 const orderIds = orderList.map((o) => o.id);
 
 const [customerList, itemList] = await Promise.all([
-  db.select().from(customers).where(inArray(customers.id, customerIds)),
-  db.select().from(orderItems).where(inArray(orderItems.orderId, orderIds)),
+  db.select().from(customersTable).where(inArray(customersTable.id, customerIds)),
+  db.select().from(orderItemsTable).where(inArray(orderItemsTable.orderId, orderIds)),
 ]);
 
 // Then stitch in memory — O(N) work, but bounded by query count.
@@ -135,20 +135,18 @@ The pattern is **fetch by ID list, stitch in memory**. Three queries scale the s
 
 ```ts
 // Useful telemetry: log query count per request, alert on outliers.
-let queryCount = 0;
-db.$client.on?.('query', () => queryCount++);
-
 async function handleRequest(req: Request) {
-  queryCount = 0;
-  const result = await handle(req);
+  const { result, queryCount } = await withQueryCounter(() => handle(req));
+
   if (queryCount > 10) {
     log.warn('high_query_count', { path: req.url, queries: queryCount });
   }
+
   return result;
 }
 ```
 
-A list endpoint making >10 queries is almost certainly an N+1.
+A list endpoint making >10 queries is suspicious. The exact threshold depends on the route, but the count must be request-scoped; a module-level counter races across concurrent requests.
 
 ## Pressure Resistance
 
@@ -202,4 +200,4 @@ Internal endpoints get hit by cron, by background jobs, by data exports, by retr
 
 - Martin Fowler, *Patterns of Enterprise Application Architecture* (2002) — names the pattern and the canonical eager-loading vs. lazy-loading distinction.
 - "Bullet" Bob Martin / writings on ORM design — documents the "select N+1" problem as the first failure mode any ORM user hits.
-- [PostgreSQL EXPLAIN ANALYZE](https://www.postgresql.org/docs/current/sql-explain.html) — the tool for proving an N+1 is happening: query count drops from N+1 to 1 in the explain plan after the fix.
+- [PostgreSQL EXPLAIN ANALYZE](https://www.postgresql.org/docs/current/sql-explain.html) — use it to inspect the final query plan after batching or joining; use request-level query logs to prove query count dropped from N+1 to O(1).

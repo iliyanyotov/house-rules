@@ -1,0 +1,14 @@
+{
+  "name": "house-rules",
+  "owner": {
+    "name": "Iliyan Yotov",
+    "email": "iliyan.yotov@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "house-rules",
+      "source": "./",
+      "description": "Claude Code skills for well-made software. Language-agnostic discipline and TypeScript-flavored craft."
+    }
+  ]
+}

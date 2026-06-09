@@ -42,64 +42,68 @@ You are violating the rule if any of these are true:
 
 ## The Pattern
 
-### Server-side: accept and store the key
+### Server-side: reserve the key before the side effect
 
 ```ts
 async function handleCreateOrder(req: Request) {
+  const endpoint = 'POST /orders';
   const key = req.headers.get('idempotency-key');
   if (!key) return json({ error: 'missing_idempotency_key' }, 400);
 
-  // Look up prior result.
-  const prior = await idempotencyKeys.find({
-    endpoint: 'POST /orders',
+  // Atomic insert: the unique `(endpoint, key)` constraint decides who executes.
+  const reservation = await idempotencyKeys.reserve({
+    endpoint,
     key,
-  });
-  if (prior) {
-    // Replay the original response. The work was already done.
-    return new Response(prior.responseBody, {
-      status: prior.responseStatus,
-      headers: { 'content-type': 'application/json', 'idempotent-replay': 'true' },
-    });
-  }
-
-  // Do the work.
-  const body = CreateOrder.parse(await req.json());
-  const order = await orders.create(body);
-  const responseBody = JSON.stringify({ order });
-
-  // Record the result for replay.
-  await idempotencyKeys.insert({
-    endpoint: 'POST /orders',
-    key,
-    responseBody,
-    responseStatus: 201,
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
 
-  return new Response(responseBody, { status: 201 });
+  if (reservation.status === 'completed') {
+    return replay(reservation);
+  }
+
+  if (reservation.status === 'processing_elsewhere') {
+    const completed = await idempotencyKeys.waitForCompletion({ endpoint, key });
+    return replay(completed);
+  }
+
+  // We own the reservation. Now, and only now, perform the side effect.
+  const body = CreateOrder.parse(await req.json());
+  const result = await db.transaction(async (tx) => {
+    const order = await tx.orders.create(body);
+    const responseBody = JSON.stringify({ order });
+
+    await tx.idempotencyKeys.complete({
+      endpoint,
+      key,
+      responseBody,
+      responseStatus: 201,
+    });
+
+    return { responseBody, responseStatus: 201 };
+  });
+
+  return new Response(result.responseBody, { status: result.responseStatus });
 }
 ```
 
-The `(endpoint, key)` primary key gives O(1) lookups *and* enforces uniqueness — two concurrent requests with the same key race on the insert; the loser reads the winner's stored result.
+The `(endpoint, key)` primary key gives O(1) lookups *and* enforces uniqueness. Two concurrent requests with the same key race on the reservation insert, before the side effect. The winner executes; the loser waits for, then replays, the winner's stored result.
 
 ### Concurrency — handle the race deterministically
 
 ```ts
 try {
-  await idempotencyKeys.insert({ /* ... */ }); // succeeds → we are the executor
-  // do the work
+  await idempotencyKeys.insertProcessing({ endpoint, key }); // succeeds → we execute
 } catch (err) {
   if (isUniqueViolation(err)) {
-    // Someone else is doing or did the work — re-read and replay.
-    await sleep(200);
-    const prior = await idempotencyKeys.find({ endpoint, key });
-    return replay(prior);
+    // Someone else is doing or did the work. Poll, block, or return 409.
+    const completed = await idempotencyKeys.waitForCompletion({ endpoint, key });
+    return replay(completed);
   }
   throw err;
 }
 ```
 
-Or use the database's atomic upsert (`INSERT ... ON CONFLICT DO NOTHING RETURNING *`) to skip the race entirely.
+Use the database's atomic insert/upsert (`INSERT ... ON CONFLICT DO NOTHING RETURNING *`) for the reservation. Never do `find` → side effect → `insert`; that is the duplicate-write race.
 
 ### Client-side: generate the key once per intent
 
@@ -130,23 +134,24 @@ Most providers send a unique `id` on every event and retry on non-200 responses.
 async function handlePaymentWebhook(req: Request) {
   const event = PaymentEvent.parse(await req.json());
 
-  const prior = await processedWebhooks.find({ eventId: event.id });
-  if (prior) return json({ ok: true, replay: true });
+  const processed = await db.transaction(async (tx) => {
+    const claimed = await tx.processedWebhooks.insertOnce({ eventId: event.id });
+    if (!claimed) return false;
 
-  await db.transaction(async (tx) => {
-    await tx.processedWebhooks.insert({ eventId: event.id, processedAt: new Date() });
     await handlePaymentEvent(tx, event);
+    await tx.processedWebhooks.markCompleted({ eventId: event.id, processedAt: new Date() });
+    return true;
   });
 
-  return json({ ok: true });
+  return json({ ok: true, replay: !processed });
 }
 ```
 
-The `INSERT` and the side effects share a transaction — partial failure rolls back both.
+The claim and the side effects share a transaction. A duplicate delivery loses the unique-key race before it can perform duplicate work.
 
 ### Queue consumers — message ID as key
 
-For at-least-once queues, the message ID is the natural key. Each consumer checks "have I processed this ID?" before doing work, and writes the marker in the same transaction as the side effect.
+For at-least-once queues, the message ID is the natural key. Each consumer claims the message ID with a unique insert before doing work, and marks it completed in the same transaction as the side effect.
 
 ### Scheduled jobs — the natural-time key
 
@@ -156,18 +161,19 @@ Cron-driven writes have no client to supply a header. They have something better
 async function ingestDailyFeed() {
   const todayIso = new Date().toISOString().slice(0, 10);
 
-  // "Already done today?" — the date IS the idempotency key.
-  const existing = await dailyImports.findByDate(todayIso);
-  if (existing) {
+  // "Already doing or done today?" — the date IS the idempotency key.
+  const claimed = await dailyImports.claimDate(todayIso);
+  if (!claimed) {
     return json({ ok: true, skipped: 'already_ingested', date: todayIso });
   }
 
   await ingest(todayIso);
+  await dailyImports.markCompleted(todayIso);
   return json({ ok: true, date: todayIso });
 }
 ```
 
-The precheck reads a marker; the operation writes the marker last (or via a unique constraint). A retry within the same time window hits the existing row and skips.
+The claim is a unique insert. A retry within the same time window hits the existing row and skips or waits, instead of running a second import.
 
 The rule generalizes: **the idempotency key is whatever is naturally stable for the unit of work.** For HTTP it's a client-supplied UUID. For cron it's the time bucket. For webhooks it's the provider's event ID. For queues it's the message ID.
 
