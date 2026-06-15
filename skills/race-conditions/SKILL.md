@@ -145,6 +145,8 @@ async function withdraw(userId: UserId, amountCents: number) {
 }
 ```
 
+This covers the **single-row** read-then-write. When the invariant spans *multiple* rows (a sum of bookings, "at least one doctor on call", a uniqueness rule), a row lock on what you read isn't enough — the database's *isolation level* decides which anomalies (lost update, write skew, phantom) are even possible, and a plain transaction runs at a level that permits several. Choosing the isolation level or lock for the anomaly is its own database-side discipline; the `transaction-isolation` skill covers it.
+
 ### Server: double-submit and repeated webhooks
 
 A button click can fire twice; a webhook delivery can repeat. Both are races where two writes arrive for the same logical event. The structural fix is *idempotency keys* — the server treats both arrivals as the same event and writes once. (See the `idempotency-keys-on-writes` skill.)

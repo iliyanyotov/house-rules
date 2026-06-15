@@ -96,6 +96,9 @@ const usersWithCounts = await Promise.all(
 // ✅ One query with GROUP BY.
 const usersWithCounts = await db.select({
   user: usersTable,
+  // count(orders.id), NOT count(*): the left join emits one all-null row for a
+  // user with zero orders, and count(*) would tally that row as 1. count() on
+  // the joined column skips nulls, so zero-order users correctly read 0.
   orderCount: sql<number>`count(${ordersTable.id})`,
 })
   .from(usersTable)
@@ -198,6 +201,5 @@ Internal endpoints get hit by cron, by background jobs, by data exports, by retr
 
 ## Reference
 
-- Martin Fowler, *Patterns of Enterprise Application Architecture* (2002) — names the pattern and the canonical eager-loading vs. lazy-loading distinction.
-- "Bullet" Bob Martin / writings on ORM design — documents the "select N+1" problem as the first failure mode any ORM user hits.
+- Martin Fowler, *Patterns of Enterprise Application Architecture* (2002) — names the pattern and the canonical eager-loading vs. lazy-loading distinction; the "N+1 selects" problem traces to its lazy-load discussion.
 - [PostgreSQL EXPLAIN ANALYZE](https://www.postgresql.org/docs/current/sql-explain.html) — use it to inspect the final query plan after batching or joining; use request-level query logs to prove query count dropped from N+1 to O(1).
