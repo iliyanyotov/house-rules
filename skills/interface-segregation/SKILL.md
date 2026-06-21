@@ -224,6 +224,11 @@ The point of segregation is the opposite — you're typing to the *minimum contr
 | "We share types for consistency" | Share *narrow* types for genuine sharing. The full type is a category error. |
 | "The framework provides the type — just use it" | Frameworks provide types as defaults. The point of TS's structural typing is you can be more specific. |
 
+## Related
+
+- `dependency-inversion` — DIP declares the port; ISP keeps it narrow
+- `law-of-demeter` — both minimize what callers can reach (breadth vs. depth)
+
 ## Reference
 
 - Robert C. Martin, *Agile Software Development: Principles, Patterns, and Practices* (2002) — the "I" in SOLID. Original framing: "Many client-specific interfaces are better than one general-purpose interface."

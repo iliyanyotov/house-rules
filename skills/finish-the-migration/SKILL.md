@@ -147,6 +147,12 @@ The two skills hand off at the reference count:
 
 Introducing a replacement is signing up to *remove the original* — on a schedule, behind a guard, against a count that reaches zero. Until the old path is deleted from the tree, the migration isn't done; it's just two ways of doing one thing, costing you both.
 
+## Related
+
+- `dead-code-deletion-on-sight` — handoff: drive references to zero, then delete
+- `decouple-deploy-from-release-via-flags` — migrate behind a flag, then remove it
+- `expand-contract-schema-migration` — the schema-shaped instance of the same lifecycle
+
 ## Reference
 
 - Martin Fowler, [*StranglerFigApplication*](https://martinfowler.com/bliki/StranglerFigApplication.html) — incremental replacement where the old system is progressively retired, not left running beside the new one indefinitely.

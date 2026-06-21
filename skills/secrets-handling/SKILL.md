@@ -289,6 +289,11 @@ It's a smaller hassle than the breach. Secret managers make rotation a 5-minute 
 | "We have a WAF" | Defense in depth. A WAF doesn't help if the secret is in your own logs. |
 | "Constant-time compare is paranoia at our scale" | Two extra lines. Zero timing-attack surface. Cheap insurance. |
 
+## Related
+
+- `fail-fast` — reject missing/malformed secrets at startup, at the boundary
+- `parse-dont-validate` — parse secrets into a typed env at the boundary, once
+
 ## Reference
 
 - [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html) — canonical reference. Broader category: OWASP Top 10 A02:2021 (Cryptographic Failures).

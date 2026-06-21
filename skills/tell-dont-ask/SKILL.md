@@ -307,6 +307,12 @@ Apply incrementally. Next time you'd write `if (entity.x === ...)` outside the e
 | "It's pure logic — why hide it?" | The pure logic stays exposed (as a function in the module). What's hidden is the *decision tree* — which belongs in the module that owns the data. |
 | "Tell-Don't-Ask is OOP dogma" | The principle is about cohesion, not classes. Functional modules benefit equally. |
 
+## Related
+
+- `law-of-demeter` — talk to the immediate neighbor
+- `single-responsibility` — decisions concentrate where the data lives
+- `principle-of-least-astonishment` — named operations whose names don't lie
+
 ## Reference
 
 - Andy Hunt and Dave Thomas, *The Pragmatic Programmer* (1999, 20th-anniversary ed. 2019) — named the principle "Tell, Don't Ask." The underlying cohesion argument carries across functional and OO codebases.

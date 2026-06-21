@@ -198,6 +198,11 @@ Apply incrementally — when you'd write `a.b.c.d`, write `getXFromA(a)` instead
 | "TypeScript ensures the path exists" | TS ensures it *types* — it doesn't ensure it stays the same shape across refactors. |
 | "The chain reads naturally as English" | English is forgiving; refactors aren't. |
 
+## Related
+
+- `tell-dont-ask` — both delegate to the immediate neighbor / data owner
+- `interface-segregation` — both limit what callers can reach
+
 ## Reference
 
 - Karl Lieberherr and Ian Holland, ["Assuring good style for object-oriented programs"](https://www2.ccs.neu.edu/research/demeter/papers/law-of-demeter/oopsla88-law-of-demeter.pdf) (1989) — the original formulation. Named after the Demeter Project at Northeastern University.

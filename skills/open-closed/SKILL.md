@@ -195,7 +195,7 @@ The map is one indirection. The "non-OCP" version has the branching scattered �
 
 ### "Inheritance would be cleaner"
 
-Inheritance was the canonical OCP mechanism in the OO era. In a functional TS stack, discriminated unions + higher-order functions are cleaner — no hidden vtable, no liskov-substitution concerns, no `super` chaining.
+Inheritance was the canonical OCP mechanism in the OO era. In a functional TS stack, discriminated unions + higher-order functions are cleaner — no hidden vtable, no `liskov-substitution` concerns, no `super` chaining.
 
 ### "I just need to add one if"
 
@@ -223,6 +223,11 @@ If the next variant arrives in a week, this rationalization compounds. The check
 | "It's fine for now" | The "it's fine for now" rationalization compounds. The third variant is the breaking point. |
 | "OCP is OO theory" | The principle (extension by addition, not modification) applies to any modular system. The mechanism varies. |
 | "I'll restructure later" | The longer you wait, the more callers need restructuring too. Restructure early; it's cheaper. |
+
+## Related
+
+- `composition-over-inheritance` — the discriminated-union form is composition
+- `exhaustive-switch` — the closed-set mechanism OCP relies on in TS
 
 ## Reference
 

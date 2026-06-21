@@ -208,6 +208,10 @@ Sometimes. When inference produces the wrong shape (too wide, too narrow, missin
 | "Annotations help juniors read the code" | Juniors read the hover. Annotations that lie when the source changes are *worse* for juniors. |
 | "It's just a few extra characters" | A few extra characters × every line × every file = noticeable noise. And every one is a place for the annotation to drift from the truth. |
 
+## Related
+
+- `parse-dont-validate` — boundaries are annotated; the interior infers from the proof the boundary carries
+
 ## Reference
 
 - Google TypeScript Style Guide, [§Type System / Type Inference](https://google.github.io/styleguide/tsguide.html#type-inference) — *"Rely on the type inference of the compiler as much as possible. Omit type annotations for trivially inferred types."*

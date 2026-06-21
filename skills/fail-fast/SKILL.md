@@ -178,6 +178,12 @@ Use `cause`. The chain is preserved across the await. Node and most error tracke
 | "Logging is enough" | Logging without re-throwing means the caller proceeded with broken state. The log is a tombstone, not a guard. |
 | "The error message isn't actionable" | Then write a better error message. That's the work. |
 
+## Related
+
+- `define-errors-out-of-existence` — opposite boundaries: invariants-you-control vs. expected-external-input
+- `swallow-deliberately-at-the-boundary` — the one permitted exception to "never hide an error"
+- `errors-as-values` — throw on bugs; return typed values on expected failures
+
 ## Reference
 
 - Jim Shore, ["Fail Fast"](https://martinfowler.com/ieeeSoftware/failFast.pdf) (IEEE Software, 2004) — the canonical statement: *"The sooner a problem is noticed, the cheaper it is to fix."*

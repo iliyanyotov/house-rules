@@ -201,6 +201,11 @@ Translate at the seam. Inside your code, types are branded. At the library bound
 | "Equality comparisons get awkward" | `userId === otherUserId` works fine — both are `UserId`. Comparing a `UserId` and an `OrgId` is a *bug*; the compiler refusing it is the feature. |
 | "I want one ID type for the whole app" | Then you don't have IDs, you have strings. Re-read the failure mode. |
 
+## Related
+
+- `value-objects-for-domain-primitives` — branded IDs are the lightweight form of value objects
+- `parse-dont-validate` — the brand is minted at the parse boundary, then trusted inward
+
 ## Reference
 
 - Dan Vanderkam, *Effective TypeScript* 2e (2024), item 37 ("Use Branded Types for Nominal Typing") — the canonical TS treatment.

@@ -254,6 +254,11 @@ Internal calls hit databases, caches, queues, internal services — all with fai
 | "Long-running jobs need long timeouts" | Yes — *named* long timeouts. Not no timeout. |
 | "It's an idempotent read, hanging is fine" | Hanging is never fine. Pool exhaustion follows, eventually. |
 
+## Related
+
+- `retry-with-jitter-and-budget` — per-attempt timeout sits inside the retry budget
+- `bulkhead-isolated-failure-domains` — the per-dependency timeout is part of the bulkhead
+
 ## Reference
 
 - Marc Brooker (AWS), [*Timeouts, retries, and backoff with jitter*](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) — AWS Builders' Library. Required reading.

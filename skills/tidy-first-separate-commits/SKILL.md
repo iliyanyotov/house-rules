@@ -194,6 +194,11 @@ When uncertain, ask: *would a reasonable test for the old code still pass after 
 
 The cost of splitting is 90 seconds with `git add -p`. The cost of not splitting compounds over the codebase's life — every future bisect, every future revert, every future review.
 
+## Related
+
+- `small-changesets` — concern-splitting at commit vs. PR granularity
+- `revert-and-redo-on-confusion` — muddled diffs reset by re-committing separately
+
 ## Reference
 
 - Kent Beck, *Tidy First?* (O'Reilly, 2023) — structural changes and behavioral changes are economically and cognitively distinct, and should be sequenced separately.

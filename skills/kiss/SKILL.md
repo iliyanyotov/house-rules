@@ -145,6 +145,11 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 
 Find the simplest implementation that works. If a tired engineer can't read it at midnight, simplify it.
 
+## Related
+
+- `yagni` — sibling simplicity guards (clever syntax vs. speculative scope)
+- `dry` — neither abstracts for elegance alone
+
 ## Reference
 
 - Kelly Johnson, Lockheed Skunk Works (1960) — *"Keep it simple, stupid."* The original engineering version: simple systems are repairable in the field.

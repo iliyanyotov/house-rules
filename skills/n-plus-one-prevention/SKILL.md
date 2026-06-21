@@ -199,6 +199,11 @@ Internal endpoints get hit by cron, by background jobs, by data exports, by retr
 | "The ORM defaults are fine" | ORMs default to lazy loading. Eager-load explicitly. |
 | "Premature optimization" | N+1 is not optimization — it's correctness. |
 
+## Related
+
+- `transaction-isolation` — both DB-query disciplines invisible until scale
+- `race-conditions` — invisible-until-scale data-access bugs
+
 ## Reference
 
 - Martin Fowler, *Patterns of Enterprise Application Architecture* (2002) — names the pattern and the canonical eager-loading vs. lazy-loading distinction; the "N+1 selects" problem traces to its lazy-load discussion.

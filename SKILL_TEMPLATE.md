@@ -36,11 +36,12 @@ For rules that fire on every line or every PR. Examples: `tdd`, `kiss`, `yagni`,
 ## The Iron Rule     — code-fence "NEVER ..." + No exceptions list
 ## Detection: The "<X>" Smell — one before/after example
 ## Why <This> Wins   — 2-column table
-## Pressure Resistance Protocol — 3-5 entries, each "Pressure / Response / Action"
-## Red Flags — STOP and Reconsider — bullet list
+## Pressure Resistance — 3-5 entries, each "Pressure / Response / Action"
+## Red Flags         — bullet list
 ## Quick Reference   — situation → action table
-## Common Rationalizations (All Invalid) — excuse → reality table
+## Common Rationalizations — excuse → reality table
 ## The Bottom Line   — one punch line + 2-sentence closer
+## Related           — genuine neighbors, backticked names + reason (omit if none)
 ## Reference         — 2-4 citations
 ```
 
@@ -59,6 +60,7 @@ For rules whose value is the pattern itself: naming conventions, type-design con
 ## Pressure Resistance  — bold prose, not numbered (saves space)
 ## Common Mistakes  — one consolidated smell → fix table
 ## The Bottom Line
+## Related           — genuine neighbors, backticked names + reason (omit if none)
 ## Reference
 ```
 
@@ -78,6 +80,7 @@ For skills where the rule needs several sub-patterns to be useful: resilience, t
 ## Pressure Resistance
 ## Red Flags
 ## Common Rationalizations
+## Related           — genuine neighbors, backticked names + reason (omit if none)
 ## Reference
 ```
 
@@ -88,7 +91,7 @@ For skills where the rule needs several sub-patterns to be useful: resilience, t
 - **One excellent example beats many.** If you can show the pattern once, do.
 - **Directive tone.** "Never use a name that needs surrounding code." Not "consider whether…"
 - **No decorative emoji.** ❌ / ✅ markers in before/after code comparisons are allowed (and standard in Anthropic's own skills); anything else (🎉 ✨ 👉) is not.
-- **No `[[adjacent-skill]]` links until the library is stable.**
+- **Cross-reference related skills by name, in prose.** Claude Code resolves no clickable link between skills — markdown file links break at runtime and `[[wiki]]` syntax is inert. The only thing that works is a plain backticked name (`` `fail-fast` ``). Where a skill has genuine neighbors (a tension it must reconcile, a handoff, a discipline it builds on), close the body with a `## Related` line listing them: backticked names + a few words on the relationship. Keep each skill self-contained — the line points the reader onward, it does not assume the neighbor was read.
 
 ## Verification checklist
 
@@ -99,7 +102,7 @@ For skills where the rule needs several sub-patterns to be useful: resilience, t
 - [ ] Examples use universal-sounding domains (`User`, `Invoice`, `Order`)
 - [ ] Not baked into one framework's mental model
 - [ ] Iron Rule, at least one example, Pressure Resistance, References — all present
-- [ ] No `[[adjacent-skill]]` links
+- [ ] `## Related` lists genuine neighbors by backticked name (or is omitted if the skill stands alone) — no `[[wiki]]` or markdown file links, which don't resolve
 - [ ] No decorative emoji (❌/✅ comparators are allowed)
 
 ## Reference

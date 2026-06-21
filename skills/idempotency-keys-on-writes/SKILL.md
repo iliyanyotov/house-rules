@@ -245,6 +245,12 @@ One header. The client passes a UUID. The server stores it. The complication is 
 | "Adding the table is painful" | Two columns and a composite primary key. A 30-second migration. |
 | "Stripe-style is too heavyweight" | The implementation above *is* Stripe-style. No frameworks, no services. |
 
+## Related
+
+- `retry-with-jitter-and-budget` — makes retried writes safe
+- `dead-letter-and-replay` — consumer-side dedup so replay is safe
+- `race-conditions` — prevents double-submit races
+
 ## Reference
 
 - Stripe Engineering, [*Designing robust and predictable APIs with idempotency*](https://stripe.com/blog/idempotency) — the canonical industry write-up.

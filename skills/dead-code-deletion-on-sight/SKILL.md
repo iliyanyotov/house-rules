@@ -202,6 +202,11 @@ The shim exists *for callers*. No callers, no shim.
 
 The PR that orphans the code is the only PR where the context is fresh enough to delete it cleanly. Wait, and the deletion never happens.
 
+## Related
+
+- `finish-the-migration` — handoff: when references hit zero, delete
+- `yagni` — both refuse code that isn't pulling its weight
+
 ## Reference
 
 - Martin Fowler, *Refactoring* 2e (2018) — "Remove Dead Code" listed as a primary refactoring.

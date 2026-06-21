@@ -233,6 +233,11 @@ You hit a wrong abstraction. The fix is to *un-extract* — inline the function 
 | "The shared function is reusable" | Reusable for *what*? Specifically. If no second use case exists, reusability is hypothetical. |
 | "We always extract helpers in this codebase" | Then your codebase carries the wrong-abstraction tax. Stop. |
 
+## Related
+
+- `kiss` — DRY names knowledge, not text; no abstraction for elegance
+- `yagni` — don't extract for a maybe-future caller
+
 ## Reference
 
 - Andy Hunt & Dave Thomas, *The Pragmatic Programmer* (1999) — the canonical statement: *"Every piece of knowledge must have a single, unambiguous, authoritative representation within a system."*

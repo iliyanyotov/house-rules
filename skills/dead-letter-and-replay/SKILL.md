@@ -161,6 +161,12 @@ The dead-letter store grows; left alone it grows forever. Delete on successful r
 | "Dead-letter + replay is over-engineering" | One table and one re-invoke. You already need the idempotency. |
 | "We have a dead-letter table" (but never replay from it) | An untested replay path is a graveyard. Exercise it. |
 
+## Related
+
+- `idempotency-keys-on-writes` — dedup on arrival before processing
+- `retry-with-jitter-and-budget` — bound in-line attempts, then dead-letter
+- `steady-state-purge-unbounded-growth` — the dead-letter table needs a retention policy
+
 ## Reference
 
 - AWS, [*Amazon SQS dead-letter queues*](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html) — the canonical dead-letter mechanism: isolate messages that can't be processed so they neither block the queue nor disappear.

@@ -189,6 +189,11 @@ That's the bug, not the fix. If a function expects `Foo` and the caller has `Par
 | "`as` is shorter than building the right type" | Building the right type is the work. Skipping it isn't a shortcut; it's a deferral with interest. |
 | "It's an internal-only type, who cares" | Future-you cares when refactoring across the seam where the lie lives. |
 
+## Related
+
+- `no-any-escape-via-unknown-or-never` — sibling discipline: resist type-escape hatches
+- `branded-ids` — the one legitimate `as`: branding a value after it parses
+
 ## Reference
 
 - `satisfies` shipped in TypeScript 4.9 (November 2022). [TypeScript 4.9 release notes](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html) — the operator's introduction and rationale.

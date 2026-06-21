@@ -247,6 +247,11 @@ The application check races with itself across processes. Two instances both pas
 
 Pick the tool by the anomaly: atomic `UPDATE` for one-row counters, `FOR UPDATE` for hot single resources, a version column for low-contention edits, `SERIALIZABLE` + retry for multi-row invariants, a unique constraint for uniqueness. Name the choice in the code, so the next reader knows which anomaly you defended against.
 
+## Related
+
+- `race-conditions` — the DB-layer counterpart to app-async races
+- `retry-with-jitter-and-budget` — SERIALIZABLE retries use jittered backoff
+
 ## Reference
 
 - Martin Kleppmann, *Designing Data-Intensive Applications* (2017), ch. 7 ("Transactions") — the definitive treatment of isolation levels, the anomalies each permits, and write skew in particular. The source for this skill's framing.

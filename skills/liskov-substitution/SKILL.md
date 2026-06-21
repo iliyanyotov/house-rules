@@ -243,6 +243,10 @@ Yes — when an LSP violation is deep in the codebase, the restructure is real. 
 | "No-op is safer than throw" | Silent failure is worse than loud failure. |
 | "It's just for one method" | One violation invites more. Restructure now. |
 
+## Related
+
+- `composition-over-inheritance` — composition avoids the substitutability trap
+
 ## Reference
 
 - Barbara Liskov, ["Data Abstraction and Hierarchy"](https://dl.acm.org/doi/10.1145/62139.62141) (1987) — the original "subtypes must be substitutable" formulation. The principle predates SOLID by a decade.

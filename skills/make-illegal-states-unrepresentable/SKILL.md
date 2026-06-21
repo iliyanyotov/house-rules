@@ -177,6 +177,11 @@ Convert at the boundary. The external shape is wire-level; your type is domain-l
 | "Unions don't compose well" | They compose via union: `A | B | C`. They don't compose via spread — by design. |
 | "It's faster to write four booleans" | And slower to debug for the rest of the type's life. |
 
+## Related
+
+- `exhaustive-switch` — discriminated unions define legal states; exhaustive switch enforces handling them
+- `parse-dont-validate` — parsing produces the narrowed states; illegal states never enter typed code
+
 ## Reference
 
 - Yaron Minsky, ["Effective ML"](https://blog.janestreet.com/effective-ml-revisited/) (Jane Street, 2011) — the canonical phrasing: *"Make illegal states unrepresentable."* The OCaml community lore that crossed into TypeScript via discriminated unions.

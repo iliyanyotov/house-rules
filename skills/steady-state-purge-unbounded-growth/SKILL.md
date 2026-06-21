@@ -238,6 +238,11 @@ Then your queries scan an ever-growing set of soft-deleted rows. The optimizer s
 | "Cleanup is risky — what if we delete the wrong thing?" | Then the cron has a `WHERE` clause that you've tested. Risk lives in *manual* cleanups under outage pressure, not in scheduled cleanups under normal conditions. |
 | "Soft-delete is enough" | Soft-delete + scheduled hard-delete is enough. Soft-delete alone is unbounded growth in disguise. |
 
+## Related
+
+- `idempotency-keys-on-writes` — the keys table grows; it needs a purge
+- `dead-letter-and-replay` — the dead-letter table grows; it needs a purge
+
 ## Reference
 
 - Michael Nygard, *Release It!* 2e (2018), ch. 5 — names "Steady State" as a stability pattern alongside Timeouts, Circuit Breaker, and Bulkheads. *"Every system should be able to run for a long time without operator intervention."*

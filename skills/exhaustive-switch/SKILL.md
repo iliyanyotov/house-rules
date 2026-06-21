@@ -194,6 +194,11 @@ That's a different problem. Either the union is over-faceted (split into nested 
 | "The function returns `void`, so a missing case is fine" | The void return masks the bug. The data is unhandled and you'll never know. |
 | "My switch is in a hot path, the function call is expensive" | A function call that runs zero times is free. If it's running, find the bug. |
 
+## Related
+
+- `make-illegal-states-unrepresentable` — the discriminated union the switch is exhaustive over
+- `no-any-escape-via-unknown-or-never` — the `never` default guard; `any` would silence the check
+
 ## Reference
 
 - Dan Vanderkam, *Effective TypeScript* 2e (2024), items 28–29 — union exhaustiveness as the canonical use of `never`.

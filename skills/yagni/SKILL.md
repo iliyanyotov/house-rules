@@ -161,6 +161,11 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 
 Speculative code is a bet on the future. The base rate of those bets paying off is low — and the wrong-shape abstraction is more expensive than the missing one.
 
+## Related
+
+- `kiss` — sibling simplicity guards
+- `dry` — premature extraction is the "abstraction for maybes" YAGNI prohibits
+
 ## Reference
 
 - Ron Jeffries & Kent Beck, *Extreme Programming Explained* (1999) — *"Always implement things when you actually need them, never when you just foresee that you need them."*

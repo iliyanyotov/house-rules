@@ -201,6 +201,13 @@ That's about boundaries you don't control. Within one process, the boundary is t
 | "It's hard to thread the type through every call" | If it's hard, the boundary is wrong — not "you need more checks." |
 | "Logs need the raw input for debugging" | Log the raw input *at the boundary*, before parsing. Then parse. |
 
+## Related
+
+- `branded-ids` — branding is the boundary's typed output
+- `make-illegal-states-unrepresentable` — parsing yields the narrowed/union type
+- `no-any-escape-via-unknown-or-never` — narrow from `unknown`, never `any`
+- `prefer-type-inference-annotate-at-boundaries` — annotate the boundary, infer inward
+
 ## Reference
 
 - Alexis King, ["Parse, don't validate"](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/) (2019) — the original framing. Haskell, but the TypeScript application is a direct translation: parsing returns a *new type* that carries the proof; validation returns a *boolean* and throws the proof away.

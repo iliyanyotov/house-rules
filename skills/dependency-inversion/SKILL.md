@@ -216,6 +216,12 @@ You don't. Apply DIP to *new* code; leave existing code alone until you touch it
 | "Adapters add latency" | A function call adds nanoseconds. The actual DB call is milliseconds. The adapter's overhead is unmeasurable. |
 | "The team won't follow the convention" | A code-review checklist plus a lint rule banning cross-layer imports enforces it mechanically. |
 
+## Related
+
+- `interface-segregation` — a narrow inverted port
+- `composition-root-discipline` — DIP inverts imports; the composition root assembles the wiring
+- `seams-for-untestable-code` — greenfield (DIP) vs. legacy-rescue (seams)
+
 ## Reference
 
 - Robert C. Martin, *Agile Software Development* (2002) and *Clean Architecture* (2017) — the canonical "D" of SOLID. *Clean Architecture* generalizes it into "The Dependency Rule": source code dependencies point inward, toward higher-level policies.

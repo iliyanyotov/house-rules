@@ -203,6 +203,11 @@ Transactions are a separate concern: an *orchestrator* that calls two operations
 | "Splitting hurts performance" | Modern runtimes inline small functions. Overhead is a non-issue at app-code scale. |
 | "Mixing concerns is more pragmatic" | Pragmatism is what the next person will say when debugging your god function at 2am. |
 
+## Related
+
+- `deep-modules` — the change-cohesion vs. interface-width clarification
+- `tell-dont-ask` — both concentrate authority in the owning module
+
 ## Reference
 
 - Robert C. Martin, *Agile Software Development, Principles, Patterns, and Practices* (2003) — the "S" in SOLID: *"A module should have one and only one reason to change."*

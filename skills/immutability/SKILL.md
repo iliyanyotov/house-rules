@@ -198,6 +198,11 @@ Rename: `withUpdatedUser`, `updatedUser`, or use a verb-noun convention that ret
 | "Spread copies are O(n)" | So is iterating to apply the change. The constant factor is identical. |
 | "Mutation makes APIs simpler" | It makes the API *shorter*. It makes everything that consumes the API *more complex*. |
 
+## Related
+
+- `functional-core-imperative-shell` — pure cores are naturally immutable
+- `small-changesets` — shared mutable state couples otherwise-separate changes
+
 ## Reference
 
 - ECMAScript 2023, ["Change Array by Copy"](https://github.com/tc39/proposal-change-array-by-copy) — adds `toSorted`, `toReversed`, `toSpliced`, `with`. The language now provides immutable equivalents for every legacy mutating array method.

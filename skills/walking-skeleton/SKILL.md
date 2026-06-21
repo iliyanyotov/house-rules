@@ -225,6 +225,10 @@ The walking skeleton lives in production from day 1, behind a flag or at an inte
 
 The first commit that "works" is the one where a user-visible action travels the full stack and produces a user-visible result, however trivial. Everything after is thickening.
 
+## Related
+
+- `small-changesets` — both build in thin integrated slices
+
 ## Reference
 
 - Alistair Cockburn, *Crystal Clear* (2004) — introduced "walking skeleton" as a methodology element. *"A walking skeleton is a tiny implementation of the system that performs a small end-to-end function. It need not use the final architecture, but it should link together the main architectural components."*

@@ -298,6 +298,11 @@ Branded types are functional. You don't need classes; you need types and a parsi
 | "DB rows have raw numbers" | Convert at the DB boundary (a small parse-on-read helper). Internally hold value-objects. |
 | "Wrapping makes the JSON serialization weird" | A `toJSON()` method on the class (or a thin serialization layer for brands) handles it cleanly. |
 
+## Related
+
+- `branded-ids` — the same wrapping technique, for IDs rather than constrained values
+- `parse-dont-validate` — value objects are what parsing produces at the boundary
+
 ## Reference
 
 - Eric Evans, *Domain-Driven Design* (2003) — coined the term **value object** as a first-class building block of domain models: "an object with no conceptual identity, defined entirely by its attributes."

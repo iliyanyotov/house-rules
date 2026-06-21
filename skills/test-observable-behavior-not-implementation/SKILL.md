@@ -204,6 +204,11 @@ The helper's args are *closer* to your fingers — they're inside the same modul
 | "How else do I get to 100% coverage?" | You don't. Aim for behavior coverage, not line coverage. |
 | "Snapshot tests are behavior tests" | Only if the snapshot captures something the user observes. A snapshot of an internal data structure isn't. |
 
+## Related
+
+- `mock-only-across-architectural-boundaries` — don't couple to internals = don't mock owned code
+- `functional-core-imperative-shell` — a pure core makes behavior tests need no mocks
+
 ## Reference
 
 - Vladimir Khorikov, *Unit Testing: Principles, Practices, and Patterns* (2020), ch. 4–5 — the modern canonical articulation. The four pillars: protection against regressions, refactor resistance, fast feedback, maintainability.

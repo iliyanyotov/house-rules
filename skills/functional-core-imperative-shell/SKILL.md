@@ -194,6 +194,12 @@ The feature grows by adding logic. The longer it stays tangled, the more logic a
 | "Passing `now` everywhere is silly" | Less silly than three failed tests because someone's machine clock was wrong. |
 | "The handler is the shell, so impurity is fine *anywhere* inside it" | Impurity is fine in the shell. The logic *called by* the shell should still be pure. |
 
+## Related
+
+- `test-observable-behavior-not-implementation` — a pure core means behavior tests need no mocks
+- `mock-only-across-architectural-boundaries` — mocks are confined to the shell
+- `immutability` — pure functions are naturally immutable
+
 ## Reference
 
 - Gary Bernhardt, ["Boundaries"](https://www.destroyallsoftware.com/talks/boundaries) — Destroy All Software (2012). The original talk introducing *Functional Core, Imperative Shell* as a design pattern.

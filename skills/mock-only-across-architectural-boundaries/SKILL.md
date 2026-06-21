@@ -259,6 +259,12 @@ Tools enable; they don't recommend. Module-level mocking is a sharp tool. The ru
 | "Refactoring my test suite is a big task" | One test at a time; pair the refactor with feature work. Value compounds as the suite gets less mock-heavy. |
 | "Tests pass; what's the problem?" | Tests passing against mocks but failing against real code is the *defining* problem of over-mocked suites. |
 
+## Related
+
+- `test-observable-behavior-not-implementation` — the corollary: assert outcomes, not internals
+- `functional-core-imperative-shell` — mocks live only in the shell
+- `seams-for-untestable-code` — seams give mocks a legitimate boundary to sit at
+
 ## Reference
 
 - Vladimir Khorikov, *Unit Testing: Principles, Practices, and Patterns* (2020), ch. 5, ch. 8 — *"Use mocks only for unmanaged dependencies."* Distinguishes managed vs unmanaged.

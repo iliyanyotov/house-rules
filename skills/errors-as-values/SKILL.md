@@ -325,6 +325,13 @@ A wide error union is a signal, not a defect — it tells you exactly how many w
 
 Make it disappear if you can. Throw it if it's a bug. Otherwise return `Result<T, E>` with `E` a discriminated union, propagate with `if (!r.ok) return r`, and convert to exceptions only at the outermost boundary.
 
+## Related
+
+- `define-errors-out-of-existence` — handoff: what remains after "can this not exist?"
+- `fail-fast` — distinguishes recoverable failures (return) from bugs (throw)
+- `exhaustive-switch` — the machinery: discriminated error union + exhaustive handling
+- `make-illegal-states-unrepresentable` — a Result is a discriminated union
+
 ## Reference
 
 - Joe Duffy, ["The Error Model"](http://joeduffyblog.com/2016/02/07/the-error-model/) (2016) — the architectural case for separating recoverable *errors* (return them as values) from unrecoverable *bugs* (abandon/throw). The clearest treatment of the split this skill rests on.

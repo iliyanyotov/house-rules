@@ -167,6 +167,11 @@ Production code, tests, and runtime config count. Lockfiles, codegen output, sna
 
 Plan the split *before* writing the code. Stack PRs when work has dependencies. Open follow-ups for "while I was in here" finds. Atomic delivery doesn't require atomic commits.
 
+## Related
+
+- `tidy-first-separate-commits` — split across concerns (PRs) vs. within (commits)
+- `revert-and-redo-on-confusion` — when a PR spirals, revert and redo smaller
+
 ## Reference
 
 - SmartBear / Cisco code review study (2008) — defect detection collapses past ~400 lines of diff. Still the canonical data on review size vs. defect-detection rate.

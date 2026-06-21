@@ -253,6 +253,11 @@ That's expand/contract with a JSON column as the "new shape." Same rule; just me
 | "We can pause traffic" | On any modern serverless or multi-region stack, you can't reliably pause traffic. |
 | "I'll do the migration manually after deploy" | Manual ad-hoc DDL is the version of expand/contract with no review and no test — strictly worse. |
 
+## Related
+
+- `decouple-deploy-from-release-via-flags` — a multi-deploy schema change gated by flags
+- `finish-the-migration` — expand adds the new shape; finish drives the old to zero
+
 ## Reference
 
 - Pramod Sadalage & Scott Ambler, *Refactoring Databases* (2006) — names the "expand/contract" pattern and catalogs the destructive schema changes that need it.

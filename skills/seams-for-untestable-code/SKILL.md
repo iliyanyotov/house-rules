@@ -11,7 +11,7 @@ description: Use when a function under test imports the DB, `fetch`, `Date`, or 
 
 A **seam** is a place where program behavior can be changed *without editing in that place*. A function parameter is a seam. A constructor argument is a seam. The point is **minimal intervention**: shift just enough so a test double can take the dependency's place.
 
-This skill is specifically for **legacy rescue** — code that already exists and resists being tested. For greenfield code where you're designing modules from scratch, the related discipline is *dependency-inversion* (the domain declares ports; adapters implement them). Seams retrofit testability onto code that wasn't built for it.
+This skill is specifically for **legacy rescue** — code that already exists and resists being tested. For greenfield code where you're designing modules from scratch, the related discipline is `dependency-inversion` (the domain declares ports; adapters implement them). Seams retrofit testability onto code that wasn't built for it.
 
 ## The Iron Rule
 
@@ -43,7 +43,7 @@ Both skills are about not coupling code to hard dependencies, but they apply at 
 - **Dependency-inversion** is the *greenfield* discipline. The domain declares the ports it needs (`type ProductReader = { findById: ... }`); adapters in the outer layer implement them. Designed-in from day one.
 - **Seams for untestable code** is the *legacy-rescue* discipline. Code already exists with hard dependencies; you can't redesign it. You introduce the *smallest possible* seam (often just one parameter on one function) to make it testable, then test, then optionally refactor toward the cleaner design later.
 
-If you're writing new code, reach for dependency-inversion. If you're rescuing existing code, seams are the cheaper move.
+If you're writing new code, reach for `dependency-inversion`. If you're rescuing existing code, seams are the cheaper move.
 
 ## Detection
 
@@ -349,6 +349,12 @@ If your seam-extraction produced a 10-parameter function, that's a *signal* the 
 | "The function is too tangled to seam cleanly" | Then introduce one seam *anyway* at the smallest place. Don't fix everything at once. |
 | "We'd need a DI framework" | We need a function parameter. That's all. |
 | "Integration tests are enough" | They're enough for confidence; they're not enough for fast feedback during dev. |
+
+## Related
+
+- `characterization-tests-first-for-legacy` — seams enable safe characterization
+- `dependency-inversion` — the legacy-rescue vs. greenfield versions of the same goal
+- `mock-only-across-architectural-boundaries` — seams create the boundary mocks belong at
 
 ## Reference
 

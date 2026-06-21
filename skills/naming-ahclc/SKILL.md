@@ -156,6 +156,12 @@ function handleSubmit(e: FormEvent) { /* ... */ }
 
 Action + High Context + Low Context. Booleans get prefixes. Collections are plural. If the name needs context to make sense, the name is wrong.
 
+## Related
+
+- `comments-as-why-not-what` — good names eliminate "what" comments
+- `ubiquitous-language` — names must use the domain's words
+- `principle-of-least-astonishment` — a name that predicts behavior
+
 ## Reference
 
 - A/HC/LC pattern — [`kettanaito/naming-cheatsheet`](https://github.com/kettanaito/naming-cheatsheet). The canonical source for the convention.

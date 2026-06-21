@@ -152,6 +152,11 @@ function calculateShipping(weight: number, distance: number): number {
 
 The test is the specification. The test is the documentation. The test is the safety net. Write it first, every time.
 
+## Related
+
+- `characterization-tests-first-for-legacy` — greenfield test-first vs. brownfield characterize-first
+- `functional-core-imperative-shell` — TDD pressure yields the pure-core/shell split
+
 ## Reference
 
 - Kent Beck, *Test-Driven Development by Example* (2002) — the canonical work; red-green-refactor.

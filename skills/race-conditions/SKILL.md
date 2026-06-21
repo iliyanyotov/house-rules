@@ -201,6 +201,11 @@ If the race silently corrupts data, the user doesn't see an error — that's the
 | "We use Postgres, it handles this" | Postgres handles consistent writes *within* a transaction. Reads-then-writes split across two queries don't get the benefit unless wrapped. |
 | "I'll add error handling for the corrupt state" | The corrupt state is the bug. Detection-and-recovery is more expensive than prevention. |
 
+## Related
+
+- `transaction-isolation` — app-async races vs. DB multi-row races
+- `idempotency-keys-on-writes` — dedup prevents double-submit races
+
 ## Reference
 
 - Dan Abramov, ["A Complete Guide to useEffect"](https://overreacted.io/a-complete-guide-to-useeffect/) — why effects + state are inherently racy and how cleanup eliminates the race.

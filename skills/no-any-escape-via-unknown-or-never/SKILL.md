@@ -47,7 +47,7 @@ You are violating the rule if any of these are true:
 - `Array<any>`, `Record<string, any>`, `Promise<any>`, `Map<string, any>`.
 - `// @ts-ignore` or `// @ts-expect-error` without an inline reason comment naming the constraint.
 - A function returns `unknown` and the caller immediately `as`-casts instead of narrowing.
-- An exhaustive-switch's `default` branch handles a real future variant via `as any` cast, not `never`.
+- An `exhaustive-switch`'s `default` branch handles a real future variant via `as any` cast, not `never`.
 - `JSON.parse(...)` is assigned to a typed variable without going through a schema parse.
 - `tsconfig.json` has `"noImplicitAny": false`.
 
@@ -244,6 +244,12 @@ A type variable (`<T>`) is a feature of every modern language. If `<T>` is confu
 | "Library types are wrong" | `@ts-expect-error` with a reason. Self-cleaning when the upstream fixes it. |
 | "The codebase already has `any`s" | The existing ones are debt. New ones add to the debt. Stop the bleed; pay it down opportunistically. |
 | "Generics are too abstract" | A type variable is less abstract than `any` — it's a specific promise. `any` is *more* abstract because it promises nothing. |
+
+## Related
+
+- `exhaustive-switch` — `never` in the default branch enforces exhaustiveness
+- `parse-dont-validate` — `unknown` (never `any`) is the inbound boundary type
+- `satisfies-over-as` — sibling escape-hatch discipline: check, don't coerce
 
 ## Reference
 

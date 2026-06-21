@@ -231,6 +231,11 @@ The composition version is *slightly* more code at the type-declaration site; it
 | "I only need one method from the parent" | Then take that one method as a parameter — don't inherit a whole class for it. |
 | "Polymorphism requires inheritance" | TypeScript's structural typing gives you polymorphism without inheritance. |
 
+## Related
+
+- `liskov-substitution` — if you must inherit, honor the contract; composition avoids the risk
+- `open-closed` — OCP's discriminated-union form is composition, not inheritance
+
 ## Reference
 
 - *Design Patterns* (Gamma, Helm, Johnson, Vlissides — the "Gang of Four," 1994) — the original formulation: *"Favor object composition over class inheritance."*

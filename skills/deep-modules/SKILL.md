@@ -187,6 +187,11 @@ Utilities are the worst offenders. They grow public-by-accident: someone exposes
 | "What if I need to swap implementations later" | When you need it, the deep interface is exactly what makes the swap possible. The narrow port is the swap-friendly shape. |
 | "Fluent chains read nicely" | Fine when the chain has internal state. Useless when the chain is just an alternate syntax for an options bag. |
 
+## Related
+
+- `single-responsibility` — "one reason to change" is not "small surface"
+- `interface-segregation` — both hide; the module hides implementation, ISP hides unused methods
+
 ## Reference
 
 - John Ousterhout, *A Philosophy of Software Design* (2018), ch. 4 ("Modules Should Be Deep") — the original framing of *information hiding* and *interface vs. implementation cost*. The substring and file-I/O examples are his.

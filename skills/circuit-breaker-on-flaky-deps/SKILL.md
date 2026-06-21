@@ -248,6 +248,12 @@ Then the fallback is "fail fast with a typed error." The breaker still helps —
 | "It complicates traces" | Tag the trace with breaker state. Now traces have *more* signal. |
 | "Library is overkill, I'll add it later" | Build the minimal version (above). Replace with library when you need observability/concurrency knobs. |
 
+## Related
+
+- `retry-with-jitter-and-budget` — transient (retry) vs. sustained (break)
+- `bulkhead-isolated-failure-domains` — the breaker sits inside each per-dependency bulkhead
+- `graceful-degradation-defaults` — open breaker -> degrade to a fallback
+
 ## Reference
 
 - Michael Nygard, *Release It!* 2e (2018), ch. 5 — the canonical chapter on stability patterns (timeouts, circuit breakers, bulkheads, handshaking, steady-state).

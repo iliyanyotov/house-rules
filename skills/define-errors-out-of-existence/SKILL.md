@@ -201,6 +201,12 @@ Two failure modes, two treatments. Validation failures (user input, schema misma
 | "I'd have to refactor every caller" | Many callers were going to handle the case anyway — better to typecheck the handling than scatter try/catch. |
 | "What if the result type explodes — `Result<T, A \| B \| C \| D>`" | That's a signal that the function is doing too many things. Split it, or fold related errors into a discriminated union. |
 
+## Related
+
+- `fail-fast` — the reconciled tension: expected input vs. invariants you control
+- `errors-as-values` — handoff: failures that can't be defined away become typed values
+- `parse-dont-validate` — narrow the input type so the bad case is unconstructable
+
 ## Reference
 
 - John Ousterhout, *A Philosophy of Software Design* (2018), ch. 19 ("Define Errors Out of Existence") — the canonical chapter; the `substring` example is his.

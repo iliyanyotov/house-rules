@@ -197,6 +197,11 @@ A bare `try { ... } catch { return null; }` collapses three states (loading, bro
 | "The framework should handle this" | Frameworks give you the primitives. Wiring them is your job. |
 | "We have a global 500 page, that's the fallback" | A global 500 turns a leaf failure into a full-page failure. The opposite of graceful. |
 
+## Related
+
+- `swallow-deliberately-at-the-boundary` — sibling deliberate-fallback patterns (data-layer vs. post-commit)
+- `circuit-breaker-on-flaky-deps` — degrade to a fallback when the breaker opens
+
 ## Reference
 
 - Michael Nygard, *Release It!* 2e (2018) — *steady state* and *fail fast* patterns. Stability is achieved by isolating failure domains, not by preventing all failures.

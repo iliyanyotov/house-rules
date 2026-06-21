@@ -208,6 +208,11 @@ If removing the comment loses information, keep it. If it doesn't, delete it.
 
 The deletion test is the single most useful filter: if removing the comment wouldn't confuse a future reader, the comment isn't earning its space. Keep the ones that preserve information the code can't.
 
+## Related
+
+- `naming-ahclc` — "why" comments flow from names that already say "what"
+- `ubiquitous-language` — both preserve domain knowledge code can't capture
+
 ## Reference
 
 - Robert C. Martin, *Clean Code* (2008), ch. 4 — the canonical chapter on "Good Comments and Bad Comments." The good-comment list maps almost exactly onto "why."

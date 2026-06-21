@@ -172,6 +172,12 @@ Action: Reorder so the critical write is first and fully committed before any be
 
 There is exactly one place a `catch` may decline to re-throw: an optional step, after the real work has committed, with the failure recorded. Everywhere else, `fail-fast`. Make every legitimate swallow loud enough that a reviewer can tell it from a bug at a glance.
 
+## Related
+
+- `fail-fast` — the inverse it carves an exception to
+- `graceful-degradation-defaults` — sibling deliberate-fallback pattern
+- `dead-letter-and-replay` — owed optional work: defer instead of drop
+
 ## Reference
 
 - Michael Nygard, *Release It!* (2nd ed., 2018) — degradation as a *designed*, observed fallback at a boundary, not an ambient suppression of errors.

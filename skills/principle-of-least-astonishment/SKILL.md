@@ -188,6 +188,11 @@ A return type that varies by outcome forces every caller to type-narrow at the c
 
 If the reader has to open the body to know what the function does, the name is wrong. Fix the name; fix the body; never let them disagree.
 
+## Related
+
+- `tell-dont-ask` — named operations that match intent
+- `naming-ahclc` — a name that predicts behavior
+
 ## Reference
 
 - Steve McConnell, *Code Complete* 2e (2004), ch. 7 ("High-Quality Routines") and ch. 11 ("The Power of Variable Names") — the canonical treatment of "names should match behavior."

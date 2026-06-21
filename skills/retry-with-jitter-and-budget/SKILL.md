@@ -227,6 +227,12 @@ Until it isn't. The double-charge or duplicate-row bug is hard to trace and impo
 | "Library retries are good enough" | They're invisible. Centralize for observability and tuning. |
 | "We'll add jitter when we see herd problems" | The herd problem looks like a flat-line at saturation. Add jitter now. |
 
+## Related
+
+- `timeouts-everywhere` — each attempt is timed; the retry has a total budget
+- `circuit-breaker-on-flaky-deps` — handoff: transient retries vs. sustained-outage breaking
+- `idempotency-keys-on-writes` — retrying writes needs idempotency keys
+
 ## Reference
 
 - Marc Brooker (AWS), [*Timeouts, retries, and backoff with jitter*](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) — the canonical write-up, including the comparison of jitter strategies.

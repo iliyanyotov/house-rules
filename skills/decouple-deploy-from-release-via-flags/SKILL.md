@@ -253,6 +253,11 @@ Then the flag's stages compress — shadow for one day, canary for one day, full
 | "Flags will pile up" | Only if you let them. The rule's removal half prevents this. |
 | "Reverting is good enough" | Reverting reverts *everything*. Flags revert *one thing*. Different scopes. |
 
+## Related
+
+- `expand-contract-schema-migration` — flags carry code across the schema deploys
+- `finish-the-migration` — flags guard the deprecation window
+
 ## Reference
 
 - Forsgren, Humble, Kim, *Accelerate* (2018) — the DORA finding that *deployment frequency* and *change failure rate* both improve when deploys and releases are decoupled.

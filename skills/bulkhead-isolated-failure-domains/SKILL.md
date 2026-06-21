@@ -217,6 +217,12 @@ Start permissive: half your function-instance concurrency limit per critical dep
 | "I'll add it when there's a problem" | The problem is invisible until it isn't. Once the dep starts hanging, you've already shipped the bug. |
 | "Concurrency caps will reject good requests" | They reject requests that would have *hung anyway*. The user sees a fast 503 instead of a 30s spinner. |
 
+## Related
+
+- `circuit-breaker-on-flaky-deps` — layered: a breaker per dependency, inside the bulkhead
+- `timeouts-everywhere` — a per-dependency timeout is part of the design
+- `shed-load-under-overload` — bulkhead saturation is the shed signal
+
 ## Reference
 
 - Michael Nygard, *Release It!* 2e (2018), ch. 5 — names "Bulkheads" alongside Timeouts and Circuit Breaker as core stability patterns. The metaphor is from naval architecture.

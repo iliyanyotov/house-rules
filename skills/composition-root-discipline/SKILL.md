@@ -159,6 +159,12 @@ static fromEnv(env: Env): Context {
 
 One file builds the graph; everything else receives it. The wiring list gets long — that's the cost of being able to see your whole system's shape in one place, and it's a bargain. Keep it ordered, keep it logic-free, and don't trade it for runtime magic until it genuinely stops scaling.
 
+## Related
+
+- `dependency-inversion` — DIP inverts; the composition root assembles
+- `interface-segregation` — narrow types reduce constructor bloat
+- `yagni` — hand-wire until genuinely unwieldy; don't add a DI framework early
+
 ## Reference
 
 - Mark Seemann, *Dependency Injection Principles, Practices, and Patterns* (2019) — defines the Composition Root pattern: *"A Composition Root is a single, logical location in an application where modules are composed together,"* placed as close as possible to the application's entry point.

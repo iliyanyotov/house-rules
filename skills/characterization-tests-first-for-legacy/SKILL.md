@@ -187,6 +187,11 @@ Yes. The tests can land as a separate PR — characterization first, then the fi
 | "It would take too long" | Half an hour, typically. Much less than the regression-hunt time you'll spend without it. |
 | "Snapshot tests are cheating" | They're characterization, codified. The cheating is updating them without reading the diff. |
 
+## Related
+
+- `tdd` — the brownfield counterpart to test-first
+- `seams-for-untestable-code` — add a seam first, then characterize
+
 ## Reference
 
 - Michael Feathers, *Working Effectively with Legacy Code* (2004) — the canonical book on this discipline. Feathers' famous definition: **"legacy code is code without tests."** The characterization-test pattern is the entry point to changing legacy code safely.

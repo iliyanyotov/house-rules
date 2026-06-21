@@ -209,6 +209,11 @@ The business is rarely "sure" — they refine vocabulary over time. Start with t
 | "I'd have to update too many files" | Search-and-replace is one command. The translation tax of not doing it lasts forever. |
 | "Naming is bikeshedding" | Naming is the single most read-impacting decision in the codebase. It's the opposite of bikeshedding. |
 
+## Related
+
+- `naming-ahclc` — names enforce the domain language
+- `comments-as-why-not-what` — comments preserve domain rules
+
 ## Reference
 
 - Eric Evans, *Domain-Driven Design: Tackling Complexity in the Heart of Software* (2003) — coined the term **ubiquitous language**. The book's central thesis: a project's domain experts and developers must share a vocabulary, and that vocabulary lives in the code.

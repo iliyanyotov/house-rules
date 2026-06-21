@@ -207,6 +207,11 @@ Flow built on a wrong model produces wrong work. The "flow" of the last 30 minut
 | "I'll lose ideas I had during the attempt" | Write them down. The ideas are cheap; the muddled code is expensive. |
 | "Senior engineers don't revert" | Senior engineers revert *more* than juniors. They're calibrated to the spiral. |
 
+## Related
+
+- `small-changesets` — a spiraling PR -> redo in smaller steps
+- `tidy-first-separate-commits` — disentangle muddled tidy+behavior diffs
+
 ## Reference
 
 - Kent Beck, *Test-Driven Development by Example* (2002) — when the test goes from red to *more* red (worse failures), the move is to revert the last change. Beck's framing: *"When in doubt, throw it away. It only took 10 minutes to write."*

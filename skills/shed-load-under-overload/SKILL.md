@@ -248,6 +248,11 @@ Modern clients (most SDKs, AWS SDK, browser `fetch` retry libraries) honor it. E
 | "We have rate limiting" | Rate limiting is "per-client cap." Shedding is "system-wide capacity." They're complementary; you need both. |
 | "Queue + workers can keep up" | At sustained overload, no they can't. Add a bound. |
 
+## Related
+
+- `bulkhead-isolated-failure-domains` — saturation is the signal to shed (503)
+- `graceful-degradation-defaults` — same posture: degrade rather than queue forever
+
 ## Reference
 
 - Michael Nygard, *Release It!* 2e (2018), ch. 5 — names "Shed Load" and "Back Pressure" as paired stability patterns.
