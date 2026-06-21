@@ -2,6 +2,8 @@
 
 **Claude Code skills for writing software that holds up.**
 
+> **Status: unreleased and not yet properly versioned.** This plugin is still being evaluated against a range of real codebases; treat it as a work in progress. It carries no meaningful version yet, and skills may be added, reworded, or removed without notice until it settles.
+
 Every skill comes from the same four places: the books and talks worth re-reading, the bugs that woke someone up at 3am and stayed memorable a year later, the refactors of code nobody planned to inherit, and the patterns that kept showing up no matter how the team was shaped — solo, small, large, distributed, in-person, fast-iteration, or a long-running product.
 
 ## What's in it
