@@ -69,6 +69,32 @@ The route is a *template* (`/api/invoices/[id]`), not the rendered URL (`/api/in
 
 User-level data lives in *logs* and *traces*, where the system is designed for unbounded attribute values.
 
+### Instrumenting an API client — label by method name, not the entity it touches
+
+When you wrap an external dependency (a `PaymentClient`, a `SearchClient`) to count calls, the right label is the method name — a fixed set of constants known at code time. The trap is labeling by *what the call was about*.
+
+```ts
+// metrics/clientCalls.ts
+const clientCalls = counter('client.calls', {
+  labelNames: ['apiName'],  // ← always one of a fixed set of method names
+});
+
+// ✅ apiName is a static, bounded set: "fetchUser" | "createOrder" | "listInvoices" | …
+//    Cardinality = number of client methods (dozens, fixed at code time).
+async function fetchUser(userId: UserId) {
+  clientCalls.inc({ apiName: 'fetchUser' });
+  return paymentClient.get(`/users/${userId}`);
+}
+
+// ❌ One time series per user/order/email/URL — unbounded, grows with traffic.
+clientCalls.inc({ apiName: userId });                 // entity ID
+clientCalls.inc({ apiName: order.id });               // entity ID
+clientCalls.inc({ apiName: user.email });             // free-text identity
+clientCalls.inc({ apiName: `/users/${userId}` });     // full path with params
+```
+
+A good label has a small, **known-at-code-time domain**: a method name, a status code, a region, a boolean. Never something whose domain is "every value a user can produce." The entity ID and URL go in *logs* and *trace attributes* — searchable, never grouped.
+
 ### Errors — tag vs. context
 
 Most error trackers index *tags* (creating one series per unique value) but store *contexts* on the event itself (not indexed). Use the distinction:

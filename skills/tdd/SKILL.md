@@ -70,7 +70,7 @@ function calculateShipping(weight: number, distance: number): number {
 | Hard-to-test = poor design, discovered late | Hard-to-test = caught immediately |
 | "Does it work?" | "Is it right?" |
 
-## Pressure Resistance Protocol
+## Pressure Resistance
 
 ### 1. "We'll add tests later"
 
@@ -112,7 +112,7 @@ function calculateShipping(weight: number, distance: number): number {
 
 **Action:** Pull the pure logic out. Inject dependencies. Test the core, integration-test the shell.
 
-## Red Flags — STOP and Reconsider
+## Red Flags
 
 - Writing any function without a test
 - "Let me just get it working first"

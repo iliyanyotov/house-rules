@@ -113,7 +113,7 @@ Each commit is independently revertable. `git bisect` walks past each tidy in on
 
 When uncertain, ask: *would a reasonable test for the old code still pass after this change?* If yes, it's tidy. If no, it's behavior.
 
-## Pressure Resistance Protocol
+## Pressure Resistance
 
 ### 1. "It's all one logical unit"
 
@@ -155,7 +155,7 @@ When uncertain, ask: *would a reasonable test for the old code still pass after 
 
 **Action:** Commit it separately. The triviality is the win, not the excuse.
 
-## Red Flags — STOP and Reconsider
+## Red Flags
 
 - The word "and" in a commit message between a noun and a verb
 - A commit's diff stat shows files unrelated to the change goal

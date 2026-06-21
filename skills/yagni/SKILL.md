@@ -69,7 +69,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 
 **Scope:** YAGNI applies to **capabilities**, **abstractions**, **configurability**, and **infrastructure beyond current stakes**. It does *not* apply to type safety, input validation at edges, error handling at boundaries, or tests for behavior that exists — those are baseline requirements, not speculative features.
 
-## Pressure Resistance Protocol
+## Pressure Resistance
 
 ### 1. "It's easy to add now, hard to add later"
 
@@ -119,7 +119,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 
 **Action:** Document the scaling path in an ADR. Build the simple version. Scale when measurement demands it.
 
-## Red Flags — STOP and Reconsider
+## Red Flags
 
 - The words "might," "probably," "eventually," "just in case," "to be safe" in a comment or PR description
 - An interface with one implementation

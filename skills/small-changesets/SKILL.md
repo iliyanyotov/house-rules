@@ -94,7 +94,7 @@ Found an unrelated smell while working? Don't fix it in the current PR. Note it 
 
 Production code, tests, and runtime config count. Lockfiles, codegen output, snapshot fixtures, and pure renames don't (within reason). When unclear, list bulk-changed files in the PR description with the reason.
 
-## Pressure Resistance Protocol
+## Pressure Resistance
 
 ### 1. "It's all related, it has to ship together"
 
@@ -128,7 +128,7 @@ Production code, tests, and runtime config count. Lockfiles, codegen output, sna
 
 **Action:** Stack the PRs. Tools like Graphite or `git-spr` smooth the workflow.
 
-## Red Flags — STOP and Reconsider
+## Red Flags
 
 - A PR description with "this PR does X, Y, Z" or three+ bullets of different things
 - Diff stat over 400 lines (excluding lockfiles and generated code)

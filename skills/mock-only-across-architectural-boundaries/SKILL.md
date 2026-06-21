@@ -90,7 +90,38 @@ test('sendInvoice sends a formatted email to the user', async () => {
 
 The boundary is `email: SendFn` — an injected adapter at the edge of your code. The assertion is on the *observable* outcome (an email with the right payload). Real `User`, real `Invoice`, real `db`. Refactor any internal helper — the test stays green.
 
-### The clock seam — canonical example
+### Build domain entities with a schema-driven factory — don't mock them
+
+Where do `makeUser` / `makeInvoice` come from? A factory generates a valid entity *from its schema* and merges your overrides. The base is valid-by-construction; you specify only the fields the test cares about.
+
+```ts
+// generateMock: produce a valid sample value from a schema (e.g. zod's generators,
+// @anatine/zod-mock, or your own). Generically: "a valid instance of this schema."
+const userFactory = (overrides: Partial<User> = {}): User => ({
+  ...generateMock(userSchema),
+  ...overrides,
+});
+
+// ✅ A real, fully-valid User. Every field satisfies userSchema.
+const user = userFactory({ status: 'active' });
+await suspendUser(user, { db: testDb });   // db is the real boundary, mocked/test-DB'd
+```
+
+Contrast with mocking the entity itself:
+
+```ts
+// ❌ Cast a partial object to the type — a fake User that drifts from userSchema.
+const user = { id: '1', status: 'active' } as unknown as User;
+
+// ❌ A library mock of the type — same problem, fancier syntax.
+const user = mock<User>({ status: 'active' });
+```
+
+Both anti-patterns (a) **drift from the real schema** — the cast satisfies the compiler, not the validator, so an invalid `User` sails through; (b) **couple the test to fields it doesn't care about** — add a required field and you hand-edit every literal; (c) **hide shape changes** — when `User` gains or renames a field, the casts compile silently while the factory's `generateMock(userSchema)` reflects the new shape automatically.
+
+The split is the same rule as everywhere in this skill: **construct domain objects (via factories from the schema); reserve mocks for the boundaries** the unit talks to (DB / HTTP / external SDK). Factories keep test data valid-by-construction and refactor-safe; mocks stay at the seam.
+
+### The clock — freeze it in the test, don't mock it
 
 ```ts
 // ❌ Direct Date.now — tests fail at midnight in CI.
@@ -98,16 +129,29 @@ function isExpired(token: Token): boolean {
   return token.expiresAt.getTime() < Date.now();
 }
 
-// ✅ Inject the clock at the function boundary.
+// ✅ Production stays as-is; the test freezes the system clock.
+//    freezeTime / restoreTime wrap whatever your runner provides for clock control.
+afterAll(restoreTime);
+
+test('token past its expiry reads as expired', () => {
+  freezeTime(new Date('2026-01-15T00:00:00Z'));
+  expect(isExpired(token)).toBe(true);
+});
+```
+
+The clock is not an architectural boundary, so it doesn't need a mock *or* an injected seam — the test runner can pin `Date.now()` / `new Date()` directly. No global monkey-patching by hand, no flake, and production code carries no test-only parameter.
+
+When you genuinely *can't* reach the runtime clock (a pure function you want frozen without touching global time, or a hot path where the global freeze is too broad), inject a `now` at the boundary instead:
+
+```ts
 function isExpired(token: Token, now: () => Date = () => new Date()): boolean {
   return token.expiresAt.getTime() < now().getTime();
 }
 
-const fixedNow = () => new Date('2026-01-15T00:00:00Z');
-expect(isExpired(token, fixedNow)).toBe(true);
+expect(isExpired(token, () => new Date('2026-01-15T00:00:00Z'))).toBe(true);
 ```
 
-`Date` is replaced at the *boundary* — the function signature names a `now` dependency. The test passes a deterministic fake. No global monkey-patching, no flake.
+That keeps `Date` at the *boundary* — the signature names a `now` dependency the test supplies. Reach for it only when freezing the global clock won't do; for most code, freezing it will.
 
 ### The DB is *not* mocked
 

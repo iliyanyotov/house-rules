@@ -119,7 +119,7 @@ export function formatPrice(cents: number) {
 
 The shim exists *for callers*. No callers, no shim.
 
-## Pressure Resistance Protocol
+## Pressure Resistance
 
 ### 1. "We might need it again"
 
@@ -161,7 +161,7 @@ The shim exists *for callers*. No callers, no shim.
 
 **Action:** Delete both.
 
-## Red Flags — STOP and Reconsider
+## Red Flags
 
 - An IDE warning "X is declared but never used"
 - A commented-out block of code longer than one line

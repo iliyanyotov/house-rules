@@ -109,9 +109,54 @@ export async function handleTransferRequest(body: unknown) {
 //   Argument of type 'UserId' is not assignable to parameter of type 'AccountId'.
 ```
 
-### Branded IDs through the schema layer
+### One identity, end to end
 
-When the database returns rows, the branding propagates if your schema annotates the column type. Most query builders support a `$type<UserId>()`-style cast on column definitions; with that in place, `users.findById(id)` returns `User` with `id: UserId`, not `id: string`. Foreign keys stay typed all the way to the handler.
+The same `UserId` should survive the whole round-trip — minted, validated, stored, and read back without decaying to `string`. Four moving parts, one type:
+
+```ts
+// 1. The primitive (the `Brand<T, B>` defined above — ship it once, reuse everywhere).
+export type UserId = Brand<string, 'UserId'>;
+
+// 2. A typed generator mints prefixed IDs already typed to the brand.
+const PREFIX = { user: 'u', order: 'o', invoice: 'in' } as const;
+type Entity = keyof typeof PREFIX;
+type IdOf<E extends Entity> = E extends 'user' ? UserId : Brand<string, E>;
+
+export const idGenerator = {
+  id: <E extends Entity>(entity: E): IdOf<E> =>
+    `${PREFIX[entity]}_${crypto.randomUUID()}` as IdOf<E>,
+};
+
+const newUser = idGenerator.id('user'); // typed UserId, value "u_…"
+
+// 3. The parse boundary brands via a transform — the ONE legit `as`, right after validation.
+export const userIdSchema = z
+  .string()
+  .regex(/^u_[0-9a-f-]{36}$/)
+  .transform((s) => s as UserId);
+
+// 4. The DB column TYPE is the brand, so reads come back branded.
+export const users = pgTable('users', {
+  id: text('id').$type<UserId>().primaryKey(),
+});
+```
+
+Now one identity flows across the stack — `UserId` at every hop, never `string`:
+
+```ts
+// HTTP → service → DB column → back out. No re-casting in between.
+async function handleGetUser(rawId: string) {
+  const userId = userIdSchema.parse(rawId); // string → UserId, validated once
+  const user = await loadUser(userId);      // UserId in
+  return user.id;                           // UserId out (column type carried it)
+}
+
+async function loadUser(id: UserId): Promise<{ id: UserId }> {
+  return db.query.users.findFirst({ where: eq(users.id, id) });
+}
+```
+
+The brand is minted in exactly two named boundaries — the generator and the transform. Everywhere else `UserId` flows untouched. Swap `UserId` for `OrderId` at any hop and the compiler stops you.
 
 ## Pressure Resistance
 

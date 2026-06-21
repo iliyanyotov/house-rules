@@ -1,6 +1,6 @@
 ---
 name: tell-dont-ask
-description: Use when calling code reads an object's field, branches on it, then mutates the same or related field. Use when "feature envy" appears in code review — one module repeatedly accessing another's internals to make decisions. Use when validation logic lives outside the entity it validates. Use when a `switch` on `entity.status` appears in code that's *not* the entity's definition.
+description: Use when calling code reads an object's field, branches on it, then mutates the same or related field. Use when "feature envy" appears in code review — one module repeatedly accessing another's internals to make decisions. Use when validation logic lives outside the entity it validates. Use when a `switch` on `entity.status` appears in code that's *not* the entity's definition. Use when entities are plain DTOs / schema-inferred types with no methods and the same `entity.status` rule is duplicated across the services that handle them.
 ---
 
 # Tell, Don't Ask
@@ -221,6 +221,39 @@ The line: **does the decision encode a rule of the queried module?** If yes, the
 
 The second case: `canBeRefunded(invoice)` belongs in the invoice module.
 
+### When entities are plain data (DTOs across a boundary)
+
+A common architecture makes entities **plain serializable types with no methods** — schema-inferred shapes shared between a server and a client, or DTOs that cross a network/process boundary. You *cannot* put `invoice.refund()` on such a type; it must stay a bare data structure to serialize cleanly. It's tempting to conclude "Tell-Don't-Ask needs rich objects, so it doesn't apply here." That conclusion is wrong, and it's the source of a false-positive reading of this skill.
+
+The principle was never about *objects*; it's about **which module owns the decision** (see Why). The unit that owns the rule isn't a method on the entity — it's a **dedicated domain module for that entity**: one file (`domain/invoice.ts`) exporting free functions that take the entity and return a result or a new entity. Every solution example in this skill is already in that form — `refundInvoice(invoice, now)`, `attemptConfirmation(order, …)`, `shouldPromptUpgrade(user)`. None is a method; all are "tell."
+
+So in a DTO codebase the rule sharpens rather than disappears:
+
+```ts
+// ❌ The "ask" smell, DTO edition: every service that touches a booking
+//    re-implements the cancellation rule by reading the DTO's fields.
+// src/services/booking/cancelBookingService.ts
+if (booking.status === 'confirmed' && booking.startsAt > now && !booking.cancelledAt) {
+  // ... cancel
+}
+// src/services/booking/rescheduleBookingService.ts  — the SAME rule, drifting
+if (booking.status === 'confirmed' && booking.startsAt > now) { /* ... */ }
+
+// ✅ One domain module owns the rule; services tell.
+// src/domain/booking.ts  (operates on the plain DTO, returns a new DTO)
+export function canCancel(booking: Booking, now: Date): boolean {
+  return booking.status === 'confirmed' && booking.startsAt > now && !booking.cancelledAt;
+}
+export function cancelBooking(booking: Booking, now: Date): CancelResult {
+  if (!canCancel(booking, now)) return { ok: false, reason: 'not-cancellable' };
+  return { ok: true, booking: { ...booking, status: 'cancelled', cancelledAt: now } };
+}
+```
+
+The entity stays a pure DTO; the *behavior* concentrates in one named module per entity instead of smearing across every service that handles it. If your services each carry their own `if (entity.status === …)` rule, that's the violation — not the absence of methods on the entity.
+
+**The guard:** "entities must be plain data" justifies *no methods on the type*. It does **not** justify scattering the entity's rules across its callers. Give the entity a domain-function module and tell *it*.
+
 ## Pressure Resistance
 
 ### "It's just one if-check"
@@ -242,6 +275,10 @@ It *moves* the logic to where it belongs — the module that owns the data. From
 ### "Sometimes I really do need to read the state"
 
 Sure — for *display*. The skill applies to *decisions*. If you're reading to render, ask freely. If you're reading to mutate or invoke side effects, tell.
+
+### "Our entities are plain DTOs with no methods — this skill can't apply"
+
+It applies, just not as methods. The owner of the rule is a per-entity *domain module* (`domain/invoice.ts`) of free functions that take the DTO and return a new one — exactly the form every example here uses. "No methods on the type" is fine; "the rule duplicated across every service that reads the DTO" is the violation. See *When entities are plain data*.
 
 ### "I can't refactor everything"
 

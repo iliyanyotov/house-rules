@@ -63,7 +63,7 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 | Hostile error messages from type magic | Hand-readable errors from hand-written types |
 | Survives only as long as its author | Survives team turnover |
 
-## Pressure Resistance Protocol
+## Pressure Resistance
 
 ### 1. "It's more elegant"
 
@@ -105,7 +105,7 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 
 **Action:** Rewrite. If a colleague needs to puzzle out your code during an incident, you owe them an apology.
 
-## Red Flags — STOP and Reconsider
+## Red Flags
 
 - A line that takes longer to read than to copy-paste
 - Nested ternaries (`x ? a : y ? b : c`)

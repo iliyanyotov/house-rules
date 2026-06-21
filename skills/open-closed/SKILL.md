@@ -187,7 +187,7 @@ That's an argument for *not* OCP-ing yet — wait for the second variant. But on
 
 ### "Discriminated unions are TS-specific magic"
 
-They're the literal manifestation of a type-theoretic sum type, present in every modern type system (TS, Rust, OCaml, Haskell, Kotlin). In TS specifically they're cheap, well-supported, and exhaustively checked.
+A discriminated union is the everyday form of what type theory calls a sum type — present in every modern type system (TS, Rust, OCaml, Haskell, Kotlin). In TS specifically they're cheap, well-supported, and exhaustively checked.
 
 ### "The registry/map adds a layer"
 

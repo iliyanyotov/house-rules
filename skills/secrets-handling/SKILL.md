@@ -166,6 +166,82 @@ DATABASE_URL=postgres://user:pass@localhost:5432/db
 
 The `.env.example` documents *what* keys exist without exposing their values.
 
+### Defense in depth — three layers, no single point of failure
+
+The patterns above each guard one stage. A credential survives a mistake at any *one* stage only if the other layers also hold. Defend a secret at rest, in the type system, and at the egress boundary.
+
+**Layer 1 — at rest: store a vault *reference*, not the secret.** The committed config holds a pointer the deploy resolves; the literal never touches the repo. `.env.example` lists names only.
+
+```bash
+# .env.example — names and a reference shape, never a value
+PAYMENT_API_KEY=op://vault/payment-api/credential   # secrets-manager ref, resolved at deploy
+```
+
+```bash
+# .env (gitignored) — also just the reference; the deploy injector resolves it
+PAYMENT_API_KEY=op://vault/payment-api/credential
+```
+
+The process sees the resolved secret only at runtime. If the repo leaks, an `op://` ref is not a credential. (Any secrets-manager ref format works; `op://vault/item/field` is a widely-known shape.)
+
+**Layer 2 — in the type system: brand the secret at the parse boundary** so it can't be passed where a plain `string` is expected. The brand is applied once, where `unknown` becomes typed (see `parse-dont-validate`), and flows from there.
+
+```ts
+import { z } from 'zod';
+
+declare const brand: unique symbol;
+type PaymentApiKey = string & { readonly [brand]: 'PaymentApiKey' };
+
+const Env = z.object({
+  // Brand at the boundary: downstream code receives PaymentApiKey, not string.
+  PAYMENT_API_KEY: z.string().min(1).transform((s) => s as PaymentApiKey),
+});
+
+export const env = Env.parse(process.env);
+
+function charge(amount: number, key: PaymentApiKey): Promise<void> { /* ... */ }
+
+charge(1000, env.PAYMENT_API_KEY); // ✅ only the branded value type-checks here
+charge(1000, 'sk_live_oops');      // ❌ compile error: string is not PaymentApiKey
+charge(1000, user.displayName);    // ❌ compile error: a plain string can't slip into the key slot
+```
+
+**Layer 3 — at egress: a structured error that strips sensitive context out of client-facing 5xx responses.** Operators get the full error; clients get a context-free view, so a secret placed in `context` for debugging never rides out in a response body.
+
+```ts
+type ErrorContext = Record<string, unknown>;
+
+class AppError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    private readonly context: ErrorContext = {},
+    options?: { cause?: unknown },
+  ) {
+    super(message, options);
+  }
+
+  // Full detail — logs / error tracker only, never a response body.
+  asJson() {
+    return { message: this.message, status: this.status, context: this.context };
+  }
+
+  // Context-stripped — safe to return to clients on a 5xx.
+  asJsonWithoutContext() {
+    return { message: this.message, status: this.status };
+  }
+}
+
+// At the boundary: log the full error internally, return the stripped view outward.
+function toResponse(err: AppError): Response {
+  logger.error(err.asJson()); // context (may hold a key) stays internal
+  const body = err.status >= 500 ? err.asJsonWithoutContext() : err.asJson();
+  return Response.json(body, { status: err.status });
+}
+```
+
+No layer is sufficient alone: a branded type doesn't stop a committed secret; a vault ref doesn't stop `context` leaking in a 5xx; a context-stripped error doesn't stop the wrong `string` reaching the key slot. Together they make a single slip survivable.
+
 ## Pressure Resistance
 
 ### "It's a dev/staging key, it doesn't matter"

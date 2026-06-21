@@ -40,6 +40,15 @@ You are violating the rule if any of these are true:
 - A user can double-click submit and end up with two records.
 - A queue with at-least-once delivery has consumers that aren't idempotent.
 
+## Two stances: producer side and consumer side
+
+Idempotency shows up in two situations, and they differ in *who owns the key*:
+
+- **Producer side — you expose a mutating endpoint.** You *require* the caller to supply a key (`Idempotency-Key` header) and dedupe on `(endpoint, key)`. You set the contract. Covered by *Server-side* and *Client-side* below.
+- **Consumer side — you receive an at-least-once stream you don't control** (a provider webhook, a queue, a pub/sub topic). You *don't* get to demand a key — you **derive** one from something naturally stable the producer already sends (the event ID, the message ID), and dedupe on it before applying the side effect. Covered by *Webhooks*, *Queue consumers*, and *Scheduled jobs* below.
+
+The consumer side has a second failure mode the producer side doesn't: a delivery can not just *duplicate* but *fail to process at all*. Dedupe (this skill) stops a duplicate from double-applying; it does **not** save an event whose handler throws. For that — persisting the failed event and replaying it — see `dead-letter-and-replay`. The two compose: dedupe on arrival, dead-letter on failure.
+
 ## The Pattern
 
 ### Server-side: reserve the key before the side effect
@@ -240,3 +249,4 @@ One header. The client passes a UUID. The server stores it. The complication is 
 
 - Stripe Engineering, [*Designing robust and predictable APIs with idempotency*](https://stripe.com/blog/idempotency) — the canonical industry write-up.
 - Marc Brooker (AWS), [*Reliability, constant work, and a good cup of coffee*](https://aws.amazon.com/builders-library/reliability-and-constant-work/) — idempotency tokens framed as a foundational reliability primitive.
+- Consumer-side companion: `dead-letter-and-replay` handles the *other* failure mode of an at-least-once stream — an event whose handler throws — which dedupe alone does not cover.

@@ -175,7 +175,7 @@ The feature grows by adding logic. The longer it stays tangled, the more logic a
 ## Red Flags
 
 - A "pure" function with `new Date()`, `Math.random()`, `await`, or any import from `db/`, `fetch`, `fs`, `process.env`.
-- A test that needs `vi.useFakeTimers()` or module-mocking to test business logic.
+- A test that needs fake timers or module-mocking to test business logic.
 - A helper used by both a route and a job whose two callers each do "their own" pre-processing.
 - A computation duplicated in three places because none of the existing copies could be reused.
 - A function that returns `Promise<T>` but doesn't actually `await` anything — it's mid-extraction.

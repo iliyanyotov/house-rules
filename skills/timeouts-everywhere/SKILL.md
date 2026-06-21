@@ -103,6 +103,65 @@ await mailer.send({ to, subject, html }, {
 
 Every SDK has a different surface. The rule: find it, set it, document the value.
 
+### The injected-`fetch` seam — testable is not the same as timed
+
+A common, *good* pattern: a client takes its `fetch` implementation as a constructor parameter so tests can inject a fake. The seam is excellent for testability — and does nothing for timeouts. These are two separate disciplines; the seam buys you the first, not the second.
+
+```ts
+// ❌ Good seam, no deadline. Every method routes through a naked call.
+class SearchClient {
+  constructor(
+    private baseUrl: string,
+    private fetchAPI: typeof fetch = fetch, // ← great for tests…
+  ) {}
+
+  // …but every one of these awaits with NO signal:
+  async getUser(id: UserId): Promise<User> {
+    const res = await this.fetchAPI(`${this.baseUrl}/users/${id}`);
+    return res.json();
+  }
+  async searchOrders(q: string): Promise<Order[]> {
+    const res = await this.fetchAPI(`${this.baseUrl}/orders?q=${q}`);
+    return res.json();
+  }
+  // …and ~two dozen more, all the same shape.
+}
+```
+
+**Blast radius.** The missing signal isn't one bug — it's one bug multiplied by every method. When dozens of calls all route through that single un-timed `this.fetchAPI(...)`, one slow or hung upstream pins a worker (or a pooled connection) indefinitely. Under load the pool drains, and now features that never touched `SearchClient` start stalling too. One missing line, many call sites, system-wide impact.
+
+**The fix: add the deadline once, at the seam.** Wrap the injected `fetch` so every method inherits the timeout — no per-method edits, and the test seam is preserved.
+
+```ts
+// ✅ One wrapper at the seam; all methods inherit the deadline.
+class SearchClient {
+  private readonly call: typeof fetch;
+
+  constructor(
+    private baseUrl: string,
+    fetchAPI: typeof fetch = fetch,
+    private timeoutMs = TIMEOUTS_MS.http_external,
+  ) {
+    this.call = (input, init) =>
+      fetchAPI(input, {
+        ...init,
+        // Combine any caller signal with our deadline.
+        signal: init?.signal
+          ? AbortSignal.any([init.signal, AbortSignal.timeout(this.timeoutMs)])
+          : AbortSignal.timeout(this.timeoutMs),
+      });
+  }
+
+  async getUser(id: UserId): Promise<User> {
+    const res = await this.call(`${this.baseUrl}/users/${id}`);
+    return res.json();
+  }
+  // searchOrders, and the other ~two dozen, now timed for free.
+}
+```
+
+The injected `fetch` still lets tests pass a fake; the wrapper guarantees no method can ever issue a naked, deadline-free call. You need *both*: the seam for testing, the wrapper for timeouts.
+
 ### LLM calls — generous, but bounded
 
 ```ts

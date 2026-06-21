@@ -142,7 +142,7 @@ You build the skeleton *inside* the MVP. The MVP defines the feature's outer env
 
 The walking skeleton lives in production from day 1, behind a flag or at an internal URL. The deploy isn't ceremonial — it's the *test that the joints really hold*. Local dev hides plenty of deploy-time issues (env vars, build cache, runtime mismatches). The deploy is the proof.
 
-## Pressure Resistance Protocol
+## Pressure Resistance
 
 ### 1. "The DB needs to be designed first"
 
@@ -184,7 +184,7 @@ The walking skeleton lives in production from day 1, behind a flag or at an inte
 
 **Action:** Keep the body trivial. Trust the joints to be the lesson.
 
-## Red Flags — STOP and Reconsider
+## Red Flags
 
 - A project plan with sequential layer-by-layer milestones
 - A new feature with no deployed preview after 2 weeks

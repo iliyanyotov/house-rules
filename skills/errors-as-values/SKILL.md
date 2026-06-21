@@ -107,6 +107,8 @@ Each variant carries exactly the data its handler needs (`declineCode`, `retryAf
 ### The caller handles it exhaustively — no try/catch
 
 ```ts
+const assertNever = (x: never): never => { throw new Error(`unhandled: ${JSON.stringify(x)}`); };
+
 const result = await charge(order);
 if (result.ok) {
   return showReceipt(result.value);
@@ -141,17 +143,17 @@ async function checkout(cartId: CartId): Promise<Result<Order, CheckoutError>> {
   if (cart.lineItems.length === 0) return err({ kind: 'cart_empty' });
 
   const reservation = await reserveStock(cart);
-  if (!reservation.ok) return reservation; // propagate the out_of_stock error as-is
+  if (!reservation.ok) return err(reservation.error); // forward the error channel; drop the foreign success type
 
   const order = await placeOrder(cart);
   const charged = await charge(order);
-  if (!charged.ok) return charged; // propagate ChargeError unchanged
+  if (!charged.ok) return err(charged.error); // ChargeError flows into CheckoutError
 
   return ok(order);
 }
 ```
 
-`if (!r.ok) return r` is the value-level equivalent of letting an exception bubble — but the error stays named, the success type stays narrow, and a genuine bug in `placeOrder` still throws instead of being swallowed.
+`if (!r.ok) return err(r.error)` is the value-level equivalent of letting an exception bubble — but the error stays named and a genuine bug in `placeOrder` still throws instead of being swallowed. Forward the error with `err(r.error)`, not bare `return r`: `r` is a `Result<Reservation, …>`, whose success branch carries a `Reservation`, not the `Order` this function must return — re-wrapping keeps the error channel and drops the foreign success type.
 
 ### The boundary still converts to/from exceptions
 
@@ -190,6 +192,84 @@ async function reserveStock(cart: Cart): Promise<Result<Reservation, CheckoutErr
 ```
 
 The `try`/`catch` lives in *one* adapter, translating a known exception into a typed value and **re-throwing anything it doesn't recognize**. The interior never catches.
+
+### When throwing is the right call — do it typed, not stringly
+
+`errors-as-values` is the default this skill teaches, but it is not the only disciplined option, and a mature codebase sometimes does the opposite *well*. There is a second coherent strategy: **a typed error-class hierarchy that is thrown, caught by one top-level boundary, and rendered as a structured response.** It is a legitimate sibling of `Result`, not the anti-pattern.
+
+The two strategies oppose the *same* enemy — the bare `throw new Error("...")` / `catch (e) { e.message }` channel that callers can't reliably discriminate. They differ only in *where the branching happens*:
+
+- **Return a `Result`** when a *caller* must branch on each failure locally and you want the compiler to force handling at the call site — checkout deciding whether to prompt for a new card, retry, or add a payment method. The decision lives next to the call.
+- **Throw a typed error to a boundary** when, in a layered server, *most* failures should propagate untouched through every intermediate layer to a *single* place that maps them to HTTP. A repository deep in a request stack has nothing useful to do with "invoice not found" except let it travel to the one handler that turns it into a `404`. Threading `if (!r.ok) return r` through six layers that only forward the error buys nothing the throw doesn't.
+
+When you choose the throwing style, the bar is: **typed base + stable machine-readable code + `cause`-chaining + exactly one catch boundary.** Never bare strings.
+
+```ts
+// ✅ One base every domain error extends. `type` is a STABLE, machine-readable
+// discriminant (a wire contract clients switch on) — never the human `message`.
+// `status` carries the transport mapping; `context` carries safe-to-expose detail;
+// `cause` chains the underlying failure for logs without leaking it to the client.
+abstract class AppError extends Error {
+  abstract readonly type: string;   // e.g. 'invoice/not_found' — stable, versioned
+  abstract readonly status: number; // HTTP status this maps to
+  readonly context: Record<string, string | number>;
+
+  constructor(message: string, context: Record<string, string | number> = {}, cause?: unknown) {
+    super(message, { cause });       // native cause-chaining
+    this.name = new.target.name;
+  }
+}
+
+class InvoiceNotFoundError extends AppError {
+  readonly type = 'invoice/not_found';
+  readonly status = 404;
+  constructor(invoiceId: string, cause?: unknown) {
+    super(`Invoice ${invoiceId} not found`, { invoiceId }, cause);
+  }
+}
+
+class PaymentDeclinedError extends AppError {
+  readonly type = 'payment/declined';
+  readonly status = 402;
+  constructor(declineCode: string, cause?: unknown) {
+    super('Payment was declined', { declineCode }, cause);
+  }
+}
+```
+
+Interior layers throw and stay oblivious — no `try`/`catch`, no re-wrapping:
+
+```ts
+async function loadInvoice(invoiceId: string): Promise<Invoice> {
+  const row = await db.invoices.find(invoiceId);
+  if (!row) throw new InvoiceNotFoundError(invoiceId); // propagates untouched
+  return row;
+}
+```
+
+One boundary catches the base and renders an RFC 7807 problem+json error — a structured body keyed by the stable `type`, *not* by a substring of the message:
+
+```ts
+// The SINGLE catch boundary. Everything below it just throws AppError subclasses.
+function toProblemResponse(e: unknown): Response {
+  if (e instanceof AppError) {
+    log.warn(e.type, { context: e.context, cause: e.cause }); // cause stays server-side
+    return json(
+      { type: e.type, title: e.message, status: e.status, ...e.context },
+      { status: e.status, headers: { 'content-type': 'application/problem+json' } },
+    );
+  }
+  log.error('unhandled', { cause: e });   // a genuine bug — fail-fast territory
+  return json(
+    { type: 'about:blank', title: 'Internal Server Error', status: 500 },
+    { status: 500, headers: { 'content-type': 'application/problem+json' } },
+  );
+}
+```
+
+This is `instanceof AppError` at exactly *one* site against a sealed base — categorically different from the `instanceof` chains in Detection, which branch on many ad-hoc error classes scattered across interior callers. Here the interior never discriminates; the boundary does it once.
+
+The line both strategies refuse to cross is the stringly-typed one. `throw new Error('invoice not found')` answered by `if (e.message.includes('not found'))` is the failure mode — whether you return or throw, the discriminant must be a typed `kind`/`type`, never a message. Pick `Result` or typed-throw by where the decision lives; never pick bare strings.
 
 ## Pressure Resistance
 

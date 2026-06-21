@@ -67,6 +67,82 @@ export async function handlePaymentWebhook(rawBody: unknown) {
 
 Untrusted external input gets `safeParse` + a structured response. The interior — `routePaymentEvent` — accepts the parsed type and never re-checks.
 
+### One parse at the controller; the layers below trust the type
+
+This is the load-bearing pattern in a layered backend. The schema's **output** type *is* the domain type, branded IDs are minted in the same transform, and the controller is the only place that touches `unknown`. Service and repository receive `User` and `OrderId` — already proven — so they have nothing left to validate.
+
+```ts
+type UserId = string & { readonly __brand: 'UserId' };
+
+const userSchema = z
+  .object({
+    id: z.string().uuid(),
+    email: z.string().email(),
+    displayName: z.string().min(1).max(120),
+  })
+  .transform((row) => ({
+    // The one legitimate `as`: branding a value we just proved is a UUID.
+    id: row.id as UserId,
+    email: row.email,
+    displayName: row.displayName,
+  }));
+
+// The PARSED type — z.output, not z.input. This is the domain type.
+type User = z.output<typeof userSchema>;
+```
+
+The boundary is the controller. It is the only layer that sees `unknown`:
+
+```ts
+// controller.ts — the ONLY parse boundary in this path
+export async function createUserController(req: Request): Promise<Response> {
+  const result = userSchema.safeParse(await req.json());
+  if (!result.success) {
+    return Response.json({ error: 'invalid_user' }, { status: 400 });
+  }
+
+  // result.data is `User` — branded, narrowed, proven. Hand it inward.
+  const user = await createUser(result.data);
+  return Response.json(user, { status: 201 });
+}
+```
+
+Every layer below receives the domain type and re-proves nothing:
+
+```ts
+// service.ts — takes `User`, not `unknown`. No schema import. No re-parse.
+export async function createUser(user: User): Promise<User> {
+  await sendWelcomeEmail(user.email); // `email` already valid; no re-check
+  return insertUser(user);
+}
+
+// repository.ts — also takes `User`. The id is already a `UserId`.
+export async function insertUser(user: User): Promise<User> {
+  await db.insert(users).values(user);
+  return findUserById(user.id); // `user.id` is `UserId`; the query helper demands it
+}
+```
+
+Contrast the anti-pattern — the same field re-checked at every depth, each layer distrusting the last:
+
+```ts
+// ❌ The boundary failed to carry the guarantee, so everyone re-proves it.
+export async function createUserController(req: Request) {
+  const body = (await req.json()) as { email?: string }; // lie #1
+  return createUser(body);
+}
+export async function createUser(body: { email?: string }) {
+  if (!body.email?.includes('@')) throw new Error('bad email'); // re-check #1
+  return insertUser(body);
+}
+export async function insertUser(body: { email?: string }) {
+  if (!body.email) throw new Error('missing email'); // re-check #2 — three layers deep
+  // ...
+}
+```
+
+One parse at the top; the type system carries the proof inward. The fix for a downstream `if (!user.email)` is never another check — it's making the boundary mint a type that can't be missing one.
+
 ### Env vars are a boundary
 
 ```ts

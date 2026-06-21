@@ -96,9 +96,9 @@ function makeBulkhead(name: string, opts: { timeoutMs: number; maxInFlight: numb
 
 // Each dep's bulkhead is sized for that dep, not the route.
 export const paymentBulkhead = makeBulkhead('payment', { timeoutMs: 10_000, maxInFlight: 50 });
-export const mailerBulkhead  = makeBulkhead('mailer',  { timeoutMs:  3_000, maxInFlight: 20 });
-export const botBulkhead     = makeBulkhead('bot',     { timeoutMs:  2_000, maxInFlight: 50 });
-export const dbBulkhead      = makeBulkhead('db',      { timeoutMs:  5_000, maxInFlight: 100 });
+export const mailerBulkhead = makeBulkhead('mailer', { timeoutMs: 3_000, maxInFlight: 20 });
+export const botBulkhead = makeBulkhead('bot', { timeoutMs: 2_000, maxInFlight: 50 });
+export const dbBulkhead = makeBulkhead('db', { timeoutMs: 5_000, maxInFlight: 100 });
 ```
 
 ### Using it in a handler

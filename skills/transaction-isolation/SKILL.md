@@ -142,8 +142,9 @@ async function goOffCall(doctorId: DoctorId, shiftId: ShiftId) {
 ### `SERIALIZABLE` is a contract: you MUST retry on serialization failure
 
 ```ts
-// ✅ SERIALIZABLE transactions can abort with SQLSTATE 40001 (or 40P01 deadlock).
-//    That's not a bug — it's the level doing its job. Retry the WHOLE transaction.
+// ✅ SERIALIZABLE transactions abort with SQLSTATE 40001 (serialization failure) —
+//    that's not a bug, it's the level doing its job. Deadlocks (40P01) can occur at
+//    any isolation level. Both are transient; retry the WHOLE transaction for either.
 async function withSerializableRetry<T>(run: () => Promise<T>, max = 5): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
@@ -182,7 +183,7 @@ try {
 
 A unique constraint is the cheapest concurrency control there is: the database enforces the invariant atomically regardless of isolation level. Reach for it before reaching for `SERIALIZABLE` whenever the invariant is expressible as a constraint.
 
-## Choosing the tool
+### Choosing the tool
 
 | Situation | Tool |
 |---|---|

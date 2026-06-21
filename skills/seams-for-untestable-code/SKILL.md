@@ -51,7 +51,7 @@ You are violating the rule if any of these are true:
 
 - A function imports a side-effecting module at the top and calls it inside its body, with no way to substitute the import for a test.
 - A "test" relies on a real network, real DB, real filesystem, real wall-clock time.
-- A test uses module-mocking (`vi.mock()`, `jest.mock()`) to replace 3+ modules per file.
+- A test uses module-mocking (replacing whole modules at import time) to substitute 3+ modules per file.
 - A test sets `globalThis.fetch = mockFn` or `Date.now = () => fixedTime` as setup.
 - A unit test takes more than ~50ms to run.
 - A bug fix is blocked on "we'd need to refactor a lot first."
@@ -156,6 +156,90 @@ test('sends with the expected from address', async () => {
 });
 ```
 
+### Three cheap seams in one class — and zero module-mocking
+
+The seam types stack. A single class often has several hard dependencies — raw I/O (`fetch`), a collaborator (a repository/client), and the clock (`Date`). The first two get a cheap constructor seam, *defaulted to their production value*, so production constructs the object exactly as before while tests reach each one through a parameter — no module-mocking, no `globalThis.fetch =`. The clock is the exception: it needs no seam at all, because the test runner can freeze `new Date()` directly with fake timers. Inject what the runtime can't stub; don't inject what it can.
+
+```ts
+// ❌ Three hidden dependencies: real fetch, real Date, a `new`-ed client.
+export class OrderConfirmationService {
+  async confirm(orderId: OrderId): Promise<void> {
+    const order = await new OrderRepository().findById(orderId);
+    const res = await fetch(`${env.PAYMENTS_URL}/charge`, {
+      method: 'POST',
+      body: JSON.stringify({ orderId, amount: order.total }),
+    });
+    if (!res.ok) throw new Error('charge failed');
+    order.confirmedAt = new Date(); // wall-clock — untestable
+    await new OrderRepository().save(order);
+  }
+}
+```
+
+```ts
+// ✅ The two real boundaries enter through the constructor, each defaulted to production.
+//    Seam 1: injected collaborator (the repository) instead of `new`-ing one.
+//    Seam 2: fetchAPI default-param seam for raw I/O.
+//    The clock is NOT a constructor seam — `new Date()` stays inline and the
+//    test freezes it with fake timers. Don't inject what the test runner can stub.
+type OrderRepo = Pick<OrderRepository, 'findById' | 'save'>;
+
+export class OrderConfirmationService {
+  constructor(
+    private readonly orders: OrderRepo = new OrderRepository(),
+    private readonly fetchAPI: typeof fetch = fetch,
+  ) {}
+
+  async confirm(orderId: OrderId): Promise<void> {
+    const order = await this.orders.findById(orderId);
+    const res = await this.fetchAPI(`${env.PAYMENTS_URL}/charge`, {
+      method: 'POST',
+      body: JSON.stringify({ orderId, amount: order.total }),
+    });
+    if (!res.ok) throw new Error('charge failed');
+    order.confirmedAt = new Date(); // frozen by the test runner, not injected
+    await this.orders.save(order);
+  }
+}
+```
+
+Production is unchanged — every argument defaults, so `new OrderConfirmationService()` still wires the real repository, real `fetch`, and real clock:
+
+```ts
+const service = new OrderConfirmationService();
+```
+
+Test — fully deterministic, no module-level mocking anywhere:
+
+```ts
+// freezeTime / restoreTime wrap whatever your runner provides for system-clock
+// control (e.g. fake timers + a fixed system time, or a frozen-clock helper).
+const frozen = new Date('2026-06-19T00:00:00Z');
+
+afterAll(restoreTime); // always restore the real clock, even if a test throws
+
+test('stamps confirmedAt and charges the order total', async () => {
+  freezeTime(frozen); // pins new Date() inside confirm()
+
+  const saved: Order[] = [];
+  const service = new OrderConfirmationService(
+    {
+      findById: async () => ({ id: 'o1', total: 4200 } as Order),
+      save: async (o) => { saved.push(o); },
+    },
+    async () => new Response(null, { status: 200 }), // fake fetch
+  );
+
+  await service.confirm('o1' as OrderId);
+
+  expect(saved[0].confirmedAt).toEqual(frozen);
+});
+```
+
+The class body changed only by reading `this.fetchAPI` / `this.orders` instead of the globals — a few-character edit per dependency, not a rewrite. The clock needed no edit at all: `new Date()` stays inline and the test freezes the system clock around it. Two small constructor seams plus the runtime's own time control, one fully unit-testable class, and no module mocks to leak across files.
+
+The injected-`fetch` seam is the cheapest intervention for a single class. On a larger codebase or across a team, intercepting HTTP at the network layer (e.g. MSW) can scale better — every client calls the real global `fetch` and tests declare request handlers once, with no per-class seam to thread. Reach for that when many clients need faking; reach for the constructor seam when you just need this one class testable now.
+
 ### Module-import seam (last resort)
 
 For framework-bound code (route handlers that you can't add parameters to without breaking the framework contract), the seam is at the module-import level:
@@ -173,8 +257,9 @@ export async function POST(req: Request) {
 Test (with the test runner's module-mocking API):
 
 ```ts
-vi.mock('../../../services/email/EmailService', () => ({
-  emailService: { send: vi.fn(async () => ({ ok: true })) },
+// mockModule = your test runner's module-mocking API.
+mockModule('../../../services/email/EmailService', () => ({
+  emailService: { send: async () => ({ ok: true }) },
 }));
 
 const { POST } = await import('./route');
