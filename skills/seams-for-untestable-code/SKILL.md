@@ -109,6 +109,8 @@ test('finds sessions older than 7 days', async () => {
 
 Two seams (the `now` parameter and the `database` parameter). The function body is untouched aside from reading from the parameters. The change is minimal.
 
+Note the clock here is shown as an injected `now` parameter, but the later "Three cheap seams" section says *don't* inject the clock — freeze it with fake timers. Both are valid; the decision rule: **inject `now` when the function is otherwise pure, or a test needs several distinct times in one run; freeze the system clock with fake timers when the clock is just one of several dependencies (so you're not threading `now` through every call) or when it's the function's *only* hard dependency.** Here `findStaleSessions` already needs a `database` seam, so a fake-timer approach would work too — `now` is injected mainly because it makes the cutoff math obvious in the test.
+
 `Pick<typeof db, 'select'>` is the trick that makes this cheap: TS lets you describe the *shape* of the dependency as "just the methods I call," so the test fake doesn't have to mock the entire database surface.
 
 ### Constructor / closure seam

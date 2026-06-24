@@ -43,7 +43,7 @@ You are violating the rule if any of these are true:
 - An overridden method throws an exception that the supertype's method doesn't.
 - An overridden method is a no-op (silently does nothing).
 - An overridden method changes the *semantics* of the supertype's method (different invariants, different side effects).
-- An `instanceof` check appears at a call site to handle different subtypes differently — the abstraction isn't doing its job.
+- An `instanceof` check appears at a call site to handle different subtypes differently *where the function expected them to behave uniformly* — the abstraction isn't doing its job. (Classifying a caught error by subtype at a boundary — `if (e instanceof UserError)` — is *not* this: the errors are being routed, not substituted into a uniform contract.)
 - The supertype has a method that "doesn't apply" to a subtype.
 - Adding a subtype requires updating every caller to handle the new case.
 
@@ -226,11 +226,11 @@ Yes — when an LSP violation is deep in the codebase, the restructure is real. 
 - An overridden method that contains `throw new Error(...)` and the supertype's method doesn't.
 - An overridden method whose body is empty or comment-only.
 - An overridden method that calls `super.method()` and then "corrects" the result.
-- An `instanceof Penguin` (or any subtype) check at a call site that takes the supertype.
+- An `instanceof Penguin` (or any subtype) check at a call site that takes the supertype *and expects uniform behavior from it*. (Routing a caught error by its subtype at an error boundary is legitimate, not a violation.)
 - A subclass test that needs special setup the parent class's tests don't.
 - A JSDoc comment "may throw if called on the X subtype."
 
-**All of these mean: the subtype isn't a true subtype — split it into capability interfaces.**
+**All of these mean: the subtype isn't a true subtype — split it into capability interfaces.** (LSP is about *substitution*, not about never inspecting type. Classifying a caught error by subtype to route it — user-facing 400 vs. re-thrown system error — is correct; capability interfaces are the wrong fix for error classification.)
 
 ## Common Rationalizations
 

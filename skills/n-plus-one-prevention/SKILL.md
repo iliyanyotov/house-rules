@@ -161,6 +161,8 @@ A list endpoint making >10 queries is suspicious. The exact threshold depends on
 
 1ms × 1,000 queries = 1 second. Add network round-trip overhead and connection-pool contention and you're at 3-5 seconds. One 5ms query with a JOIN beats 1,000 × 1ms queries every time.
 
+"But I wrapped the loop in `Promise.all`, so they run concurrently and the latency doesn't add up." True — and that's the *more dangerous* shape, because measuring it looks fine. You've now fired N queries at once against a fixed-size connection pool: the real cost is pool exhaustion (other requests block waiting for a connection) and DB CPU saturation, not wall-clock latency for *this* request. A single batched query is still strictly better — it uses one connection, not N. Parallel N+1 trades visible latency for invisible pool/CPU pressure that surfaces as *other* endpoints slowing down.
+
 ### "We'll cache it"
 
 The cache doesn't fix the underlying query. The first request is still slow. Cache misses are still slow. And the cache adds invalidation complexity. Fix the query first; cache after, if profiling shows it helps.

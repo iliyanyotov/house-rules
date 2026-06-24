@@ -119,6 +119,8 @@ export function formatPrice(cents: number) {
 
 The shim exists *for callers*. No callers, no shim.
 
+The trap is the *middle* state: a `@deprecated` shim that still has a handful of callers the deprecating PR hasn't migrated yet. That isn't dead code — it's an unfinished migration. Don't delete it (you'd break the callers) and don't leave it indefinitely (it rots). Finish migrating the callers, then delete the shim and the `@deprecated` tag in the same PR (see `finish-the-migration`). "No callers, no shim" applies only once "Find References" is *actually* zero.
+
 ## Pressure Resistance
 
 ### 1. "We might need it again"

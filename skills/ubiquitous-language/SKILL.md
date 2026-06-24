@@ -128,6 +128,8 @@ export const consultations = pgTable('consultations', {
 
 The DB column names will appear in monitoring dashboards, support queries, ad-hoc analytics, schema migrations. Domain language there pays off forever.
 
+Casing (`starts_at` vs `startsAt`) is a *separate*, orthogonal convention — follow your stack's norm (Prisma defaults to camelCase columns; many Drizzle/Postgres setups use snake_case). Ubiquitous language is about the *word*, not the case: `starts` over `start_dt`, `presentingComplaint` over `cc`. Both `starts_at` and `startsAt` satisfy this rule; `start_dt` doesn't.
+
 ### Routes mirror domain entities, not implementation
 
 ```ts
@@ -192,7 +194,7 @@ The business is rarely "sure" — they refine vocabulary over time. Start with t
 - Abbreviations or acronyms in identifiers that aren't terms the business uses (`cfg`, `mgr`, `proc`, `usr`).
 - A code comment defining what an identifier "represents in business terms."
 - A type and a schema table with different names for the same concept.
-- Generic words (`process`, `handle`, `manage`, `update`) where a domain verb would fit (`approve`, `reject`, `archive`, `publish`).
+- A generic verb standing alone or fronting another generic word (`processData`, `handleStuff`, `manageRecords`) where a domain verb would fit (`approve`, `reject`, `archive`, `publish`). A generic verb paired with a domain term is fine, and often correct by layer: `handleCancelBooking` (an orchestration entry point) and a repository's `updateNoShow` / `findById` (persistence CRUD) read clearly — the domain verb belongs in the service layer, the CRUD verb in the repository.
 - "Translation" code: a function whose only job is to map between `DbOrder` and `ApiOrder` and `UiOrder` because each layer renamed the same concept.
 - A pivot or rename happened in the business >2 weeks ago and the code still uses the old word.
 

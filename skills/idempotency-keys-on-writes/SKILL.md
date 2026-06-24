@@ -44,7 +44,7 @@ You are violating the rule if any of these are true:
 
 Idempotency shows up in two situations, and they differ in *who owns the key*:
 
-- **Producer side — you expose a mutating endpoint.** You *require* the caller to supply a key (`Idempotency-Key` header) and dedupe on `(endpoint, key)`. You set the contract. Covered by *Server-side* and *Client-side* below.
+- **Producer side — you expose a mutating endpoint.** You *require* the caller to supply a key (`Idempotency-Key` header) and dedupe on `(endpoint, key)`. You set the contract. Covered by *Server-side* and *Client-side* below. (A server-*derived* key — e.g. hashing a booking's time window — can stop a narrow class of duplicates, but it is *not* a substitute for a client key: the caller still can't retry and get the *original* response back, and you can't dedupe two genuinely-distinct intents that happen to hash the same. If you can't expose a header, say so in the API docs and document the retry semantics.)
 - **Consumer side — you receive an at-least-once stream you don't control** (a provider webhook, a queue, a pub/sub topic). You *don't* get to demand a key — you **derive** one from something naturally stable the producer already sends (the event ID, the message ID), and dedupe on it before applying the side effect. Covered by *Webhooks*, *Queue consumers*, and *Scheduled jobs* below.
 
 The consumer side has a second failure mode the producer side doesn't: a delivery can not just *duplicate* but *fail to process at all*. Dedupe (this skill) stops a duplicate from double-applying; it does **not** save an event whose handler throws. For that — persisting the failed event and replaying it — see `dead-letter-and-replay`. The two compose: dedupe on arrival, dead-letter on failure.

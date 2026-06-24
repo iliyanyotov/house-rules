@@ -148,7 +148,7 @@ Some chains are unavoidable and fine:
 - **JSON-like data structures.** When parsing external data with a schema, the parsed object has the shape the API gave you. Don't artificially flatten.
 - **Pure transformations.** `array.map().filter().sort()` is fluent and idiomatic.
 
-The rule applies to *your own domain types* whose structure *you control*. External APIs and built-in primitives are exempt.
+The rule applies to *your own domain types* whose structure *you control*. External APIs and built-in primitives are exempt. But a chain that *starts* in a framework type and *ends* in one of yours (`axiosError.response.data.error.message` — Axios's `.response.data`, then your own error payload) is still governed: extract an accessor (`getApiErrorMessage(err)`) that owns both the framework navigation and your shape in one place — especially when the same drill repeats across call sites.
 
 ## Pressure Resistance
 

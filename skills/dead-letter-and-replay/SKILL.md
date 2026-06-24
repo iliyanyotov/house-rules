@@ -85,6 +85,8 @@ async function handleEvent(raw: string, signature: string) {
 
 Note the acknowledgement decision: once the event is durably in your dead-letter store, return success to the producer. You have taken ownership of recovery; letting the producer keep retrying a poison event buys nothing.
 
+The store can be a dedicated table *or* a status/attempts column on the work table — "dead-letter" is a role, not necessarily a separate table. A failed row that stays in the same table counts only if both hold: it is (a) excluded from the normal processing query (so it isn't silently retried forever or treated as pending) and (b) reachable by replay. What's non-negotiable is the durable *raw* record plus a replay path — not a second table.
+
 ### Sub-pattern 3 — Bound in-line retries before dead-lettering
 
 A transient blip deserves a couple of immediate retries; a poison event deserves none. Cap attempts, then dead-letter. (Retries use backoff + jitter and only wrap idempotent work — see `retry-with-jitter-and-budget`.)

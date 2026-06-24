@@ -144,11 +144,11 @@ function handleSubmit(e: FormEvent) { /* ... */ }
 | `data`, `result`, `value`, `item`, `obj`, `info`, `thing` as standalone names | Name the *kind* of data |
 | Files named `utils.ts`, `helpers.ts`, `common.ts`, `misc.ts`, `lib.ts` | Split by domain; name by content |
 | Function name contains `And` or `Or` | Split — it has multiple responsibilities |
-| Class suffixed `Manager`, `Helper`, `Service`, `Util` with no specific noun | Name the actual thing it does |
+| Class suffixed `Manager`, `Helper`, `Util`, `Coordinator` (says it does *something*, not what) | Name the actual thing it does. `*Service`/`*Repository` are accepted layer names *with a domain-noun prefix* (`PaymentService` ✓); a do-something prefix is still a smell (`SMSManager` → `SMSSender`) |
 | Boolean without an `is` / `has` / `should` / `can` prefix | Add the prefix, or model as a discriminated union |
 | Returned collection named in singular | Pluralize, or unwrap to a scalar |
 | Abbreviations: `btn`, `usr`, `cfg`, `mgr`, `svc` | Spell it out |
-| `get*` doing per-call I/O | Rename to `fetch*` |
+| `get*` that hits the wire on *every* call (no memoization) | Rename to `fetch*`. Memoized/amortized lookups (`getCurrentUser`, `getSession`) stay `get*` |
 
 ## The Bottom Line
 

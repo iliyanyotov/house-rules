@@ -48,7 +48,7 @@ You are violating the rule if any of these are true:
 - A change to a base class breaks half its children for reasons unrelated to the subtype relationship.
 - "Manager"/"Service" / "Helper" / "Base" classes that exist primarily to hold shared methods.
 - An `instanceof` check used to handle different subtypes at the call site — the abstraction isn't doing its job.
-- A class hierarchy more than two levels deep (Grandparent → Parent → Child).
+- A class hierarchy deeper than one level (Grandparent → Parent → Child), **or** a base class with many children that exists only to share methods. Depth is a symptom; reuse-only inheritance is the disease — a popular one-level base used purely for shared methods is already the smell.
 
 ## The Pattern
 

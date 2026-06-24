@@ -170,7 +170,7 @@ The fallback is dependency-specific:
 
 ### Per-dependency state, not per-request
 
-The breaker is *shared* across all calls to that dependency. One breaker per provider, used by every call. The `failures` array must be observable across requests — in serverless runtimes, this means module-scope state (shared across requests on the same instance). In a horizontally-scaled service, per-instance breakers are usually fine; for stricter coordination, use a shared state store.
+The breaker is *shared* across all calls to that dependency. One breaker per provider, used by every call. The `failures` array must be observable across requests — in serverless runtimes, this means module-scope state shared across requests on the same *warm* instance. That's adequate for steady request traffic, but unreliable for cron-/queue-triggered fan-out, where each invocation may be a cold start and the breaker effectively begins CLOSED every time — exactly the high-fan-out workloads that most need a breaker. For those, reach for a shared state store (e.g. Redis) sooner. In a horizontally-scaled service, per-instance breakers are usually fine; for stricter coordination, use a shared store.
 
 ### What "non-trivial failure rate" means
 

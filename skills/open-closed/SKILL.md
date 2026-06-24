@@ -209,7 +209,7 @@ If the next variant arrives in a week, this rationalization compounds. The check
 - A configuration object with 15+ boolean flags that interact.
 - A code review comment "add another case for the new event."
 - A git blame showing the same file edited by 5 different PRs, each adding one branch.
-- A `default: throw new Error('unhandled type')` that catches new types at runtime (should fail at compile time via `assertNever`).
+- A `default: throw new Error('unhandled type')` over a **fixed set** of types that catches new ones at runtime (should fail at compile time via `assertNever`). *Exception:* for an **open-ended set** (plugin/integration slugs not known at compile time), a `default` that hands off to a generic adapter is the correct OCP form — new variants fall through with no edit, so the switch never needs changing.
 
 **All of these mean: the module is closed for the wrong axis — restructure so new behavior is an addition, not an edit.**
 

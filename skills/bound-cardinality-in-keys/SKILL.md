@@ -33,7 +33,7 @@ The consequences:
 - **Performance degradation.** Aggregation queries slow to a crawl when grouping millions of series.
 - **Dashboard breakage.** UI dropdowns trying to enumerate the label become unusable.
 - **Loss of alerting.** Per-series alerts can't be defined when the series space is open.
-- **Cache pollution.** A cache key built from user input gets one entry per unique input — most entries are never read again.
+- **Cache pollution.** A cache key built from an unbounded *parameter combination* (free text, timestamps, emails) gets one entry per unique input — most are never read again. (A per-entity key like `invoice:${id}`, re-read by that entity, is fine — see Cache keys.)
 
 The fix is architectural: **separate dimensions (low-cardinality, queryable) from attributes (high-cardinality, observable but not aggregated)**. Different storage shapes for different needs.
 
@@ -115,6 +115,8 @@ tracker.setContext('order', { id: order.id, amount: order.amountCents });
 
 The user-object and context fields store data on the *event* but don't create indexed dimensions. They're searchable but don't multiply cardinality.
 
+Production error-tracker wrappers follow exactly this split — a code-time-constant `functionName` in indexed `tags`, the call arguments in non-indexed `extra` — so fingerprints stay bounded to the number of instrumented functions, not the number of calls.
+
 ### Logs — structured fields are fine, but think about what's groupable
 
 Log aggregators typically allow unbounded attribute values. The cardinality concern is *which fields end up as facets* in dashboards.
@@ -148,6 +150,10 @@ const result = await cache.get(`search:${hash(normalized)}`, { ttl: 60 });
 ```
 
 The hash variant bounds the *key length* but not the *number of keys* — make sure the TTL is short enough that low-hit keys evict.
+
+**A cache is not a metric.** For a metric label or error tag, every distinct value is a permanent series that bills forever, so the bar is "bounded value space." A cache entry *self-evicts*, so the bar is different: **will this key be re-read before it falls out?** That's why `invoice:${invoiceId}` and `user-timezone:${userId}` are *correct* — one entry per entity, re-read on every request for that entity. The pathology is keying on an unbounded *combination of request parameters* (timestamps + free text + email) where each key is written once and never read again. An unbounded entity ID in a cache key is fine; an unbounded parameter-tuple is the leak.
+
+And key on a *projection*, not the whole payload: build the key from only the fields that change the result (`${eventTypeId}:${startTime}:${endTime}`), never `JSON.stringify(wholeInput)`. Stringifying the whole validated input drags identity fields (email, request UUID) into the key — exploding cardinality *and* splitting entries that should be shared.
 
 ### Tracing — span names from a closed set
 
@@ -209,7 +215,7 @@ Development data flows through the same pipelines and contributes to the same in
 
 - A metric label whose value is `req.userId`, `req.email`, `req.url`, `req.headers['x-*']`, or any unmodified user input.
 - An error-tracker `setTag` with user-supplied or per-request data.
-- A cache key constructed by template-string concatenation with input.
+- A cache key built from multiple high-cardinality request parameters (timestamps + free text + email), or from `JSON.stringify(wholeInput)`, where each key is read at most once. (A single canonical entity ID — `invoice:${id}` — is *not* this.)
 - A monitoring dashboard with a `group by` dropdown that takes 30 seconds to load.
 - A monthly metrics bill that doubled with no corresponding traffic change.
 - A code review comment "let's just add `userId` as a label."

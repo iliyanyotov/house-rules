@@ -140,11 +140,14 @@ type Frozen<T> = { readonly [K in keyof T]: T[K] extends object ? Frozen<T[K]> :
 
 `readonly` is type-level only — it prevents writes in TS but doesn't enforce at runtime. That's usually fine: the compiler catches violations during build.
 
-### Query results are already immutable — don't fight it
+### Query and parse results are shared — don't mutate them
 
 ```ts
 // Query libraries return plain arrays. Don't mutate them.
 const rows = await orders.findByOrgId(orgId);
+// These are plain *mutable* arrays, not frozen — and a parser (e.g. a zod `.transform`)
+// may even hand back the caller's own array unchanged, so an in-place `.sort()` can
+// mutate the original input. Treat them as `readonly`; copy before reordering.
 
 // ❌
 rows.sort(byDate);

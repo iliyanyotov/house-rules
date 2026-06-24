@@ -213,7 +213,7 @@ The walking skeleton lives in production from day 1, behind a flag or at an inte
 |---|---|
 | "Building one layer at a time is more focused" | Focused on the wrong axis. The hard problems are between layers. |
 | "We'll integrate at the end" | The end is where integration is most expensive. |
-| "The skeleton is throwaway code" | Skeleton becomes the file structure and type contracts. Mostly survives into the final feature. |
+| "The skeleton is throwaway code" | The value is proving the *joints*, not the body. The type contracts and deploy seams usually survive; the thin body is often rewritten — expected and cheap, because the connections already hold. |
 | "We need to figure out the design first" | The design *emerges* from the skeleton walking. Design-first guesses. |
 | "Deploying half-done code is unprofessional" | Deploying behind a flag is a normal industrial practice. |
 | "It's just a small project" | Small projects benefit *more* — integration cost is a higher fraction of total. |

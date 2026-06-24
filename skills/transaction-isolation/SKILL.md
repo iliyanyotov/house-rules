@@ -25,7 +25,7 @@ NEVER assume a transaction is safe at the default isolation level. Match the lev
 
 ## Why
 
-"ACID" promises that each transaction is *atomic, consistent, isolated, durable* — but **Isolation is a dial, not a guarantee.** SQL defines four levels (`READ UNCOMMITTED`, `READ COMMITTED`, `REPEATABLE READ`, `SERIALIZABLE`), and each *permits* a set of anomalies. The default on Postgres, MySQL/InnoDB, SQL Server, and Oracle is `READ COMMITTED` or weaker — which prevents dirty reads but still allows:
+"ACID" promises that each transaction is *atomic, consistent, isolated, durable* — but **Isolation is a dial, not a guarantee.** SQL defines four levels (`READ UNCOMMITTED`, `READ COMMITTED`, `REPEATABLE READ`, `SERIALIZABLE`), and each *permits* a set of anomalies. The default on Postgres, SQL Server, and Oracle is `READ COMMITTED`; MySQL/InnoDB defaults to the stronger `REPEATABLE READ`. Neither default is enough — a stronger-sounding name does not save you, because InnoDB's `REPEATABLE READ` (unlike Postgres `SERIALIZABLE`/SSI) still allows the read-then-write anomalies below. Both prevent dirty reads but still allow:
 
 - **Lost update** — two transactions read a value, both modify it, the second overwrites the first. (Balance, counter, inventory.)
 - **Write skew** — two transactions each read a set of rows, each makes a decision that's valid *given what it read*, and both commit — but together they violate an invariant neither could see the other breaking. (Two doctors both go off-call because each saw the other still on; two bookings for the last seat.)
@@ -145,12 +145,12 @@ async function goOffCall(doctorId: DoctorId, shiftId: ShiftId) {
 // ✅ SERIALIZABLE transactions abort with SQLSTATE 40001 (serialization failure) —
 //    that's not a bug, it's the level doing its job. Deadlocks (40P01) can occur at
 //    any isolation level. Both are transient; retry the WHOLE transaction for either.
-async function withSerializableRetry<T>(run: () => Promise<T>, max = 5): Promise<T> {
+async function withSerializableRetry<T>(run: () => Promise<T>, maxRetries = 5): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
       return await run();
     } catch (e) {
-      if (isSerializationFailure(e) && attempt < max) {
+      if ((isSerializationFailure(e) || isDeadlock(e)) && attempt < maxRetries) {
         await sleep(backoffWithJitter(attempt));   // see retry-with-jitter-and-budget
         continue;
       }

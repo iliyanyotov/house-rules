@@ -112,6 +112,8 @@ function calculateShipping(weight: number, distance: number): number {
 
 **Action:** Pull the pure logic out. Inject dependencies. Test the core, integration-test the shell.
 
+**Caveat:** this is about functions mixing *logic* with I/O. Once the logic is extracted, the remaining thin **orchestration shell** — the handler that just calls repo, service, webhook in order — has little logic of its own and is legitimately tested by stubbing those collaborators (or with an integration test). Many stubs in a *shell* test is expected; many stubs in a test that should be exercising *pure logic* is the smell.
+
 ## Red Flags
 
 - Writing any function without a test
@@ -119,7 +121,7 @@ function calculateShipping(weight: number, distance: number): number {
 - Implementation file open without a test file
 - Committing code without corresponding tests
 - Tests that pass immediately (you never saw them fail)
-- A test mocks more than one module per file
+- A test of *pure business logic* mocks more than one module — that core should be extracted and tested without mocks. (An orchestration/handler shell whose whole job is coordinating several collaborators legitimately stubs each one; the smell is mocks where pure logic should be.)
 - A unit test talks to a real DB, network, or filesystem
 - A function reads `Date.now()` inline and the test mocks the clock
 

@@ -121,7 +121,7 @@ async function callApi() {
 }
 ```
 
-When a legacy API *requires* the key in the URL, the request shape is forced — but the observability discipline still applies: don't include those URLs in breadcrumb extras, don't log them, and strip them before re-throwing.
+Truly URL-only APIs are rare. OAuth token endpoints in particular take `client_secret` / `refresh_token` in the form-encoded POST body or a Basic auth header — *never* the query string — so a token-refresh URL with the secret in it is an avoidable leak, not a forced one. Only when an API genuinely offers no header or body option is the URL shape forced; even then the observability discipline still applies: don't include those URLs in breadcrumb extras, don't log them, and strip them before re-throwing.
 
 Rule of thumb: error messages, log lines, and response bodies are written by you; the secret is something you possess. Never let possession leak into output.
 

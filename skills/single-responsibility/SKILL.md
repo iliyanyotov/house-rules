@@ -183,7 +183,7 @@ Transactions are a separate concern: an *orchestrator* that calls two operations
 
 ## Red Flags
 
-- Function or file names with `And`, `Plus`, `Util`, `Helper`, `Manager`, `Service` without further specificity.
+- Names that are a *bare unqualified* noun — `Util`, `Helper`, `Manager`, or a lone `Service` — or an `And`/`Plus` joining unrelated concerns. A *specific* service (`BotDetectionService`, `RegularBookingService`) is the goal, not the smell; the problem is `Service` with no domain noun in front of it.
 - A handler longer than ~30 lines of inlined logic (orchestrators that delegate to named services are fine even when long).
 - A component longer than ~100 lines.
 - A function that imports from four different concerns and *inlines* logic from each.

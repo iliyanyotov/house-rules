@@ -125,6 +125,8 @@ return new Response('overloaded', {
 
 `Retry-After` is *added jitter* if the caller respects it. Underestimate and you re-spike; overestimate and you delay healthy traffic. Calibrate from real recovery time. When in doubt, prefer the larger value.
 
+`Retry-After` is the most direct carrier, but it's not the only honest one. The `RateLimit-*` header family (IETF `RateLimit-Limit` / `RateLimit-Remaining` / `RateLimit-Reset`, or the older `X-RateLimit-*`) carries the same recovery-time information and is what many rate limiters emit instead. Either is honest as long as the value reflects *real* recovery time; a 429/503 whose retry timing is buried only in the JSON body (with no header at all) is the form to avoid — a machine can't read it.
+
 ### Different shedding for different criticality
 
 ```ts
@@ -221,7 +223,7 @@ Queues and buffers don't *solve* overload — they *delay* it. A buffer that fil
 
 ### "Retry-After is just a hint"
 
-Modern clients (most SDKs, AWS SDK, browser `fetch` retry libraries) honor it. Even crude clients benefit because *some* portion of traffic backs off, which is enough to break the death spiral.
+Modern clients (most SDKs, AWS SDK, browser `fetch` retry libraries) honor `Retry-After`, and many also read the `RateLimit-Reset` family. Even crude clients benefit because *some* portion of traffic backs off, which is enough to break the death spiral.
 
 ## Red Flags
 

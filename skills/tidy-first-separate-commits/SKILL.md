@@ -107,11 +107,13 @@ Each commit is independently revertable. `git bisect` walks past each tidy in on
 | Inline a function | Modify validation logic |
 | Reformat (prettier/biome) | Reorder side effects |
 | Reorganize file structure | Change a default value |
-| Add types to untyped code | Add or remove a parameter |
+| Add types to untyped code (no suppression removed, no runtime cast changed) | Add or remove a parameter; remove a `@ts-expect-error`/`@ts-ignore` or change a runtime cast |
 | Sort imports | Add an env-var read |
 | Add tests for existing behavior | Add a feature flag check |
 
 When uncertain, ask: *would a reasonable test for the old code still pass after this change?* If yes, it's tidy. If no, it's behavior.
+
+One trap for this test: **type-only changes are erased at runtime**, so the old test passes even when behavior shifted. Adding types is tidy *only* when no `@ts-expect-error`/`@ts-ignore` is removed and no runtime cast (`as`, `!`, a parse/coerce) changes. Removing a suppression can surface a real behavior change at a boundary — split it out as a `fix:`, not a tidy.
 
 ## Pressure Resistance
 

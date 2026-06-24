@@ -9,6 +9,8 @@ description: Use when opening a PR, dividing work, or sizing a piece of in-fligh
 
 **A PR is one reviewable concern.** Target ≤400 lines of non-generated diff. If a reviewer can't read it carefully in under 30 minutes, it's too big.
 
+The primary test is *one reviewable concern* — not the line count. A 200-line PR that bundles a security fix, a logger swap, and a refactor is four PRs in a trenchcoat; the 400-line number is a coarse upper bound, the concern count is what actually catches the defects.
+
 Split refactor from behavior change; split feature from infrastructure; split each independently-shippable step into its own PR.
 
 ## When to Use
@@ -22,7 +24,7 @@ Split refactor from behavior change; split feature from infrastructure; split ea
 ## The Iron Rule
 
 ```
-NEVER ship a PR that mixes unrelated concerns or exceeds ~400 lines.
+NEVER ship a PR that mixes unrelated concerns. (And keep it under ~400 lines — but most violations are smaller than that; concern-mixing is the primary test.)
 ```
 
 **No exceptions:**

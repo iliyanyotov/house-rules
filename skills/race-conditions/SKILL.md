@@ -76,7 +76,9 @@ The `controller.abort()` in the cleanup ensures a fetch from an older `userId` w
 ### React: timers that fire after unmount
 
 ```tsx
-// ❌ If the timer fires after unmount, setState happens on an unmounted component.
+// ❌ No cleanup: the interval keeps running after unmount, leaking work (and any
+//    async result can overwrite fresh state). On React 18 the late setState is a
+//    silent no-op, but the leaked timer and the stale-write race remain.
 function Countdown({ targetMs }: { targetMs: number }) {
   const [remaining, setRemaining] = useState(targetMs);
   useEffect(() => {
@@ -95,7 +97,7 @@ function Countdown({ targetMs }: { targetMs: number }) {
 }
 ```
 
-If a callback can fire after unmount (long-running timer, subscription with no abort), guard with an `isMounted` ref:
+If a callback can fire after unmount (long-running timer, subscription with no abort) and you can't cancel it, guard with an `isMounted` ref — to drop a *stale* async result, not to dodge the harmless post-unmount no-op:
 
 ```tsx
 function ActiveCountdown({ expiryMs }: { expiryMs: number }) {
@@ -103,8 +105,7 @@ function ActiveCountdown({ expiryMs }: { expiryMs: number }) {
   useEffect(() => () => { isMounted.current = false; }, []);
 
   useExpiry(expiryMs, () => {
-    if (!isMounted.current) return;
-    // safe to setState
+    if (!isMounted.current) return;   // unmounted — drop this stale result
   });
 }
 ```

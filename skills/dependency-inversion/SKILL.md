@@ -214,7 +214,7 @@ You don't. Apply DIP to *new* code; leave existing code alone until you touch it
 | "TypeScript already prevents bugs" | Types prevent some bugs. They don't prevent "we changed our DB provider and had to edit 80 files." |
 | "We're a startup, no time" | Startups churn vendors more often than established codebases. DIP is *more* valuable at startup speed. |
 | "Adapters add latency" | A function call adds nanoseconds. The actual DB call is milliseconds. The adapter's overhead is unmeasurable. |
-| "The team won't follow the convention" | A code-review checklist plus a lint rule banning cross-layer imports enforces it mechanically. |
+| "The team won't follow the convention" | A code-review checklist catches most of it. A lint rule (`no-restricted-imports`, or eslint-plugin-boundaries) *can* enforce the import direction — but expect to seed it on new code: large codebases accumulate pre-existing direct imports the rule must allowlist or grandfather. |
 
 ## Related
 

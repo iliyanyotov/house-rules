@@ -205,6 +205,8 @@ A cron mid-flight during a deploy will see old code reading the database mid-mig
 
 Migration tooling makes it easy to generate one file for a multi-step schema change. *Don't.* Split into separate PRs corresponding to expand / tighten / contract. Each PR is then reviewable and revertible on its own.
 
+The unit that matters is the *deploy*, not the file: splitting a destructive change across several files in the *same* PR/deploy doesn't make it safe — old code still meets the new shape. Conversely, several DDL statements in one migration file are fine when they're all part of one safe step (e.g. `CREATE TABLE` + its backfill `INSERT`). Split by *deploy boundary*, not by file count.
+
 ## Pressure Resistance
 
 ### "There's no traffic at 3 AM — we'll deploy then"
@@ -234,7 +236,7 @@ That's expand/contract with a JSON column as the "new shape." Same rule; just me
 ## Red Flags
 
 - A PR titled like "rename X → Y" with one migration file and code changes both.
-- A migration that mixes `ADD COLUMN ... NOT NULL` and `DROP COLUMN` in one file.
+- A *deploy* that ships a `DROP`/`RENAME`/narrowing migration together with the code that depends on the new shape — regardless of how many files the SQL is split across. (Multiple DDL statements in one file is *not* itself the smell; coupling a destructive change with its dependent code in one deploy is.)
 - A code review comment "let's also bump the type to be stricter" — the bump and the strictening should be separate deploys.
 - A migration file with no corresponding stabilization window plan in the PR description.
 - The phrase "shouldn't be any traffic during deploy" in a PR description.
@@ -263,4 +265,4 @@ That's expand/contract with a JSON column as the "new shape." Same rule; just me
 - Pramod Sadalage & Scott Ambler, *Refactoring Databases* (2006) — names the "expand/contract" pattern and catalogs the destructive schema changes that need it.
 - Martin Fowler, ["Parallel Change"](https://martinfowler.com/bliki/ParallelChange.html) (2014) — the broader rename for the same pattern, applied to any breaking interface change.
 - Jez Humble & David Farley, *Continuous Delivery* (2010), ch. 12 — the operational discipline this pattern enables (deploys decoupled from releases).
-- Postgres docs on [`ALTER TABLE`](https://www.postgresql.org/docs/current/sql-altertable.html) and [`ALTER TYPE`](https://www.postgresql.org/docs/current/sql-altertype.html) — note that `DROP VALUE` is unsupported and `SET NOT NULL` rewrites the whole table; both inform the patterns above.
+- Postgres docs on [`ALTER TABLE`](https://www.postgresql.org/docs/current/sql-altertable.html) and [`ALTER TYPE`](https://www.postgresql.org/docs/current/sql-altertype.html) — note that enum `DROP VALUE` is unsupported, and that `SET NOT NULL` takes an `ACCESS EXCLUSIVE` lock and full-scans the table to verify no existing NULLs (it does *not* rewrite rows; on PG 12+ a pre-validated `CHECK (col IS NOT NULL)` lets it skip even the scan) — on a large table that scan blocks writes for its duration. Both facts inform the patterns above.

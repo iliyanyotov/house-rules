@@ -113,6 +113,8 @@ describe('computeDiscount — current behavior (characterization)', () => {
 
 Now you have a baseline. You suspect `VIP on $5` is a bug — your fix should change that test, not silently change behavior elsewhere. The other tests stay as the safety net.
 
+The `(characterization)` label and the "suspicious / probably a bug" comments are *scaffolding for the discovery pass*, not a permanent fixture. Once you decide a quirk is intended, rename the test to state the real expectation; once you fix a confirmed bug, the changed test should read as an ordinary spec. Long-lived characterization suites end up looking like normal behavior tests named by intent — the "characterization" framing is how they start, not how they stay.
+
 ### Use a REPL or run the code to find weird inputs
 
 The best characterization tests are written by *interacting* with the code: load it in a REPL, call it with values, see what happens. Running the test file with extra `console.log`s and reading output is another way. The point: don't guess what the code does — run it.

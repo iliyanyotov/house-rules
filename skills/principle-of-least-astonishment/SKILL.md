@@ -92,6 +92,8 @@ function logAndFormatPrice(price: Money, logger: Logger): string {
 
 Naming smell test: if removing the side effect doesn't change what the function "promises" to do, the side effect doesn't belong. If it does, the name needs to say so.
 
+This is why not every "and" is a smell. `fetchAndSaveUser` hides *two unrelated operations* behind one call — split it. `checkRateLimitAndThrowError` *discloses* a guard that's part of one operation — the "and" is honesty, not a second concern. When the second clause is just a guard, a `throwIf*` / `assert*` prefix often reads better than "and".
+
 ### `find` returns optional; `findOrThrow` throws
 
 ```ts
@@ -173,7 +175,7 @@ A return type that varies by outcome forces every caller to type-narrow at the c
 
 | Smell | Fix |
 |---|---|
-| Function name contains "and" (`fetchAndSaveUser`) | Split into two functions, two names |
+| Name uses "and" to join two *unrelated* operations (`fetchAndSaveUser`) | Split into two functions, two names. (An "and" that honestly *discloses a side effect* — `logAndFormatPrice`, `checkRateLimitAndThrowError` — is fine; see "Side effects are in the name".) |
 | `get*` or `find*` that throws on missing data | Use `findOrThrow` / `getOrThrow`, or return `T \| null` |
 | `compute*` / `format*` that mutates a parameter | Make it pure; return the new value |
 | "Validator" that returns the transformed value | Rename to `parse*` — that's what it is |
