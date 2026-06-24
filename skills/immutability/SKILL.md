@@ -40,6 +40,7 @@ You are violating the rule if any of these are true:
 - A reducer or state updater returns nothing and "modifies state in place."
 - A test fixture is mutated between tests and the second test happens to pass.
 - A function called `update`, `mutate`, `merge`, or `apply` doesn't return the new value.
+- A function takes a `Date` (or holds a reference to one) and calls `.setDate`, `.setMonth`, `.setFullYear`, `.setHours`, `.setTime`, etc. — these mutate the `Date` in place, even though it's a method call, not an assignment.
 
 ## The Pattern
 
@@ -186,6 +187,7 @@ Rename: `withUpdatedUser`, `updatedUser`, or use a verb-noun convention that ret
 - `obj.field = ...` for any non-locally-constructed object.
 - A function with return type `void` that takes a non-primitive argument and "does work."
 - `Object.assign(input, { ... })` — the first argument is mutated.
+- Any `Date` setter (`.setDate`, `.setMonth`, `.setFullYear`, `.setTime`, …) on a `Date` you didn't just construct — build a new one instead: `new Date(d.getTime() + …)`.
 - A test that runs in a different order than other tests "to avoid pollution."
 - The phrase "the caller should make a copy" — no, the *callee* shouldn't mutate.
 
@@ -197,7 +199,7 @@ Rename: `withUpdatedUser`, `updatedUser`, or use a verb-noun convention that ret
 |---|---|
 | "Performance" | Profile first. The cost is usually unmeasurable. |
 | "JS arrays are passed by reference, mutation is idiomatic" | "Idiomatic" doesn't mean "correct." Modern array methods (`toSorted`, `with`, `toReversed`) exist because the idiom was wrong. |
-| "I'm building it up incrementally" | Build it up in a *local* variable that hasn't escaped. Local mutation of locally-constructed values is fine. |
+| "I'm building it up incrementally" | Build it up in a *local* variable that hasn't escaped — but `const tmp = input` is **not** a copy, it's the same reference, so mutating `tmp` mutates the caller. "Locally constructed" means `[...input]`, `{ ...input }`, or `new Date(input.getTime())`, not an aliased parameter. |
 | "Spread copies are O(n)" | So is iterating to apply the change. The constant factor is identical. |
 | "Mutation makes APIs simpler" | It makes the API *shorter*. It makes everything that consumes the API *more complex*. |
 

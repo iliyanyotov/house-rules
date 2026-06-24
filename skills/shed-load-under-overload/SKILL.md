@@ -103,6 +103,10 @@ Three states because the response differs:
 - **degraded:** serve, but skip non-critical work (analytics ping, welcome email).
 - **overloaded:** shed with 503.
 
+#### When the saturation signal itself is unavailable
+
+If `checkSaturation()` reads a shared store (Redis counter, a metrics service), give *that read* its own short timeout — a saturation check that blocks on a slow dependency reintroduces the exact latency the shed was meant to avoid. On timeout/error, the default is a deliberate tradeoff: **fail-open** (treat as healthy, serve, risk overload) when a false rejection hurts more than a brief overload — e.g. the signal is a non-critical shared rate-limit store; **fail-closed** (treat as overloaded, shed) when the downstream is the fragile thing you're protecting. Pick one explicitly; don't let a hung signal-read decide for you.
+
 The thresholds aren't aspirational; they're observed from your own data. Pick them initially as a guess, *write them down*, and tighten/loosen from real incidents.
 
 ### `Retry-After` — honest and bounded

@@ -120,6 +120,21 @@ async function goOffCall(doctorId: DoctorId, shiftId: ShiftId) {
       .where(eq(shifts.doctorId, doctorId));
   });
 }
+```
+
+```ts
+// ✅ Lock the conflict set's parent row first. The shift row is the natural
+//    aggregate root; locking it serializes all coverage decisions for that shift.
+async function goOffCall(doctorId: DoctorId, shiftId: ShiftId) {
+  await db.transaction(async (tx) => {
+    // FOR UPDATE on the parent: a second transaction blocks here until the first commits.
+    await tx.select().from(shiftRows).where(eq(shiftRows.shiftId, shiftId)).for('update');
+    const onCall = await tx.select().from(shifts)
+      .where(and(eq(shifts.shiftId, shiftId), eq(shifts.onCall, true)));
+    if (onCall.length <= 1) throw new MinimumCoverageError();
+    await tx.update(shifts).set({ onCall: false }).where(eq(shifts.doctorId, doctorId));
+  });
+}
 
 // ✅ SERIALIZABLE makes the database detect the read/write conflict between the
 //    two transactions and abort one with a serialization failure (40001).
@@ -137,7 +152,7 @@ async function goOffCall(doctorId: DoctorId, shiftId: ShiftId) {
 }
 ```
 
-`FOR UPDATE` on the rows you read **does not** help here — the anomaly is between what one transaction *reads* and what the other *writes*, and the dangerous case is often rows that don't exist yet (phantoms). The two real options: lift the transaction to `SERIALIZABLE` (Postgres's SSI detects the conflict and aborts one), or take an explicit lock on the *whole conflict set* (e.g. a `FOR UPDATE` on the parent shift row, or an advisory lock keyed on `shiftId`).
+`FOR UPDATE` on the rows you *read* **does not** help here — the anomaly is between what one transaction reads and what the other writes, and the dangerous case is often rows that don't exist yet (phantoms). The two real options are shown above: lock the conflict set's **parent row** (`FOR UPDATE` on the shift, or an advisory lock keyed on `shiftId`), or lift the transaction to **`SERIALIZABLE`** (Postgres's SSI detects the conflict and aborts one). Choose by whether a natural parent exists: when the conflict set hangs off one row (shift → coverage, account → line items), locking that parent is cheaper and needs no retry loop; reserve `SERIALIZABLE` for invariants with no natural parent to lock (phantoms across an open predicate).
 
 ### `SERIALIZABLE` is a contract: you MUST retry on serialization failure
 
@@ -162,6 +177,8 @@ async function withSerializableRetry<T>(run: () => Promise<T>, maxRetries = 5): 
 
 Choosing `SERIALIZABLE` without a retry loop trades a data-corruption bug for an intermittent-500 bug. The retry is part of the pattern, not an optional extra. (Back off with jitter — see `retry-with-jitter-and-budget`.)
 
+Prefer your client's *declarative* isolation option over inline `SET` when one exists — e.g. Prisma: `prisma.$transaction(fn, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })`; node-postgres/Drizzle: set it on the transaction config. Inline `SET TRANSACTION ISOLATION LEVEL` must be the *first* statement in the transaction and is fragile under ORMs that issue their own `BEGIN`.
+
 ### Uniqueness: prefer a constraint over check-then-insert
 
 ```ts
@@ -182,6 +199,8 @@ try {
 ```
 
 A unique constraint is the cheapest concurrency control there is: the database enforces the invariant atomically regardless of isolation level. Reach for it before reaching for `SERIALIZABLE` whenever the invariant is expressible as a constraint.
+
+`isUniqueViolation(e)` is typically `e.code === '23505'` (Postgres) or `e.code === 'P2002'` (Prisma — inspect `e.meta.target` for the column). Through an ORM the serialization/deadlock codes surface as ORM codes too — e.g. Prisma maps a serialization failure to `P2034`. Match on those, not on the error message.
 
 ### Choosing the tool
 

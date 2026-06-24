@@ -104,6 +104,8 @@ const [state, setState] = useState<SubmitState>({ kind: 'idle' });
 
 The transition `idle → submitting → success | error` is encoded in the type. The component cannot render in an impossible state because impossible states don't exist.
 
+Collapse *correlated* state, not *orthogonal* state. In a multi-step form the wizard step is its own union (`WizardStep`) and the submit lifecycle is a *second* union (`SubmitState`) — they vary independently, so forcing them into one union creates impossible-product noise, not safety. The rule is "one union per axis of variation," not "one union per component."
+
 ### "Either A or B" — never two correlated optionals
 
 ```ts

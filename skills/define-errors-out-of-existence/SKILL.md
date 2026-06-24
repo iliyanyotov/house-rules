@@ -52,6 +52,7 @@ You are violating the rule if any of these are true:
 - A caller computes a check (`if (i >= arr.length) ...`) immediately before calling the function — that's the function's own contract leaking.
 - The function's "happy path" is shorter than its "things that could go wrong" list.
 - The phrase "the caller is responsible for ensuring..." appears in a docstring.
+- A schema `.parse()` runs on a value read from your *own* database (a metadata / JSON column) with no try/catch — data you wrote in the past, after a schema change or a partial migration, is just as "reasonably producible" as form input. Use `.safeParse()` and handle the malformed-row case as a value, not a thrown 500.
 
 ## The Pattern
 
@@ -125,6 +126,8 @@ async function createOrder(input: unknown): Promise<Result<Order>> {
 ```
 
 The caller pattern-matches on `result.ok` instead of catching. Exceptions are reserved for "database is on fire," which is genuinely exceptional and *should* propagate to the global handler.
+
+Note `safeParse` *already* hands you a tagged result — `{ success: true; data } | { success: false; error }`. At a Zod boundary you often don't need a custom `Result` type at all; just return `safeParse`'s output (or map it) instead of calling `.parse()` and catching. The custom `Result` earns its place only when you're *combining* failures from sources that aren't already tagged.
 
 ### Narrowing inputs so the bad case can't exist
 

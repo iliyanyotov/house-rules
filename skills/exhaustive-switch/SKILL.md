@@ -65,6 +65,7 @@ You are violating the rule if any of these are true (TS won't catch these withou
 - A `switch` has `default: throw new Error('unreachable')` *without* the `never` check first — the comment is right but the type system isn't enforcing it.
 - An `if/else` chain over `kind === 'a' | 'b' | 'c'` doesn't end in a typed exhaustiveness check.
 - The phrase `// @ts-ignore — should never happen` appears anywhere near a switch.
+- The discriminant is typed `string` or `number` (`switch (value: string)`), so `assertNever` *can't* compile — that loose type **is** the bug. Narrow the parameter to the closed union (`value: EventLocationType`) first; the exhaustiveness anchor only works once the type is closed.
 
 ## The Pattern
 
@@ -76,7 +77,7 @@ export function assertNever(x: never): never {
 }
 ```
 
-Two lines, ship once, use everywhere.
+Two lines, ship once, use everywhere. When you'd rather not import a shared helper, the inline form is identical: `default: { const _exhaustive: never = event; throw new Error(`Unhandled: ${JSON.stringify(_exhaustive)}`); }` — same compile error when a variant is added. Reviewers should accept either form.
 
 ### Switch on a discriminated union
 

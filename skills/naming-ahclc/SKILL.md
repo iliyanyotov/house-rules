@@ -48,7 +48,7 @@ Read left-to-right, the name answers: *what does it do, on what, in which scope?
 
 **Avoid:** `do`, `process`, `manage`, `perform`, `execute`, `run` — they don't tell you *what*.
 
-**The `get` vs `fetch` carve-out.** The strict reading (`get` = sync, `fetch` = async) collides with established convention — `getCurrentUser`, `getSession`, `getDb` are all async and idiomatically named `get*`. The practical rule: **`get*` for memoized lookups** against a long-lived resource (amortized cost, conceptually a lookup), **`fetch*` for per-call network operations** that hit the wire every time.
+**The `get` vs `fetch` carve-out.** The strict reading (`get` = sync, `fetch` = async) collides with established convention — `getCurrentUser`, `getSession`, `getDb` are all async and idiomatically named `get*`. The practical rule: **`get*` for memoized lookups** against a long-lived resource (the cost is paid once and reused, conceptually a lookup), **`fetch*` for per-call network operations** that hit the wire every time.
 
 ### Boolean prefixes — mandatory
 

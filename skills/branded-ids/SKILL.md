@@ -35,7 +35,7 @@ The result: argument-swap bugs become impossible. The compiler refuses to call `
 
 You are violating the rule if any of these are true:
 
-- A function signature has two `string` parameters whose order matters semantically.
+- A function signature has two or more parameters of the **same primitive type** (`string` *or* `number`) whose order matters — `findMembership(teamId: number, userId: number)` swaps silently.
 - A database row type uses `string` for foreign keys.
 - A test fixture passes `'user_123'` directly to a function expecting an ID.
 - A function called `getInvoice(id: string)` accepts an `OrgId` and silently returns nothing.
@@ -60,6 +60,7 @@ import type { Brand } from './brand';
 export type UserId = Brand<string, 'UserId'>;
 export type OrgId = Brand<string, 'OrgId'>;
 export type AccountId = Brand<string, 'AccountId'>;
+export type TeamId = Brand<number, 'TeamId'>;   // brands apply to numeric autoincrement PKs identically
 ```
 
 ### Minting at the boundary
@@ -75,6 +76,12 @@ export const UserId = {
 
 export const OrgId = {
   parse: (raw: unknown): OrgId => cuid.parse(raw) as OrgId,
+};
+
+// Numeric autoincrement IDs brand the same way — mint right after coercion.
+export const TeamId = {
+  parse: (raw: unknown): TeamId =>
+    z.coerce.number().int().positive().parse(raw) as TeamId,   // e.g. Number(req.params.teamId)
 };
 ```
 
@@ -182,7 +189,7 @@ Translate at the seam. Inside your code, types are branded. At the library bound
 
 ## Red Flags
 
-- A function signature: `(a: string, b: string, c: string) => ...`.
+- A function signature: `(a: string, b: string, c: string) => ...` **or** `(a: number, b: number) => ...` — same-typed positional IDs swap with no compile error.
 - A schema column with no type annotation for an ID column.
 - A test that passes `'abc123'` as both a `userId` and an `orgId` and is happy.
 - A bug ticket with the phrase "wrong ID was passed."
@@ -200,6 +207,7 @@ Translate at the seam. Inside your code, types are branded. At the library bound
 | "Branding doesn't work with `JSON.parse` results" | `JSON.parse` returns `unknown`; you parse through a schema and brand in the parser. Same path as any other boundary. |
 | "Equality comparisons get awkward" | `userId === otherUserId` works fine — both are `UserId`. Comparing a `UserId` and an `OrgId` is a *bug*; the compiler refusing it is the feature. |
 | "I want one ID type for the whole app" | Then you don't have IDs, you have strings. Re-read the failure mode. |
+| "My two IDs are different built-in types (`number` vs `string`), so a swap won't compile" | True today — by accident. Add a second `number` ID, or migrate a `string` ID to numeric, and the protection silently vanishes. Branding makes the distinction intentional and permanent, not a side effect of today's column types. |
 
 ## Related
 

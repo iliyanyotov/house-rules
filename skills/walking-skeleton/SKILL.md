@@ -140,7 +140,9 @@ You build the skeleton *inside* the MVP. The MVP defines the feature's outer env
 
 ### The skeleton is deployed
 
-The walking skeleton lives in production from day 1, behind a flag or at an internal URL. The deploy isn't ceremonial — it's the *test that the joints really hold*. Local dev hides plenty of deploy-time issues (env vars, build cache, runtime mismatches). The deploy is the proof.
+The walking skeleton lives in production from day 1, behind a flag or at an internal URL. The deploy isn't busywork — it's the *test that the joints really hold*. Local dev hides plenty of deploy-time issues (env vars, build cache, runtime mismatches). The deploy is the proof.
+
+The flag is typically *scoped*, not just on/off: enable it for yourself/your team first, then widen to GA by flipping the scope — same code, no redeploy. A good flag is checked per-user, per-team, and globally, so the skeleton is live in prod *for you* on day 1 and graduates by widening the enabled cohort rather than by editing code. (This is the cohort-widening rollout from `decouple-deploy-from-release-via-flags`.)
 
 ## Pressure Resistance
 

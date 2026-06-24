@@ -45,6 +45,7 @@ You are violating the rule if any of these are true:
 - A function takes a full `Request` when it only reads `.headers.get('authorization')`.
 - A "facade" type is shared across functions that use disjoint subsets of its surface.
 - Test setup involves `as unknown as Database` or similar wholesale casts.
+- `(arg as any).someProp` to read a property the wide framework type doesn't declare — the param is simultaneously *too wide* (carries 30 unused methods) and *too narrow* (lacks the field you actually need). A hand-written interface naming exactly the fields used both segregates and removes the `as any`.
 - Adding a method to a popular type breaks tests for functions that don't use that method.
 - The phrase "just take the full X, simpler" appears in code review.
 
@@ -142,7 +143,17 @@ export function getAuthHeader(
 }
 ```
 
-Now `getAuthHeader` is testable with any object that has `headers.get` — including a plain `Headers` instance or a test fake.
+Now `getAuthHeader` is testable with any object that has `headers.get` — a plain `Headers` instance or `{ headers: { get: () => 'Bearer x' } }`. The `as unknown as Request` cast the wide signature forced (see Detection) is gone: the narrow param *is* the test fake's type, so no cast is needed.
+
+### Namespaced clients (Prisma-style)
+
+For `client.model.operation()` APIs, segregating to a model still drags in that model's full CRUD: `Pick<PrismaClient, 'creditBalance'>` narrows away the *other* models but keeps every `creditBalance` method. For true segregation, hand-write the narrow shape:
+
+```ts
+type CreditBalanceReader = { creditBalance: Pick<PrismaClient['creditBalance'], 'findUnique'> };
+```
+
+Note that `Omit<PrismaClient, '$connect' | '$transaction' | …>` (the common `PrismaTransaction` idiom) is **not** interface-segregation — it strips ~6 lifecycle hooks but keeps every model, so a one-table repository method still receives the whole schema.
 
 ### Don't over-segregate
 

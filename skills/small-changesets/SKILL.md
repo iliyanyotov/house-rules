@@ -56,6 +56,26 @@ If the PR description needs more than three bullets, STOP and split:
 
 Each PR is independently reviewable, shippable, and reversible.
 
+Concern-mixing is independent of *size* — and the small cases are the dangerous ones, because the line-count tripwire never fires:
+
+```
+❌ VIOLATION: tiny but mixed (13 lines, 3 files)
+  Title: "fix: remove console.log and improve type safety"
+  Hidden inside one trivial-looking diff:
+    - a SECURITY fix (stop logging private hashed-link data)
+    - a logger swap (console → structured logger)
+    - a TS fix (delete a @ts-expect-error, change a cast)
+    - a Prisma include → select perf change
+
+✅ CORRECT: 3–4 trivially small PRs
+  PR 1 — fix: stop logging private link data   (the security fix, alone, fast-tracked)
+  PR 2 — chore: swap console for structured logger
+  PR 3 — fix: tighten types (drop @ts-expect-error)
+  PR 4 — perf: narrow Prisma include → select
+```
+
+A 13-line diff can be four PRs. The buried security fix is exactly the "defect slips past" failure — it slipped past *because* the diff looked too small to scrutinize.
+
 ## Why Small PRs Win
 
 | Big PR | Small PR |
@@ -88,6 +108,8 @@ PR 1 lands without behavior change. PR 2 is pure tidying. PR 3 ships dark behind
 
 When you find yourself with 800 lines, *don't* push it as one. Reset your branch to the base, cherry-pick the tidying commits onto a new branch (PR 1), then cherry-pick the feature commits onto a branch based on PR 1's branch (PR 2). If commits mix concerns within a file, separate the commits first.
 
+**Already separated by commit? Don't squash the concerns back together.** If your branch's `git log` already reads `refactor: …`, `feat: …`, `test: …` as distinct commits, that *is* the split — open them as stacked PRs rather than one squash-merged PR. Re-bundling separated commits into a single PR throws away work you already did.
+
 ### "While I was in here" — open a follow-up
 
 Found an unrelated smell while working? Don't fix it in the current PR. Note it in the description ("found unrelated issue #N, addressed separately") and open a follow-up. The reviewer of the current PR doesn't need to context-switch.
@@ -95,6 +117,8 @@ Found an unrelated smell while working? Don't fix it in the current PR. Note it 
 ### What counts toward the budget
 
 Production code, tests, and runtime config count. Lockfiles, codegen output, snapshot fixtures, and pure renames don't (within reason). When unclear, list bulk-changed files in the PR description with the reason.
+
+A change to a shared test fixture or helper signature that fans out across many unrelated test files is itself a *concern*, not incidental churn — land the fixture change as its own PR first, then the behavior change on top, rather than mixing both in one diff where the real change drowns in fixture edits.
 
 ## Pressure Resistance
 

@@ -35,7 +35,7 @@ Behavior tests survive refactors. Same fixture in → same observable out. The i
 
 You are violating the rule if any of these are true:
 
-- A test calls `spyOn` on a function defined in the same module being tested.
+- A test calls `spyOn` on a function you own — defined in the same module being tested, *or* in another internal module the unit imports (not an external/boundary dependency).
 - A test asserts `expect(spy).toHaveBeenCalledWith(...)` on an internal helper.
 - A test inspects a private field or non-exported variable.
 - A test must be edited when an *internal-only* rename happens.
@@ -185,7 +185,7 @@ The helper's args are *closer* to your fingers — they're inside the same modul
 ## Red Flags
 
 - A test file that imports private helpers from the module-under-test.
-- `spyOn(thisModule, 'someHelper')` patterns.
+- `spyOn(...)` on any internal helper module the unit imports — `spyOn(internalHelperModule, 'fn')`, not just same-file `spyOn(thisModule, 'someHelper')`.
 - A test that breaks when you change `for` to `forEach` in the implementation.
 - A test that asserts `toHaveBeenCalledTimes(1)` on an internal pure function.
 - A test that mocks more deps than the unit imports.

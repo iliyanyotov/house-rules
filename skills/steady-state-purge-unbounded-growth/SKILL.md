@@ -54,6 +54,7 @@ You are violating the rule if any of these are true:
 - A blob bucket has no lifecycle policy.
 - A queue stores completed jobs indefinitely "for audit."
 - A `pg_cron` extension is enabled but no scheduled cleanup job exists.
+- A purge cron exists, is scheduled, and returns 200 — but its `DELETE` is commented out, behind a disabled flag, or silently no-ops (wrong cutoff, empty match). "The cron exists" is not the bar; "it deleted N rows last run, and N tracks the insert rate" is.
 
 ## The Pattern
 
@@ -175,6 +176,8 @@ async function purgeBatch() {
   return { deleted: deleted.rowCount ?? 0 };
 }
 ```
+
+Emit the deleted count — it's how you detect a silently-dead purge. Alert when a purge run deletes 0 rows while the table is still growing: that's the signature of a no-op cron (commented-out delete, wrong cutoff, disabled flag) that looks healthy because it returns 200.
 
 A purge that tries to delete 50M rows in one transaction *will* lock the table, time out, or both. Batch with `LIMIT`; run on a schedule that catches up. The cron is itself a steady-state pattern — each run deletes ≤N rows, so the cron never grows in cost as the table grows.
 

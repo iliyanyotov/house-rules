@@ -134,6 +134,27 @@ const [customerList, itemList] = await Promise.all([
 
 The pattern is **fetch by ID list, stitch in memory**. Three queries scale the same as one; one query per relation per item does not.
 
+A bonus: the batch rewrite also fixes an ordering bug the loop version often hides. `Promise.all(items.map(async ...))` that `push`es results resolves in *completion* order, not input order — so the output is non-deterministically shuffled. Stitching in memory by mapping over the *original* list (looking each relation up by ID) preserves order for free.
+
+### When the per-item work is a function, not a query
+
+The N+1 often hides behind a reusable enrichment/repository call, where a JOIN isn't reachable:
+
+```ts
+// ❌ enrichUser queries internally — N calls, one per user.
+const enriched = await Promise.all(users.map((u) => enrichUser(u)));
+
+// ✅ Write a batch version: one query for the whole set, stitch by id.
+async function enrichUsers(users: User[]): Promise<EnrichedUser[]> {
+  const profiles = await db.select().from(profilesTable)
+    .where(inArray(profilesTable.userId, users.map((u) => u.id)));
+  const byId = new Map(profiles.map((p) => [p.userId, p]));
+  return users.map((u) => ({ ...u, profile: byId.get(u.id) ?? null }));
+}
+```
+
+The durable fix is a batch-enrichment helper alongside the single-item one — `enrichUsers(users)` next to `enrichUser(user)` — so callers in a loop have a non-N+1 option.
+
 ### Watch the query count
 
 ```ts

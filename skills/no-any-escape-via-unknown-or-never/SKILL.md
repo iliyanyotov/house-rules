@@ -50,6 +50,7 @@ You are violating the rule if any of these are true:
 - An `exhaustive-switch`'s `default` branch handles a real future variant via `as any` cast, not `never`.
 - `JSON.parse(...)` is assigned to a typed variable without going through a schema parse.
 - `tsconfig.json` has `"noImplicitAny": false`.
+- An `// eslint-disable-next-line @typescript-eslint/no-explicit-any` sits above a `: any` — the lint rule already flagged it and someone silenced it.
 
 ## The Pattern
 
@@ -128,6 +129,36 @@ Two rules at the boundary:
 
 Every other file imports `parsePdf` and gets a typed contract. The rot is contained.
 
+### `as any` on an *argument* — narrow the value, don't blind the call
+
+A different shape: the function is already well-typed, and the `any` is on what you *pass it*.
+
+```ts
+// ❌ The hole is the argument, not the library. `as any` defeats the function's own types.
+setHeader(name, value as any);
+
+// ✅ Narrow the value to the parameter's actual type.
+if (typeof value === 'string') setHeader(name, value);   // or parse/validate it
+```
+
+An adapter file is the wrong remedy here — there's no untyped library to wrap. The fix is to make `value` actually be the type the parameter demands (a guard, a parse), not to cast the call site blind.
+
+### `Record<string, any>` for metadata / JSON columns — parse it instead
+
+The `metadata: Record<string, any>` field (on a DB row, a JSON column, a webhook payload) is where `any` quietly spreads through a codebase — every `.metadata.foo` access is unchecked.
+
+```ts
+// ❌ Every read is an unchecked `any`.
+interface Order { metadata?: Record<string, any>; }
+
+// ✅ Parse the shape at the boundary; flow the inferred type through the code.
+const MetadataSchema = z.object({ source: z.string(), campaignId: z.string().optional() });
+type Metadata = z.infer<typeof MetadataSchema>;
+interface Order { metadata?: Metadata; }
+```
+
+`Record<string, unknown>` is the *floor* — it at least forces you to narrow before use. A parsed schema is the goal: it gives the keys names and types. Reserve `Record<string, any>` for genuinely free-form telemetry blobs you never read back typed.
+
 ### `@ts-expect-error` with a reason — the only acceptable escape comment
 
 ```ts
@@ -191,7 +222,16 @@ The narrowing forces you to handle the "someone threw a string" case that JS all
 }
 ```
 
-`strict: true` covers `noImplicitAny`. `noUncheckedIndexedAccess` makes `array[i]` return `T | undefined` instead of `T`, preventing a sneaky `any`-like hole. These settings make the rule a build-time guarantee, not a code-review habit.
+`strict: true` covers `noImplicitAny`. `noUncheckedIndexedAccess` makes `array[i]` return `T | undefined` instead of `T`, preventing a sneaky `any`-like hole.
+
+But tsconfig only catches *implicit* any (a param/var TS can't infer). **Explicit** `any` — `: any`, `as any` — sails straight through `noImplicitAny`. Ban it with ESLint:
+
+```json
+// .eslintrc — catches the explicit any tsconfig can't
+{ "rules": { "@typescript-eslint/no-explicit-any": "error" } }
+```
+
+Together — strict tsconfig for implicit any, the lint rule for explicit — the rule becomes build-enforced rather than a code-review habit.
 
 ## Pressure Resistance
 

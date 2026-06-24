@@ -139,6 +139,8 @@ function isExpired(token: Token, now: Date): boolean {
 
 Same for `Math.random`, `crypto.randomUUID`, file reads, env reads. They become *parameters* to the pure core, *invocations* in the shell.
 
+A **defaulted** clock — `function isExpired(token: Token, now: Date = new Date())` — is *not* a fix for new core code. It reads the clock at every call site that omits the arg, so the core isn't pure; worse, the signature *looks* injectable while still hiding the dependency. Make `now` **required** and let the shell always pass it. (The one place a default is acceptable is retrofitting a seam onto legacy code you can't yet restructure — see `seams-for-untestable-code` — where keeping the production call argless is the point. For code you're designing fresh, required.)
+
 ### What counts as "I/O" — be honest
 
 I/O is anything not deterministic from arguments:
@@ -193,6 +195,7 @@ The feature grows by adding logic. The longer it stays tangled, the more logic a
 | "Splitting requires more files" | Two files of clear purpose beat one file of mixed purpose. |
 | "Passing `now` everywhere is silly" | Less silly than three failed tests because someone's machine clock was wrong. |
 | "The handler is the shell, so impurity is fine *anywhere* inside it" | Impurity is fine in the shell. The logic *called by* the shell should still be pure. |
+| "We already inject the DB/repositories, so we follow the pattern" | Injecting infrastructure and passing the clock/randomness are *separate* obligations. DI removes the DB from your logic; it does nothing for an inline `new Date()`. Extract the time-dependent check into a pure function that takes `now`. |
 
 ## Related
 

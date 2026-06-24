@@ -132,7 +132,7 @@ If domain files import from `infrastructure/`, `db/`, third-party SDKs, or frame
 
 ### Lighter form — the dependency is a function
 
-For one-off cases where defining a `ProductReader` interface feels ceremonial, accept a function:
+For one-off cases where defining a `ProductReader` interface feels like overkill, accept a function:
 
 ```ts
 export async function calculateTotalPrice(
@@ -144,6 +144,23 @@ export async function calculateTotalPrice(
 ```
 
 This is dependency inversion in its leanest functional form. The function parameter *is* the abstraction. Composes naturally with the functional-core / imperative-shell split.
+
+### Heavier form — constructor injection
+
+Once a port has several methods, or a service composes several ports, the idiomatic shape is class constructor injection:
+
+```ts
+class DbProductReader implements ProductReader {
+  constructor(private readonly db: Db) {}            // infra injected in
+  findProduct(id: ProductId) { return this.db.products.find(id); }
+}
+class PricingService {
+  constructor(private readonly products: ProductReader) {}   // port injected in
+  total(items: OrderItem[]) { /* uses this.products */ }
+}
+```
+
+This is still plain DI — the constructor parameter is the seam. It is *not* a DI container, and needs none.
 
 ### Anti-Corruption Layer — for messy third parties
 
@@ -184,7 +201,7 @@ Probably true. The portability argument is overrated for most products. The *tes
 
 ### "Dependency injection is overkill"
 
-We're not setting up a DI container. We're passing a function or an object literal as a parameter. The "DI" objection conflates Spring/Angular-style frameworks with the pattern of passing dependencies. The latter is a function parameter; that's all.
+We're not setting up a DI container. We're passing a function, an object literal, or a class constructor argument. The "DI" objection mixes up Spring/Angular-style frameworks with the pattern of passing dependencies. The latter is a function parameter; that's all.
 
 ### "The domain ends up with too many interfaces"
 

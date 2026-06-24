@@ -29,7 +29,7 @@ Three things go wrong when failures are thrown or stringly-typed.
 
 **The signature lies.** `function charge(): Receipt` claims it returns a receipt. It actually returns a receipt *or* throws one of four things. The caller learns the failure modes by reading the body, getting paged, or guessing. A `function charge(): Result<Receipt, ChargeError>` states the contract.
 
-**The caller can't branch safely.** When the error is a `string` or a bare `Error`, distinguishing "card declined" (show the user) from "provider timed out" (retry) means matching on `err.message` substrings or fragile `instanceof` chains. Both rot the first time someone rewords a message or wraps an error. A discriminated `E` lets the caller `switch` on `error.kind` with compile-time exhaustiveness.
+**The caller can't branch safely.** When the error is a `string` or a bare `Error`, distinguishing "card declined" (show the user) from "provider timed out" (retry) means matching on `err.message` substrings or fragile `instanceof` chains. Both rot the first time someone rewords a message or wraps an error — and `instanceof` rots in another way too: a class duplicated across two bundled copies of a package fails its *own* `instanceof` check (different realm, different constructor identity), which is why production code falls back to a stable `code` string. A stable discriminant survives rewording *and* realm boundaries; `instanceof` survives neither reliably. A discriminated `E` lets the caller `switch` on `error.kind` with compile-time exhaustiveness.
 
 **Propagation loses information.** A `try`/`catch` three layers up catches *everything* — the declined card, the timeout, and the genuine bug (a `TypeError` from a typo) all land in the same block, flattened to one `catch (e)`. Returning values keeps each failure named all the way up, and lets a real bug keep throwing.
 
@@ -50,6 +50,7 @@ One line: *make it disappear (define-errors) → if it's a bug, throw (fail-fast
 You are violating the rule if any of these are true:
 
 - A `catch` block inspects `err.message` (substring match) or chains `instanceof` to decide what to do.
+- A central error mapper that switches on a typed `code` for known errors but *falls back* to matching the raw `message` for everything else — the fallback re-opens the stringly-typed channel at the exact place meant to close it. The discipline is only as strong as its weakest branch.
 - A function's error channel is typed `string`, `Error`, `unknown`, or `{ error: string }` when the caller branches on *which* error.
 - A failure is thrown across two or more layers purely so something upstairs can `catch` it.
 - A `Result<T, E>` exists but `E` is `string` — the union got flattened to a message.
@@ -204,6 +205,8 @@ The two strategies oppose the *same* enemy — the bare `throw new Error("...")`
 
 When you choose the throwing style, the bar is: **typed base + stable machine-readable code + `cause`-chaining + exactly one catch boundary.** Never bare strings.
 
+The common halfway-house is a class hierarchy whose *only* discriminant is the class name (or `this.name`): it reads as disciplined but still forces the boundary onto `instanceof` chains and name-string comparison. The stable `type` / `code` *field* is the non-negotiable part — not the class hierarchy. A flat error with a stable `code` beats a deep hierarchy with none.
+
 ```ts
 // ✅ One base every domain error extends. `type` is a STABLE, machine-readable
 // discriminant (a wire contract clients switch on) — never the human `message`.
@@ -267,7 +270,9 @@ function toProblemResponse(e: unknown): Response {
 }
 ```
 
-This is `instanceof AppError` at exactly *one* site against a sealed base — categorically different from the `instanceof` chains in Detection, which branch on many ad-hoc error classes scattered across interior callers. Here the interior never discriminates; the boundary does it once.
+This is `instanceof AppError` at exactly *one* site against a sealed base — a completely different thing from the `instanceof` chains in Detection, which branch on many ad-hoc error classes scattered across interior callers. Here the interior never discriminates; the boundary does it once.
+
+In a real app that boundary usually fans *in* several foreign taxonomies you don't own — a schema parser's error, an ORM's, a payment SDK's — so it won't be a single `instanceof YourBase`; it's a handful of type-guards mapping each foreign shape to a `code`. The discipline is that this fan-in lives at *exactly one site* and the interior never branches — not that everything extends one base.
 
 The line both strategies refuse to cross is the stringly-typed one. `throw new Error('invoice not found')` answered by `if (e.message.includes('not found'))` is the failure mode — whether you return or throw, the discriminant must be a typed `kind`/`type`, never a message. Pick `Result` or typed-throw by where the decision lives; never pick bare strings.
 

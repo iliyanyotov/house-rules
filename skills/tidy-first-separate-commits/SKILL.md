@@ -46,7 +46,20 @@ If the commit message needs the word "and" between a tidying and a change, STOP 
 
 The first commit is *known safe*: same tests pass, same behavior. Reviewer skims, approves. The second commit is small: just the bug fix, on a clean foundation.
 
+Seen in the wild: a commit titled *"remove console.log and improve type safety in tRPC routers"* bundled four classes of change behind one "and" — a security fix (removing logs that leaked private hashed-link data), a logger swap, a TS fix, and a Prisma `include`→`select` narrowing. Split:
+
+```
+fix(trpc): stop logging private hashed-link data
+tidy(trpc): replace console.log with structured logger
+tidy(trpc): drop @ts-expect-error, tighten types
+perf(trpc): narrow duplicate include to select
+```
+
+The security fix in particular should never have ridden in behind "remove console.log" — buried in a cleanup commit, it's invisible to reviewers and to `git log --grep`.
+
 ## Why This Matters
+
+On a **squash-merge** workflow the *PR* — not the individual commit — is the bisect/revert unit on `main`, so the `git bisect` / revert benefits below apply at *review time* (and on main only where commits survive the merge). That's not a reason to skip splitting: a clean split still makes review tractable, and a clear PR title/body becomes the durable record on main. Where commits *do* survive (merge or rebase workflows), the benefits extend to `main` too.
 
 | Mixed commit | Split commits |
 |---|---|

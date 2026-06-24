@@ -32,6 +32,8 @@ NEVER write production code without a failing test first.
 
 The cycle: **RED** (write a failing test) → **GREEN** (write the minimum code to pass) → **REFACTOR** (clean up while tests stay green) → **REPEAT**. Each cycle is minutes, not hours.
 
+The bar is highest where logic and blast radius are highest — but "it's too simple" is exactly the rationalization that ships an untested regex like an email validator that silently accepts `foo@bar..com`. If a function has branches or a regex, it is not too simple; write the test. Reserve the judgment call for genuinely behavior-free pass-throughs, not for anything with a branch.
+
 ## Detection: The Code-First Smell
 
 If you're about to write implementation without a test, STOP:
@@ -142,7 +144,7 @@ function calculateShipping(weight: number, distance: number): number {
 | Excuse | Reality |
 |---|---|
 | "Tests slow me down" | Debugging slows you down more. |
-| "It's too simple" | Simple tests are fast to write. |
+| "It's too simple" | Simple tests are fast to write — and "too simple" is what ships the regex that accepts `foo@bar..com`. Anything with a branch or a regex isn't too simple. |
 | "I'll test later" | You won't. Test now. |
 | "I know it works" | Prove it with a test. |
 | "Just a prototype" | Prototypes become production. Test them. |

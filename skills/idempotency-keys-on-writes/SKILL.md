@@ -162,6 +162,15 @@ The claim and the side effects share a transaction. A duplicate delivery loses t
 
 For at-least-once queues, the message ID is the natural key. Each consumer claims the message ID with a unique insert before doing work, and marks it completed in the same transaction as the side effect.
 
+### Outbound calls — forward an idempotency key downstream
+
+Dedup protects *your* writes; it does nothing for the third-party side effects your handler triggers. When you call a mutating external API (Stripe, an email provider) inside a handler that may itself be retried, pass *that SDK's* idempotency-key option — derived from the same intent key — so a retry of your handler doesn't charge the card or send the email twice:
+
+```ts
+// ✅ Stripe re-executes only if the key is new; your retry reuses the original charge.
+await stripe.paymentIntents.create(params, { idempotencyKey: `charge:${intentKey}` });
+```
+
 ### Scheduled jobs — the natural-time key
 
 Cron-driven writes have no client to supply a header. They have something better: a *naturally stable* key — the date the cron fires for, the hour bucket, the batch identifier:
@@ -185,6 +194,8 @@ async function ingestDailyFeed() {
 The claim is a unique insert. A retry within the same time window hits the existing row and skips or waits, instead of running a second import.
 
 The rule generalizes: **the idempotency key is whatever is naturally stable for the unit of work.** For HTTP it's a client-supplied UUID. For cron it's the time bucket. For webhooks it's the provider's event ID. For queues it's the message ID.
+
+A unique *constraint* on that key only **rejects** duplicates with an error — that's a collision guard, not idempotency. True idempotency means catching the unique-violation and **returning the prior result** (skip-and-replay), not surfacing a 409 to a caller that is simply retrying. The constraint stops the double-write; the catch-and-return is what makes the retry *succeed*.
 
 ### Low-stakes notifications — UI guard + short-window dedup
 
@@ -228,6 +239,8 @@ One header. The client passes a UUID. The server stores it. The complication is 
 - A client that retries on 5xx without sending a stable key.
 - A webhook handler that doesn't check the provider's event ID.
 - A queue consumer that doesn't dedup on message ID.
+- A retried handler that re-calls a payment/email SDK without passing that SDK's idempotency-key option — your dedup is intact, the downstream charge/send fires twice.
+- A unique-constraint violation surfaced to a retrying caller as a 409 instead of caught-and-replayed — a collision guard mistaken for idempotency.
 - A bug ticket containing "we saw two records when we expected one."
 - A "fix" that adds a debounce or throttle to a UI button — that's hiding the bug.
 - The phrase "this should only happen once" with no enforcement mechanism.

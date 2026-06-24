@@ -74,7 +74,8 @@ You are violating the rule if any of these are true:
 |---|---|---|
 | **Pure additive**: new nullable column; new table; new index; new enum value (appended). | Yes | Land migration + code in one PR. |
 | **Destructive**: drop column/table; narrow type; add `NOT NULL`; remove enum value; rename column. | **No** | Expand → stabilize → contract. |
-| **Backfill required**: new `NOT NULL` column on a table with existing rows; type change that needs row-level transform. | **No** | Expand → backfill → flip → contract. |
+| **Backfill required** — *new* `NOT NULL` column (no code reads it yet) | **One migration OK** | add-nullable → backfill → SET NOT NULL; dependent code in a *later* deploy. |
+| **Backfill required** — *existing* nullable column being tightened, or a row-level type transform | **No** | Expand → backfill → flip → contract. |
 
 ### Anatomy of a rename — the canonical destructive change
 
@@ -156,9 +157,13 @@ async function updateUser(userId: UserId, name: string) {
 }
 ```
 
+A tempting one-migration shortcut is the *shadow rename* — `RENAME COLUMN display_name TO full_name` in a single step. It still breaks: old code reading `display_name` mid-deploy finds the name gone the instant the migration lands. A rename is a `DROP` of the old name plus an `ADD` of the new one — exactly the destructive change expand/contract exists to stage. There's no atomic shortcut; the three deploys above *are* the safe path.
+
 Three PRs, three deploys, no rollover window where any traffic hits a missing column.
 
 ### NOT NULL on an existing column — backfill pattern
+
+First, distinguish two cases. A **brand-new** column that no deployed code references yet has *no rollover window* — old instances neither read nor write it — so add-nullable → backfill → `SET NOT NULL` can land in **one** migration, as long as the dependent code ships in a *later* deploy. The two-deploy split below is required only when tightening an **existing** nullable column that live code already writes, because old instances may still write NULL during rollover. (The `currency` example is the existing-column case.)
 
 ```sql
 -- ❌ One-shot. Will fail if any row has NULL.

@@ -46,6 +46,7 @@ You are violating the rule if any of these are true:
 - A callback parameter is annotated (`arr.map((item: User) => ...)`) when the array's element type would have flowed in.
 - A type annotation matches the immediately-following initializer exactly (the annotation is restating the inference).
 - A type annotation drifts from what's actually assigned (the annotation is a *lie* — the compiler accepts it because of subtyping, but the runtime value is narrower or different).
+- An interior annotation *widens* the inferred type (`const x: SomeEnum = 'LITERAL'` where inference would give the literal). Unless something downstream needs the wider type, it's noise — delete it; if widening is intentional, use `satisfies` or let the consumer's parameter type do the widening.
 - A refactor changing a function's return type forced you to update dozens of call sites' local annotations.
 
 ## The Pattern
@@ -97,6 +98,16 @@ const names = users.map((user: User): string => user.name);
 
 // ✅ Inference flows from `users: User[]` through the callback.
 const names = users.map((user) => user.name);
+```
+
+The most frequent real case is over-annotating a *primitive* param the source already guarantees:
+
+```ts
+// ❌ `Object.keys()` already returns `string[]` — the annotation restates it.
+Object.keys(result).map((key: string) => result[key]);
+
+// ✅ Inference flows from `Object.keys`'s return type.
+Object.keys(result).map((key) => result[key]);
 ```
 
 ### State initializers — annotate when initial value is too narrow
@@ -176,6 +187,10 @@ Backwards. Annotations *pin* the type at the annotation site. When the source ch
 ### "Without return-type annotations, refactors can change the public type silently"
 
 True — that's why the *boundary* half of this rule exists. Always annotate exported function return types. Inside the body, let inference handle it.
+
+### "It's a trivial one-liner — the return type is obvious"
+
+Triviality is about the *body*, not the *contract*. A one-line exported function still exposes a public type callers compile against: `return isPrismaObj(obj) ? obj : undefined` silently exports `JsonObject | undefined`, and a one-character body edit can change that exported type with no warning. Annotate the return regardless of body length — the length of the body has nothing to do with the cost of the contract changing.
 
 ### "Inference fails on complex shapes"
 

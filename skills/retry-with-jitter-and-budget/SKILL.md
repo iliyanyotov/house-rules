@@ -41,7 +41,7 @@ You are violating the rule if any of these are true:
 - A retry loop with a fixed delay (`for (let i = 0; i < 3; i++) { await sleep(1000); }`).
 - A retry on `POST`/`PUT`/`PATCH` without an idempotency key on the request.
 - A library setting like `maxRetries: 3` with no jitter configuration.
-- A retry policy with no overall deadline ("retry until success").
+- A retry policy with neither an overall deadline *nor* a bounded attempt count with capped backoff ("retry until success").
 - Retries layered: SDK retries 3×, your wrapper retries 3×, the framework retries 3× → 27× actual attempts.
 - A "transient error" handler that doesn't classify the error before retrying.
 
@@ -93,7 +93,7 @@ export async function withRetry<T>(
 The three properties on display:
 
 1. **Jitter:** `Math.random() * expBackoff` — *full jitter*. Don't use "decorrelated jitter" or "equal jitter" — full is simplest and works for almost every workload.
-2. **Budget:** `deadlineMs` caps total time across all attempts. The function bails when the budget is exhausted, even if attempts remain.
+2. **Budget:** `deadlineMs` caps total time across all attempts. The function bails when the budget is exhausted, even if attempts remain. (A budget can also be *bounded attempts × a capped per-attempt delay* — `maxAttempts` + a `maxTimeoutInMs` ceiling on backoff — which is the common shape in queue/task-runner config where there's no single request to deadline. Both bound total work; the anti-pattern is having *neither*.)
 3. **Classification:** `isRetryable(err)` — only certain errors retry. Programming bugs (4xx, validation errors) should never retry.
 
 ### Using it — read with timeout
@@ -157,6 +157,24 @@ The same `idempotencyKey` is reused across retries. The server dedups. The retry
 | OOM, disk full | No | Throwing them around is worse. |
 | `AbortError` from your own timeout | Yes (subject to budget) | The timeout fired; underlying op might be transient. |
 
+### Honoring `Retry-After`
+
+The table says to honor `Retry-After` on 429 — but the canonical loop above can't, because `isRetryable` returns only a boolean and the delay is purely client-computed. Give the classifier a way to surface the server's value:
+
+```ts
+// isRetryable can return a suggested delay, not just true/false.
+const retryAfterMs = (err: unknown): number | undefined => {
+  const h = (err as { response?: { headers?: { get?: (k: string) => string | null } } })
+    .response?.headers?.get?.('retry-after');
+  return h ? Number(h) * 1000 : undefined;   // seconds → ms
+};
+
+// In the loop: server value wins, still capped by the remaining budget.
+const delay = Math.min(retryAfterMs(err) ?? Math.random() * expBackoff, budgetRemaining);
+```
+
+On a 429/503 carrying `Retry-After` (or `RateLimit-Reset`), the server is telling you exactly when it'll be ready — that value beats client backoff. Without a hook for it, "honor `Retry-After`" is advice the loop can't follow.
+
 ### Disable library-level retries
 
 Most SDKs retry internally. To prevent layering, disable them and let your wrapper control it:
@@ -171,6 +189,8 @@ const fetcher = createFetch({ retry: 0 });
 ```
 
 This keeps the retry semantics in one place. Three layers of retries is the same as 27 unwanted attempts.
+
+The rule is *one* retry layer, not *zero* library retries — and that layer isn't always your wrapper. When a durable task runner or queue (Trigger.dev, Inngest, SQS + worker) owns the retry lifecycle — re-invoking the whole handler with its own backoff, jitter, and budget — *that* is the single retry layer, and the leaf call inside the handler must set retries to 0. Pick the layer that owns retries; everywhere else, disable them. The failure mode is two owners silently stacking.
 
 ### Which jitter strategy
 
@@ -224,7 +244,7 @@ Until it isn't. The double-charge or duplicate-row bug is hard to trace and impo
 | "The default jitter in lib X is fine" | Check it. Many libraries default to no jitter or "equal jitter" (slightly worse than full). |
 | "It's an internal service, dedup is overkill" | Internal services have outages too. Their clients retry. |
 | "Budget is for paranoids" | Budget is what saves you from a stuck retry holding a connection forever. |
-| "Library retries are good enough" | They're invisible. Centralize for observability and tuning. |
+| "Library retries are good enough" | Fine *if that layer is the single source of retry truth* and configures jitter + budget + bounded attempts (e.g. a durable task runner). Bad when it silently layers *under* your own loop — then they compound invisibly. |
 | "We'll add jitter when we see herd problems" | The herd problem looks like a flat-line at saturation. Add jitter now. |
 
 ## Related

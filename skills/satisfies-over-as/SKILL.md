@@ -78,7 +78,21 @@ const ROLES = {
 // `RoleDef` is enforced on every entry.
 ```
 
-### Function return types — the common `as` smell
+### Mutable accumulators — annotate the type parameter, not `satisfies`
+
+`satisfies` is for *finished, literal* values. A mutable accumulator that you build up with index assignment is the opposite case — and the fix is a type *parameter*, not `satisfies` or `as`:
+
+```ts
+// ❌ `{} as Record<string, AppMeta>` — asserts a shape the empty object doesn't have.
+// ❌ `{} satisfies Record<string, AppMeta>` — narrows to `{}`, so `store[key] = …` won't typecheck.
+// ✅ Annotate reduce's type parameter; the accumulator stays wide enough to assign into.
+const map = items.reduce<Record<string, AppMeta>>((store, key) => {
+  store[key] = deriveMeta(key);
+  return store;
+}, {});
+```
+
+`satisfies {}` fails here because it narrows the accumulator to exactly `{}`, rejecting the index assignment. The type argument on `reduce<...>` is the right tool — it widens the accumulator without an `as`.
 
 ```ts
 // ❌ Pretending the inferred shape matches.
@@ -93,6 +107,20 @@ function buildEvent(): OrderEvent {
 ```
 
 If the compiler complains here, the bug is real. `as` would have hidden it.
+
+The same trap hides in multi-branch arrows:
+
+```ts
+// ❌ Each branch coerces separately; nothing is verified.
+const toEvents = (rows: Row[]) =>
+  rows.length === 0 ? ([] as OrderEvent[]) : rows.map((r) => ({ kind: r.k, id: r.id }) as OrderEvent);
+
+// ✅ Annotate the return; both branches — and the `.map` body — are now checked.
+const toEvents = (rows: Row[]): OrderEvent[] =>
+  rows.length === 0 ? [] : rows.map((r) => ({ kind: r.k, id: r.id }));
+```
+
+The fix is the return annotation, not deleting each `as` in place — the annotation is what forces every branch to be verified.
 
 ### Config arrays with discriminated unions
 
@@ -133,7 +161,7 @@ if (!(input instanceof HTMLInputElement)) throw new Error('expected input');
 
 Even here, `instanceof` did the narrowing. `as HTMLInputElement` would be redundant *and* unsafe. If you find yourself wanting `as`, look for the missing guard.
 
-**3. `Object.keys` ergonomics.** TypeScript intentionally returns `string[]` from `Object.keys(x)` (an object typed `{ a: 1 }` may have *extra* keys at runtime). For closed-shape config objects you control, the narrower cast is the established workaround:
+**3. `Object.keys` and its loose return type.** TypeScript intentionally returns `string[]` from `Object.keys(x)` (an object typed `{ a: 1 }` may have *extra* keys at runtime). For closed-shape config objects you control, the narrower cast is the established workaround:
 
 ```ts
 const SORT_KEYS = { 'name-asc': 1, 'name-desc': 2, 'date-desc': 3 } as const;

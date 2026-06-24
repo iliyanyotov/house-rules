@@ -61,7 +61,7 @@ async function fanOut(userId: UserId) {
   if (userR.status === 'rejected') throw userR.reason;
   if (ordersR.status === 'rejected') throw ordersR.reason;
 
-  // Garnish — log and fall through with null.
+  // Garnish — observe the failure (logging only; the value decision is in the return below).
   if (recsR.status === 'rejected') {
     log.warn('recommendations_unavailable', { userId, error: recsR.reason });
   }
@@ -69,12 +69,25 @@ async function fanOut(userId: UserId) {
   return {
     user: userR.value,
     orders: ordersR.value,
+    // Garnish: the value decision lives here, in one place — fulfilled → value, else → default.
     recommendations: recsR.status === 'fulfilled' ? recsR.value : null,
   };
 }
 ```
 
 `Promise.allSettled` replaces `Promise.all` whenever the leaves have **different criticality**. The split is explicit. Critical results throw; garnish results return `null`. Consumers can tell the difference from the return type alone.
+
+### Partial success over a collection
+
+When the leaves are *homogeneous* and partial success is acceptable (sending N notifications, syncing N rows), keep the fulfilled results and log the rejected count — the operation degrades to "most of it worked" instead of all-or-nothing:
+
+```ts
+const results = await Promise.allSettled(items.map(updateOne));
+const ok = results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+const failed = results.filter((r) => r.status === 'rejected');
+if (failed.length) log.warn('partial_failure', { ok: ok.length, failed: failed.length });
+return ok;
+```
 
 ### The fallback is a named, honest state — not silence
 

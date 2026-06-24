@@ -91,6 +91,25 @@ takeFlight(new Penguin()); // ❌ compile error — Penguin doesn't implement Fl
 
 The compile error is the point. A would-be runtime exception becomes a compile-time refusal.
 
+### The weak-default base hook is still a contract
+
+A base method with a trivial default carries an *implicit* contract that's easy to break:
+
+```ts
+// Base promises: getPayload() always returns a Payload, never throws.
+class Step { getPayload(): Payload { return {}; } }
+
+// ❌ Subclass throws when a precondition is missing — breaks every caller holding `Step`.
+class ChargeStep extends Step {
+  getPayload(): Payload {
+    if (!this.amount) throw new Error('no amount');  // base never threw
+    return { amount: this.amount };
+  }
+}
+```
+
+The default `return {}` quietly established "always succeeds." A subclass that throws violates it as surely as `Penguin.fly()`. Fix it by making the precondition part of the *type* — construct the subtype only with the required data, or return `Payload | null` the caller must handle — not by throwing inside an override the base promised would succeed.
+
 ### Don't change semantics in a subtype
 
 ```ts

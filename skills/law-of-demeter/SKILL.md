@@ -48,6 +48,7 @@ You are violating the rule if any of these are true:
 - A rename of an intermediate field in a chain breaks many call sites.
 - A function takes a wide object (`Order`, `User`, `Request`) but only one or two deeply-nested fields are used.
 - A `?.?.?.?` chain because each level might be null — and you handle the null at the end rather than at the source.
+- A `source?.a.b.c || fallback.a.b.c` expression that drills the *same* multi-level path into two alternative sources. The optional step is fine (the source may be absent); the repeated *drill* is the violation — extract one accessor (`getX(source, fallback)`) that owns both the precedence and the path.
 - A code comment "navigates the X graph" or "drills into Y" near the chain.
 - Optional chaining (`?.`) appears 3+ times in one expression.
 
@@ -97,6 +98,27 @@ const country2 = getOrderBillingCountry(order2);
 ```
 
 Now the chain lives in one place. If `billingAddress` becomes `billing`, one function changes; all callers stay valid.
+
+Inside a class, the same fix is a private accessor (or a constructor-injected field) instead of drilling `this.a.b.c` at every method:
+
+```ts
+// ❌ Every method drills the same path through an injected aggregate.
+class Reminder {
+  constructor(private calEvent: CalEvent) {}
+  subject() { return `Reminder for ${this.calEvent.organizer.language.locale}`; }
+  body()    { return greet(this.calEvent.organizer.language.locale); }
+}
+
+// ✅ Name the reach once; methods ask the neighbor.
+class Reminder {
+  constructor(private calEvent: CalEvent) {}
+  private get locale() { return this.calEvent.organizer.language.locale; }
+  subject() { return `Reminder for ${this.locale}`; }
+  body()    { return greet(this.locale); }
+}
+```
+
+A *half-applied* accessor — some fields delegated, others still drilled inline in the same class — is its own red flag: the consistency is the payoff, so finish the job.
 
 ### Don't dig — message the immediate neighbor
 

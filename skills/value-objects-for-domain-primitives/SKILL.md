@@ -43,6 +43,7 @@ You are violating the rule if any of these are true:
 - A function signature has `amount: number`, `price: number`, `percentage: number` without a value-object wrapper.
 - A field is typed as `string` with a code comment "must be a valid email" or "ISO-8601 date" or similar.
 - The same validation regex / range check appears in 3+ files.
+- Worse than a re-checked range: re-implemented *conversion* logic. A `convertToSmallestUnit(amount, currency)` copy-pasted across modules carries an embedded constant table (which currencies are zero-decimal) that drifts between copies — so the same input converts differently depending on which file you import. That's a correctness bug, not just duplication; one `Money` factory owns one table.
 - A bug post-mortem cites "passed cents but expected dollars" or "wrong currency added."
 - Two function parameters of the same primitive type can be swapped without a typecheck error, and getting the order wrong is a real risk.
 
@@ -64,37 +65,39 @@ function sumLineItems(items: { price: number }[]): number {
 ```
 
 ```ts
-// ✅ Value object. Unit, invariants, operations centralized.
-type Currency = 'USD' | 'EUR' | 'BGN';
+// ✅ Value object. Unit, invariants, operations — and currency scale — centralized.
+type Currency = 'USD' | 'EUR' | 'JPY'; // a closed set you control; JPY is zero-decimal
 
 export class Money {
   private constructor(
-    readonly amountCents: number,
+    readonly minorUnits: number, // smallest unit for THIS currency (cents, yen…)
     readonly currency: Currency,
   ) {}
 
-  static of(amountCents: number, currency: Currency): Money {
-    if (!Number.isInteger(amountCents)) {
-      throw new RangeError(`Money amount must be integer cents, got ${amountCents}`);
+  static of(minorUnits: number, currency: Currency): Money {
+    if (!Number.isSafeInteger(minorUnits)) {
+      throw new RangeError(`Money must be integer minor units, got ${minorUnits}`);
     }
-    if (amountCents < 0) {
-      throw new RangeError(`Money cannot be negative, got ${amountCents}`);
+    if (minorUnits < 0) {
+      throw new RangeError(`Money cannot be negative, got ${minorUnits}`);
     }
-    if (amountCents > 100_000_000_00) {
-      throw new RangeError(`Money exceeds maximum, got ${amountCents}`);
-    }
-    return new Money(amountCents, currency);
+    return new Money(minorUnits, currency);
   }
 
   add(other: Money): Money {
     if (this.currency !== other.currency) {
       throw new Error(`Cannot add ${this.currency} to ${other.currency}`);
     }
-    return new Money(this.amountCents + other.amountCents, this.currency);
+    return new Money(this.minorUnits + other.minorUnits, this.currency);
   }
 
   toString(): string {
-    return `${(this.amountCents / 100).toFixed(2)} ${this.currency}`;
+    // Derive minor→major scale from the platform's ISO 4217 data — never a
+    // hand-maintained decimals table (that's a stale duplicate, the very
+    // primitive-obsession this object exists to kill). JPY → 0 digits, USD → 2.
+    const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: this.currency });
+    const digits = fmt.resolvedOptions().maximumFractionDigits ?? 2;
+    return fmt.format(this.minorUnits / 10 ** digits);
   }
 }
 
@@ -109,12 +112,12 @@ The class form is one of two valid shapes. The other is a branded type — pick 
 ```ts
 // Alternative: branded type for value-only cases.
 import type { Brand } from './brand';
-export type PositiveAmountCents = Brand<number, 'PositiveAmountCents'>;
+export type PositiveMinorUnits = Brand<number, 'PositiveMinorUnits'>;
 
-export const PositiveAmountCents = {
-  of(n: number): PositiveAmountCents {
+export const PositiveMinorUnits = {
+  of(n: number): PositiveMinorUnits {
     if (!Number.isInteger(n) || n < 0) throw new RangeError(`invalid: ${n}`);
-    return n as PositiveAmountCents;
+    return n as PositiveMinorUnits;
   },
 };
 ```
@@ -148,7 +151,7 @@ export const Percentage = {
 };
 
 function applyDiscount(price: Money, discount: Percentage): Money {
-  return Money.of(Math.round(price.amountCents * (1 - discount)), price.currency);
+  return Money.of(Math.round(price.minorUnits * (1 - discount)), price.currency);
 }
 
 // Construction is explicit about unit:
@@ -257,7 +260,11 @@ It's not just a number. A `price` has a unit (cents/dollars), a sign (non-negati
 
 ### "I'd have to wrap and unwrap everywhere"
 
-You wrap at the *boundary* (input parsing) and unwrap at the *boundary* (output serialization). The middle (90% of the code) holds value-objects and never touches the raw primitive. The wrap-unwrap surface is small and intentional.
+You wrap at the *boundary* (input parsing) and unwrap at the *boundary* (output serialization). The middle (90% of the code) holds value-objects and never touches the raw primitive. The wrap-unwrap surface is small and intentional. (In codebases with many shared DTO/ORM-input interfaces, expect that boundary to be wider than two functions — you convert at each repository/serialization edge. The interfaces stay raw; the domain layer between them holds value objects.)
+
+### "We already pass amount and currency together as one object"
+
+Grouping two raw fields in a bag (`{ amount: number; currency: string }`) gives them no constructor, no invariant, and no distinct type. Any other `{ amount, currency }` bag is assignable to it, the amount can still be the wrong unit, and every consumer still re-converts. A value object is the bag *plus* the enforced construction — `Money.of(minorUnits, currency)` — so an invalid instance can't exist and the scale lives in one place.
 
 ### "TypeScript's type alias does the same thing"
 

@@ -45,6 +45,8 @@ You can violate the rule in either direction.
 - A constant (`30 * 24 * 60 * 60 * 1000`) appears in five files.
 - A domain calculation lives next to two different consumers, slightly divergent.
 
+Under-DRY's real cost isn't maintenance — it's *silent divergence into a correctness bug*. Convert an OAuth `expires_in` to an absolute expiry, copied across ~20 integrations: half compute `Date.now() + expiresIn * 1000` (milliseconds), half compute `Date.now() / 1000 + expiresIn` (seconds). The knowledge was never extracted, so the copies drifted into two incompatible *units* — tokens expire at the wrong time, intermittently, in only some integrations. A single `tokenExpiryFromExpiresIn(expiresIn)` would have made the unit one decision in one place, instead of a 20-file archaeology dig when the bug surfaces.
+
 ### Over-DRY (text deduplicated, knowledge split)
 
 - A shared helper has parameters that one caller always sets to `false` and another always sets to `true`.
@@ -201,6 +203,8 @@ Three lines × three places isn't enough signal. Read what each does in its surr
 ### "But what if we forget to update one?"
 
 That's a real risk for real knowledge duplication. It's not a risk for code-shaped duplication: if two unrelated paths happen to look alike, they *will* diverge, and the "forget to update one" concern wasn't a concern — the codepaths shouldn't have been updated in lockstep anyway.
+
+And for real knowledge, the deeper cost isn't *forgetting to sync an edit* — it's that independently-written copies of the same rule are often inconsistent *from day one* (different authors pick different units, defaults, edge cases). A single authoritative source makes the rule one decision instead of N guesses.
 
 ### "The abstraction makes intent clearer"
 

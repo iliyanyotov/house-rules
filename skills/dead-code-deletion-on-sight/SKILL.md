@@ -103,6 +103,8 @@ function compute(x: number) {
 
 If the commented-out code might be useful later, `git log` is one command away. The current file should reflect the current state.
 
+This is common, not hypothetical: real codebases ship files with stray commented-out `export * as ...` lines, `// import { oldThing }`, or whole disabled functions that have sat untouched for months. `git log` holds every one of them; the file should not.
+
 ### Backward-compatibility shims with no callers
 
 ```ts
@@ -168,13 +170,13 @@ The trap is the *middle* state: a `@deprecated` shim that still has a handful of
 - An IDE warning "X is declared but never used"
 - A commented-out block of code longer than one line
 - A file beginning with `// LEGACY` or `// DEPRECATED` and no removal date
-- A `@deprecated` JSDoc tag with no removal version
+- A `@deprecated` JSDoc tag whose `Find References` shows **zero** callers (a deprecated symbol that still has callers is a migration-in-progress, not dead code — see `finish-the-migration`)
 - A feature flag definition older than 90 days
 - An env var present in `.env.example` but referenced nowhere in code
 - A dependency in `package.json` that an audit can't find any import for
 - The phrase "let me leave it just in case"
 
-**All of these mean: delete now, in this PR.**
+**All of these warrant a zero-reference check; if `Find References` comes back zero, delete now, in this PR.**
 
 ## Quick Reference
 

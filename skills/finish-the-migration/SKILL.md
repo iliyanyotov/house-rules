@@ -58,9 +58,13 @@ export class UserModel { /* legacy data access */ }
 export class UserRepository { /* preferred data access */ }
 ```
 
+Most real `@deprecated` markers stop at "Use X instead" — that half is *advisory*, a nicer doc comment. The removal trigger (`#1234`, a date, or an owner) is the half that turns the marker into a *commitment*: it's what a stale-deprecation audit greps for. A `@deprecated` with no trigger is how migrations stall for years.
+
 ### Step 2 — Stop the bleed with a machine guard
 
 The decisive move: make *new* uses of the old path fail CI. Whatever the rule is — "no new imports of `models/`", "no new calls to `legacyClient`" — encode it so a human doesn't have to catch it in review.
+
+When the deprecated thing is a *member* of a module whose other members are still preferred — a `@deprecated` default export beside a good named export, one bad function in an otherwise-fine module — a path ban won't work: `import { good } from 'x'` must stay legal. Guard the *specific symbol* instead (restrict the default import, or the named symbol via `no-restricted-imports`'s `importNames`), not the whole module path.
 
 ```jsonc
 // Example: an ESLint no-restricted-imports / no-restricted-syntax rule.
@@ -78,6 +82,8 @@ The decisive move: make *new* uses of the old path fail CI. Whatever the rule is
 ```
 
 Now the count of old-path uses can only go *down*. Without this, every other step is undermined by new code re-growing the old path.
+
+The mechanism is interchangeable: Biome (`style/noRestrictedImports`), a lint deprecation rule (`@typescript-eslint`'s `no-deprecated`, Biome's `noDeprecated` on a `@deprecated`-tagged symbol), or even a one-line grep check in CI all do the job. Pick whatever your stack already runs — the only requirement is that a *new* use of the old path fails the build, not that any specific tool enforces it.
 
 ### Step 3 — Track the remaining call sites as a countable, shrinking list
 

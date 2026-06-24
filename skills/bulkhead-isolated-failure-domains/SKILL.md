@@ -31,10 +31,10 @@ Consider a route that does four outbound things:
 
 ```
 POST /api/checkout
- ├── payments.charge()      (payment provider)
- ├── mailer.send()          (email provider)
- ├── bot.verify()           (bot-detection service)
- └── db.insert(orders)      (database)
+ ├── payments.charge()      (payment provider)    — critical path
+ ├── db.insert(orders)      (database)            — critical path
+ ├── bot.verify()           (bot-detection)       — degradable (fail-open or skip)
+ └── mailer.send()          (email provider)      — degradable (fire-and-forget)
 ```
 
 If all four share *one* `withTimeout(15_000)` helper and *one* implicit concurrency model ("one function instance at a time"), then a 14-second mailer hang blocks the function instance for 14 seconds. Payments, bot-detection, and the database are fine — but they wait behind the mailer because the instance is busy. Multiply by traffic: your `/api/checkout` p99 latency *is* the mailer's p99 latency, even on requests where the email never matters.
@@ -53,6 +53,7 @@ You are violating the rule if any of these are true:
 - A function's p99 latency tracks the *slowest* dependency it ever calls — even on requests where that dep is incidental.
 - A code review can't answer "if dep X is at 20s p99, what happens to a request that only needs dep Y?"
 - An incident postmortem identifies one slow dep, but the user-visible degradation was across *all* features the function exposes.
+- A `Promise.all([...])` (or `deps.map((d) => callDep(d))`) over calls to *different* dependency classes, sharing one try-catch and no per-dep timeout — a hang in any element blocks settlement of all.
 
 ## The Pattern
 
@@ -132,6 +133,20 @@ export async function handleCheckout(req: Request) {
 }
 ```
 
+The shape that most often *lacks* bulkheads is a parallel fan-out — `Promise.all` over several deps with one shared catch and no per-dep budget:
+
+```ts
+// ❌ One hung dep delays settlement of all; one rejection loses the others' results.
+const [user, orders, recs] = await Promise.all([fetchUser(id), fetchOrders(id), fetchRecs(id)]);
+
+// ✅ Each call runs in its own bulkhead (own timeout + cap); allSettled keeps failures isolated.
+const [user, orders, recs] = await Promise.allSettled([
+  userBulkhead.run((s) => fetchUser(id, { signal: s })),
+  orderBulkhead.run((s) => fetchOrders(id, { signal: s })),
+  recsBulkhead.run((s) => fetchRecs(id, { signal: s })),
+]);
+```
+
 Read top-to-bottom, each call is annotated by its bulkhead. A reader instantly knows: which dep does this talk to, what budget does it get, what's the blast radius if it hangs.
 
 ### Sizing each bulkhead
@@ -203,6 +218,7 @@ Start permissive: half your function-instance concurrency limit per critical dep
 - An incident report where one slow dep degraded *all* features of a route.
 - A function instance whose p99 tracks the slowest dep, even on requests that barely touch it.
 - A test that mocks four deps with one shared mock — the production code likely shares one bulkhead too.
+- A `Promise.all([...])` fanning out to several different deps with no per-element timeout — the slowest sets the wall-clock and one hang blocks the whole batch.
 
 **All of these mean: the failure domains aren't isolated — one slow dep will take everything else with it.**
 

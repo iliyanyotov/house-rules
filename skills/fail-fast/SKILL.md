@@ -36,7 +36,7 @@ This rule applies to invariants you *control* — env vars, function preconditio
 You are violating the rule if any of these are true:
 
 - A function body starts with `if (!x) return null` for an `x` whose type says it's non-null.
-- A `try/catch` block catches an error and falls through with a default value — no log, no re-throw.
+- A `try/catch` block catches an error and falls through with a default value — no log, no re-throw. (The *logged* variant counts too: a `log.warn` plus a sentinel return is still the caller proceeding on missing data, just with a paper trail.)
 - A `switch` over a discriminant has `default: return defaultValue` over a closed set.
 - A function uses `?.` chains to "protect against" properties the type system says exist.
 - An env-var read defaults to a placeholder (`process.env.KEY ?? 'sk_test_dummy'`) without verifying the env in development.
@@ -70,6 +70,8 @@ export async function chargeCustomer(amountCents: number) {
   await paymentClient(env.PAYMENT_SECRET_KEY).charge(amountCents);
 }
 ```
+
+If you reach for a per-key getter with a fallback instead of one upfront parse — `getEnv('PAYMENT_SECRET_KEY', '')` — the *fallback argument is the leak*. Passing `''` or a placeholder for a variable that should be required silently disables the throw: the process starts, and the failure resurfaces later as a confusing runtime error far from the cause. A fallback is legitimate only when the placeholder is genuinely valid in *every* environment; otherwise omit it and let the getter throw.
 
 The throw happens once, at startup, with a clear message. Deployment fails loudly instead of every request silently returning `null` for hours.
 
@@ -127,6 +129,16 @@ export async function handleOrdersRequest(userId: UserId) {
 
 The error is handled in exactly one place — the outer boundary. Inside the system, code is short and assumes success.
 
+A sneakier variant reassigns to a degraded-but-working alternate instead of returning a sentinel:
+
+```ts
+// ❌ Worse than `return []` — there's no empty value to betray the failure.
+let key = await loadSigningKey();
+try { key = await loadRotatedKey(); } catch { key = legacyKey; }  // silently runs on the wrong key
+```
+
+There's no empty result here to tip anyone off; the system just quietly runs on the wrong path. A `log.warn` in the catch does *not* redeem it — the caller still proceeds as if nothing failed. If the rotated key is required, let the failure propagate.
+
 ### The exception: input from outside
 
 User input is *expected* to be invalid. That's not fail-fast territory — it's the parse-at-the-boundary discipline. Returning `{ ok: false, error: 'invalid_email' }` is correct because the caller is the UI, which knows how to display it.
@@ -160,6 +172,7 @@ Use `cause`. The chain is preserved across the await. Node and most error tracke
 - A `try/catch` whose catch body has no `throw` and no log.
 - A `?.` chain on a value whose type says it's defined.
 - A function that returns `null` or `[]` from inside a catch.
+- A catch that logs *and* returns a sentinel (`[]`, `null`, `''`) with a comment claiming "graceful degradation" — the log and comment make it *look* deliberate, but the caller still proceeds on missing data. A real graceful-degradation fallback is a designed boundary (see Pressure Resistance), not a leaf return.
 - An env-var fallback to a hardcoded placeholder (`'localhost'`, `'sk_test_dummy'`).
 - A test that asserts a function "doesn't throw" for clearly invalid input — that test enshrines the bug.
 - The phrases "just in case," "for safety," or "defensive" without a documented failure mode.
@@ -172,7 +185,7 @@ Use `cause`. The chain is preserved across the await. Node and most error tracke
 | Excuse | Reality |
 |---|---|
 | "Throwing is too aggressive" | Aggression is silent corruption shipped to users. Throwing is honesty. |
-| "It might be transient" | Retry explicitly. Don't conflate retry with swallow. |
+| "It might be transient" | Retry explicitly. Don't mix up retry with swallow. |
 | "I'll come back and fix the error handling" | The catch-and-default stays for the life of the codebase. |
 | "Production should never crash" | Production should never *corrupt*. Crashing is a recoverable state; corrupting is not. |
 | "Logging is enough" | Logging without re-throwing means the caller proceeded with broken state. The log is a tombstone, not a guard. |

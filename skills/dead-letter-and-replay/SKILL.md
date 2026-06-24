@@ -17,6 +17,8 @@ This pairs with two sibling skills: dedupe each delivery on arrival (`idempotenc
 NEVER let a failed inbound event vanish or retry unbounded. Persist the raw event, cap retries, make replay idempotent.
 ```
 
+The same idea applies in reverse, to **outbound** delivery you own: a webhook or notification *you send* that exhausts its delivery retries must be dead-lettered for replay, not merely logged as a failure count — the same store-and-replay discipline, in the other direction.
+
 **No exceptions:**
 - Not "the producer retries, so we don't need to store it"
 - Not "it'll basically never fail"
@@ -28,6 +30,8 @@ NEVER let a failed inbound event vanish or retry unbounded. Persist the raw even
 You control your own writes; you can re-run them. You do **not** control a third party's event stream. When a webhook handler throws, one of two bad things happens: the producer gives up after its own retry budget and the event is **lost forever**, or the producer retries indefinitely and a single **poison event** hammers you on every redelivery. Either way, your data silently drifts out of sync with the source of truth, and you find out days later from a confused user.
 
 The fix is structural. Store the **raw, unparsed** event the moment processing fails, with enough metadata to replay it. Bound in-line retries so a poison event can't loop. Make the handler idempotent so replay — manual or automated — is always safe. The dead-letter table becomes the durable record of "things we received but couldn't yet process," and replay turns a lost event into a recoverable one.
+
+There's a rung-ordering worth naming before you have any of this: if you have **no** dead-letter store yet, returning a 5xx so the provider retries is *strictly better* than catch-log-return-200. The 5xx is lossy only if the provider's own retry budget exhausts; ACK-and-drop is lossy immediately. The fully-correct state is persist-then-2xx — but never let "we return 500" be mistaken for the worst case. The worst case is the silent 200.
 
 ## Detection
 

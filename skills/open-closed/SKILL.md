@@ -137,7 +137,7 @@ export async function chargeWith(kind: PaymentKind, amount: Money) {
 2. Create `src/payments/applePay.ts`.
 3. Add one entry to the registry.
 
-The compiler enforces that the registry has an entry for every union member (via `Record<PaymentKind, PaymentMethod>`). The consumer doesn't change.
+The compiler enforces that the registry has an entry for every union member (via `Record<PaymentKind, PaymentMethod>`). With a *hand-maintained* map, the consumer doesn't change — only the map gains one entry. With a *build-generated* map (entries discovered from a directory of leaf modules), neither the consumer nor the map changes — you just add a new leaf file. The generated form is the goal for genuinely open sets.
 
 ### Strategy via function passing
 

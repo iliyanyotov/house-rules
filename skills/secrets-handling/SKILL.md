@@ -64,6 +64,8 @@ export const env = Env.parse(process.env);
 
 The schema fails the build if a required secret is missing. Server-only vs client-exposed vars are kept structurally separate (a server secret in a client-bundle variable is a build error, not a runtime surprise).
 
+A typed *accessor* — `getEnv<K>(key: K): Environment[K] { return process.env[key] as Environment[K] }` — is **not** this pattern. The `as` asserts the type without checking it, resolves lazily instead of failing at startup, and lets a malformed `sk_`-prefixed key (or a string where a number was expected) slip straight through. Parse once with a real schema; never cast `process.env` to a type.
+
 ### Constant-time comparison for signature verification
 
 ```ts
@@ -239,6 +241,8 @@ function toResponse(err: AppError): Response {
   return Response.json(body, { status: err.status });
 }
 ```
+
+Stripping `context` isn't enough — some error *messages* carry secrets too: a DB driver may embed the connection string or the failing query in `err.message`. At the boundary, also redact the message of error classes you don't control — replace a database-driver error's message with a generic "a database error occurred" before it becomes a response body or an error-tracker title.
 
 No layer is sufficient alone: a branded type doesn't stop a committed secret; a vault ref doesn't stop `context` leaking in a 5xx; a context-stripped error doesn't stop the wrong `string` reaching the key slot. Together they make a single slip survivable.
 

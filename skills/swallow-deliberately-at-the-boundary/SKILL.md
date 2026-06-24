@@ -57,6 +57,14 @@ async function placeOrder(input: OrderInput) {
   return order;
 }
 
+// ❌ Same smell, promise-chain form — the one people forget to look for.
+await mailer.sendConfirmation(order).catch(() => {});
+
+// ✅ Deliberate: the chain form reports too.
+await mailer.sendConfirmation(order).catch((err) =>
+  logger.error('sendConfirmation failed', { err, orderId: order.id }),
+);
+
 // ✅ Deliberate, observable, provably post-commit and optional.
 async function placeOrder(input: OrderInput) {
   const order = await orders.create(input);    // critical work commits FIRST
@@ -72,6 +80,8 @@ async function placeOrder(input: OrderInput) {
   return order;
 }
 ```
+
+`reportError` here is shorthand for "make it observable" — a structured log line is an equally valid first option: `logger.error('sendConfirmation failed', { err, orderId: order.id })`. Use whichever your stack already routes and alerts on; the rule is that the catch is *not silent*, not that it calls a specific tracker.
 
 The fix isn't "add a log line." It's the whole posture: critical work first, the optional work clearly labelled, the catch reporting with context, and a comment stating *why* this failure is tolerable.
 
@@ -135,7 +145,7 @@ Action: Reorder so the critical write is first and fully committed before any be
 
 ## Red Flags
 
-- A `catch` with an empty body, or `catch { return }` / `catch { return null }` with no report.
+- A `catch` with an empty body, or `catch { return }` / `catch { return null }` with no report — including the promise-chain form `.catch(() => {})` / `.catch(() => null)`.
 - A swallow positioned *before* the operation's critical write.
 - Swallowing a call whose result the caller actually depends on.
 - "It's fine if this fails" asserted in a comment but with no error report to prove it was considered.

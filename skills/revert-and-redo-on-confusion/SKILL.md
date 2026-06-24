@@ -50,11 +50,16 @@ You are violating the rule if any of these are true:
 - You've added and removed the same lines/parameters/imports multiple times.
 - Tests that used to pass are now failing in ways that surprise you.
 - You're commenting out code "to check something" and not uncommenting it.
+- A function is defined but its only caller is commented out — often renamed with a `_` prefix to silence the unused-symbol lint. That's a half-removed feature left mid-confusion, not a revert.
 - You can't articulate *what* your current change is supposed to do anymore.
 - You're patching symptoms instead of root cause and don't remember which is which.
 - The phrase "almost there, just one more thing" has fired ≥3 times in this session.
 - You started fixing one bug and are now in code unrelated to it.
 - You're afraid to look at `git diff` because the diff is "complicated."
+
+### When the muddle already shipped
+
+Most of these markers — a `// FIXME` you don't understand, a `describe.skip` with a "fix later" note, a large commented-out block — turn up in *already-committed* code you're reading, not your live diff. The live rule (revert + redo) doesn't apply once it's merged; `git revert` would undo unrelated work too. Instead, treat the marker as a signal that a past attempt was abandoned mid-confusion, and do one of two things: redo that slice cleanly *now* with a clear hypothesis, or file a tracked ticket and delete the dead artifact (see `dead-code-deletion-on-sight`). Do **not** leave it in place to be rediscovered — a marker no one acts on is the confusion made permanent.
 
 ## The Pattern
 
@@ -155,6 +160,8 @@ Then redo. The second pass takes 25 minutes because you skip:
 - The downstream half-fix.
 
 **Net time:** 60 min muddled + 60 min untangle = 120 min. Or: 60 min muddled + 25 min clean redo = 85 min. The revert paid back instantly.
+
+The same spiral happens server-side: stuck in a confusing fan-out delete handler, unsure which failures to surface, you patch the symptom (`// FIXME: error handling`, a stray `setTimeout`, a swallowed `catch`) and ship the marker instead of reverting to pick one coherent error strategy. The `// FIXME` *is* the muddle, made permanent.
 
 ## Pressure Resistance
 

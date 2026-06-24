@@ -57,7 +57,19 @@ const res = await fetch('https://api.example.com/data', {
 });
 ```
 
-`AbortSignal.timeout(ms)` is a built-in (Node 17+, all evergreen browsers). No library needed.
+`AbortSignal.timeout(ms)` is a built-in (Node 17+, all evergreen browsers). No library needed. On `node-fetch` v2 or a runtime without it, the equivalent is an `AbortController` you abort on a timer and clear in `finally`:
+
+```ts
+const controller = new AbortController();
+const timer = setTimeout(() => controller.abort(), 5_000);
+try {
+  return await fetch(url, { signal: controller.signal });
+} finally {
+  clearTimeout(timer);   // don't leak the timer if the fetch resolves first
+}
+```
+
+The discipline is the deadline, not the specific API.
 
 ### Composing timeouts with user cancellation
 
@@ -191,6 +203,19 @@ async function fulfillOrder(orderId: OrderId): Promise<void> {
 ```
 
 If the inner timeouts each fire near their limit, the outer guards the *whole* deadline.
+
+The fan-out variant matters just as much — in a `Promise.all`, the *slowest* call sets the wall-clock, so one hung element hangs the whole batch:
+
+```ts
+const outer = AbortSignal.timeout(20_000);
+const results = await Promise.all(
+  urls.map((url) =>
+    fetch(url, { signal: AbortSignal.any([outer, AbortSignal.timeout(5_000)]) }),
+  ),
+);
+```
+
+Without a *per-call* deadline on each element plus the shared outer signal, a single slow URL stalls every sibling in the batch.
 
 ### Documenting timeout values — one source of truth
 

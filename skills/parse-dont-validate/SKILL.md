@@ -41,6 +41,7 @@ You are violating the rule if any of these are true in a single request path:
 - An `as User` silences a complaint after a manual check.
 - A schema is imported into a domain file (not a boundary file).
 - A `try { Schema.parse(x) } catch {}` falls through to default values — that's hoping, not parsing.
+- A DB/ORM row exposes a field as `Json` / `unknown` / `any` (e.g. a Prisma `Json?` column), so every reader must `.parse()` it. The DB read *is* the boundary — parse the column once in the repository and return the narrowed type, so callers get the proven type, not the raw row.
 
 ## The Pattern
 
@@ -157,6 +158,8 @@ export const env = Env.parse(process.env);
 
 One parse, at module load. Every consumer reads `env.DATABASE_URL` (typed as `string`, narrowed by the schema) — no `process.env.X ?? 'localhost'` fallbacks scattered through the code.
 
+A lazy typed accessor — `getEnv(key): T => process.env[key] as T` — is *not* this pattern, even though it looks typed. The `as` asserts a type that was never checked: `STRIPE_SECRET_KEY` typed `string` is never verified to start with `sk_`, and a `number`-typed var is still the raw string at runtime. That's the `as`-coercion lie, just centralized behind a helper. Parse once with a schema so the narrowed type is *earned*, not asserted.
+
 ## Pressure Resistance
 
 ### "It's only one extra `.parse()`, what's the harm?"
@@ -186,6 +189,7 @@ That's about boundaries you don't control. Within one process, the boundary is t
 - A guard function returning `boolean` followed by use of the input as a narrowed type.
 - A schema imported into a domain file rather than a boundary file.
 - The phrase "just to be safe" or "defense in depth" applied within a single process.
+- The same schema `.parse()`ed at many independent sites because the source type (often a Prisma `Json` column) never carried the narrowed type outward — parse it *once* at the repository boundary so the type flows, instead of every reader re-parsing.
 - A `try { Schema.parse(x) } catch {}` that falls through to defaults.
 
 **All of these mean: the boundary is the wrong place — find it and parse there, once.**

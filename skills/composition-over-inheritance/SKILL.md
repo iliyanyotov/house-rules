@@ -48,7 +48,7 @@ You are violating the rule if any of these are true:
 - A change to a base class breaks half its children for reasons unrelated to the subtype relationship.
 - "Manager"/"Service" / "Helper" / "Base" classes that exist primarily to hold shared methods.
 - An `instanceof` check used to handle different subtypes at the call site — the abstraction isn't doing its job.
-- A class hierarchy deeper than one level (Grandparent → Parent → Child), **or** a base class with many children that exists only to share methods. Depth is a symptom; reuse-only inheritance is the disease — a popular one-level base used purely for shared methods is already the smell.
+- A class hierarchy deeper than one level (Grandparent → Parent → Child), **or** a base class with many children that exists only to share methods. Depth is a symptom; reuse-only inheritance is the disease — a popular one-level base used purely for shared methods is already the smell. (Reuse hierarchies don't stop at three: production email frameworks routinely reach four — `Base → Scheduled → Request → RequestReminder` — because each variant extends the nearest class that already has the methods. Depth only ever grows once you start; the only stable depth is zero or one.)
 
 ## The Pattern
 
@@ -125,6 +125,27 @@ async function handleOrder(
 ```
 
 No hierarchy. No `this`-binding. Each capability is testable in isolation; each handler picks the dependencies it actually needs.
+
+The same move dissolves the **template method** pattern — an abstract base whose subclasses override a single `abstract` step:
+
+```ts
+// ❌ A base that exists only so subclasses fill in one method.
+abstract class SmsSender {
+  protected abstract buildMessage(attendee: Person): string;   // the only thing that varies
+  async sendToAll(event: CalEvent) {
+    for (const a of event.attendees) await sms.send(a.phone, this.buildMessage(a));
+  }
+}
+class ReminderSms extends SmsSender { buildMessage(a: Person) { return `Reminder: ${a.name}`; } }
+
+// ✅ The one varying method *is* a strategy — pass it as a function.
+async function sendSmsToAll(event: CalEvent, buildMessage: (attendee: Person) => string) {
+  for (const a of event.attendees) await sms.send(a.phone, buildMessage(a));
+}
+// ReminderSms becomes just:  sendSmsToAll(event, (a) => `Reminder: ${a.name}`)
+```
+
+When subclasses differ in only one abstract method, that method is a strategy wearing an inheritance costume. Pass the function; delete the hierarchy.
 
 ### When inheritance *is* the right tool
 

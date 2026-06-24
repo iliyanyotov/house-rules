@@ -167,10 +167,17 @@ The fallback is dependency-specific:
 - **Search:** return cached or default results.
 - **Email send:** queue for later (a queue is a fallback).
 - **LLM:** return a templated/cached response, or skip the feature gracefully.
+- **Webhook / fan-out delivery:** a breaker *per destination*. When one subscriber's breaker is open, drop or dead-letter that endpoint's deliveries immediately instead of holding a request slot waiting on it — this is the canonical case, where N concurrent fetches to one hung subscriber would otherwise exhaust the pool and stall *unrelated* features (the resource-exhaustion the Why section warns about).
 
 ### Per-dependency state, not per-request
 
 The breaker is *shared* across all calls to that dependency. One breaker per provider, used by every call. The `failures` array must be observable across requests — in serverless runtimes, this means module-scope state shared across requests on the same *warm* instance. That's adequate for steady request traffic, but unreliable for cron-/queue-triggered fan-out, where each invocation may be a cold start and the breaker effectively begins CLOSED every time — exactly the high-fan-out workloads that most need a breaker. For those, reach for a shared state store (e.g. Redis) sooner. In a horizontally-scaled service, per-instance breakers are usually fine; for stricter coordination, use a shared store.
+
+### Per-tenant / unbounded-cardinality dependencies
+
+"One breaker per provider" assumes a *bounded, named* set of dependencies. It breaks when the "dependency" is an arbitrary, caller-supplied endpoint — webhook delivery to thousands of tenant URLs, per-tenant API hosts. Two failures of the naive approach: keying one breaker for "webhooks" trips *all* delivery because one customer's URL is down; keying one breaker per URL leaks breaker objects forever (an unbounded map).
+
+Key the breaker **by destination**, but **bound the registry** with LRU or TTL eviction so it can't grow without limit. One dead endpoint must not trip healthy ones, and stale breakers must age out. (This is `bound-cardinality-in-keys` applied to breaker state — the destination is exactly the unbounded key that family of keys warns about.)
 
 ### What "non-trivial failure rate" means
 

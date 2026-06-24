@@ -34,7 +34,7 @@ An AI assistant can rewrite a 40-line single-purpose function without breaking a
 You are violating the rule if any of these are true:
 
 - A file's name doesn't predict what's inside (`utils.ts`, `helpers.ts`, `lib.ts`).
-- A function's name uses `And` — `validateAndSave`, `fetchAndRender`, `parseAndStore`.
+- A function's name joins two *unrelated* concerns with `And` — `validateAndSave`, `fetchAndRender`, `parseAndStore`. (A `getXAndY` returning a coherent tuple whose parts have a real data dependency — fetch X to derive the key for Y — is a sequenced read, not a violation; the smell is `And` joining two things a caller would otherwise want separately.)
 - A handler does parsing, business logic, persistence, email sends, and response shaping.
 - A class has methods that don't share state — a junk drawer with `this`.
 - A test for the module must mock four unrelated systems.
@@ -158,6 +158,8 @@ export async function handleCreateOrder(req: Request) {
 ```
 
 Both are similar line counts. Only one is a violation. The question is *what does this module itself do*, not *how many lines*.
+
+This is the shape of a real production booking/checkout handler: it runs the cross-cutting guards inline — turnstile, bot-detection, rate-limit, session — then delegates the entire domain operation to one service call (`bookingService.create(...)`). Guards inline + one domain call out = one reason to change.
 
 ## Pressure Resistance
 

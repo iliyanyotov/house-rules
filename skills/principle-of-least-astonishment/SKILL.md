@@ -117,6 +117,8 @@ async function getUserByIdOrThrow(id: UserId): Promise<User> {
 }
 ```
 
+If your ORM already spells out the convention — Prisma's `findUnique` vs `findUniqueOrThrow`, `findFirst` vs `findFirstOrThrow` — mirror it. A hand-written `findToken` that throws while the Prisma layer right beside it carefully says `OrThrow` is the surprise: the reader trusts the suffix everywhere else and gets burned by the one place that breaks it.
+
 The reader knows from the name which contract they're getting. No surprise.
 
 ### Async functions are honest about being async
@@ -132,6 +134,8 @@ function formatPrice(price: Money): string {
   return `$${(price.amountCents / 100).toFixed(2)}`;
 }
 ```
+
+The rule is "no *needless* async," not "never async on a fast path." A function that awaits on *some* branches should stay `async` so callers always `await` one consistent shape — the surprise would be a union of `T | Promise<T>` that callers must inspect. Keep it `async` when any path is genuinely async; drop `async` only when *every* path is synchronous.
 
 The `async` keyword tells callers "this awaits something." When it doesn't, the keyword is a lie. Callers who `await` it pay a microtask hop; callers who don't `await` it forget to handle the Promise.
 

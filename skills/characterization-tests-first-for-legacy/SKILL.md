@@ -125,7 +125,9 @@ You don't need to characterize every function in the codebase. Characterize the 
 
 ### Snapshot tests for complex outputs
 
-When the output is a complex object (a database row, a parsed payload, an HTML render), snapshot tests are a fast way to characterize. The snapshot *is* the assertion — read it, confirm it matches reality, commit it. Then your change either preserves the snapshot or breaks it deliberately.
+Prefer **explicit assertions** (`toEqual`, `objectContaining`) by default, even for complex objects — they document the intent ("these fields, these values") and fail with a readable diff. Pin a complex array-of-objects with `expect(rows).toEqual([objectContaining({ start, end, source })])`, not a blanket snapshot.
+
+Reach for a **snapshot** only in two cases: (a) the output has many structurally-similar variants (e.g. a redactor checked across a dozen field-name shapes), where hand-writing each assertion is noise; or (b) the exact serialized form *is* the contract and writing it by hand is pure transcription. The snapshot *is* the assertion — read it, confirm it matches reality, commit it.
 
 ```ts
 test('parseInvoice produces this exact shape today', () => {

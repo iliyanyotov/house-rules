@@ -9,7 +9,12 @@ description: Use when shipping a risky feature — schema migration, payment int
 
 **Code is deployed; *features* are released.** A deploy is the platform-mediated act of getting binaries into production; a release is the operator-mediated act of letting users see new behavior. The two must be separable, so that risky behavior can be turned on by a flag flip (seconds, reversible) instead of a re-deploy (minutes, requires CI, and may carry unrelated changes).
 
-The release surface is a **typed flag** (string-literal union or branded variant), not a free-form env var. The flag has documented states, a default, an owner, and a removal plan.
+The release surface is a **typed flag**, not a free-form env var. Two things are typed, and they're orthogonal:
+
+- **The flag keyspace** — *which flags exist*. A bounded union of flag identifiers (`type FeatureId = keyof typeof FLAGS`, or a string-literal union of names) so a typo'd slug is a compile error, not a silent always-off. This is the load-bearing invariant, and it holds whether each flag is a boolean or a richer value.
+- **The per-flag value** — a simple `boolean` is the common, fully-valid case. A multi-state union (`'classic' | 'v2-shadow' | …`) is worth it only when the *consumer* must branch differently per stage in code.
+
+Don't blur the two together: staging a rollout (shadow → canary → full) is usually done by *widening which subjects have a boolean on* (per-user, per-team, then global), **not** by encoding stages in the flag value. Either shape is disciplined; pick by whether the code paths actually differ per stage. Every flag — boolean or union — still needs a default, an owner, and a removal plan (unless it's a permanent operational/kill-switch/permission flag; see below).
 
 ## The Iron Rule
 
@@ -41,22 +46,44 @@ This is core to the DORA framing of "deployment frequency" being a *leading* ind
 You are violating the rule if any of these are true:
 
 - A risky feature ships by re-deploying main with the feature on; rollback plan is "revert and re-deploy."
-- A feature flag is a free-form env var like `ENABLE_NEW_CHECKOUT=true` with no typed wrapper and no enumerated states.
+- A feature flag is a free-form env var like `ENABLE_NEW_CHECKOUT=true` with no typed wrapper — the flag *name* isn't drawn from a bounded keyspace, so a typo reads as silently-off. (A boolean value is fine; an *untyped* flag identifier is the smell.)
 - A flag is set in code (`const USE_NEW_FLOW = true;`) and "released" by editing the constant and re-deploying.
-- A flag has no documented owner, no removal plan, and has been in the codebase >6 months.
+- A *release/experiment* flag has no documented owner, no removal plan, and has been in the codebase >6 months. (Operational/kill-switch/permission flags are permanent by design — see the taxonomy below.)
 - "Rollback" of a new feature requires editing data (because the old code can't read the new shape).
 - A feature was reverted by re-deploying an older commit, and that re-deploy lost an unrelated fix.
 - The codebase has 20+ accumulated flags from old launches, none of them removed.
 
 ## The Pattern
 
-### A typed flag, not a free-form env var
+### A typed flag keyspace, not a free-form env var
+
+The first and most important typing is *which flags exist* — a bounded keyspace of flag names. This is what the dominant production pattern (a `Record<FlagName, boolean>` registry) gets right:
 
 ```ts
-// ❌ Free-form, no enumeration, easy to typo.
+// ❌ Free-form name, easy to typo into a silent always-off.
 const useNewCheckout = process.env.ENABLE_NEW_CHECKOUT === 'true';
 
-// ✅ Typed, enumerated, defaulted.
+// ✅ Bounded keyspace: the flag *name* is typed; a typo is a compile error.
+const FLAGS = {
+  'checkout-v2': false,
+  'new-onboarding': false,
+} satisfies Record<string, boolean>;
+type FeatureId = keyof typeof FLAGS;
+
+function isEnabled(id: FeatureId, ctx: { userId?: UserId; teamId?: TeamId }): boolean {
+  // resolved per-subject: global default, overridden per-team, overridden per-user
+  return resolveFlag(id, ctx);
+}
+```
+
+Most flags are booleans, and that's correct. **Stage a rollout by widening the enabled cohort** — internal users → one team → 1% → everyone — not by adding stages to the value. The typed *keyspace* (not enumerated *states*) is the load-bearing invariant: setting an unknown flag name won't compile, and an unset flag reads as its safe default.
+
+#### When a multi-state value earns its keep
+
+Reach for a string-literal union *only when the consumer must run materially different code per stage* — most commonly a **shadow** stage that runs both paths and compares them. Then the value carries the branch:
+
+```ts
+// ✅ Multi-state value — justified because 'v2-shadow' is a distinct code path, not just a wider cohort.
 type CheckoutMode = 'classic' | 'v2-shadow' | 'v2-canary' | 'v2-full';
 
 const checkoutMode: CheckoutMode = (() => {
@@ -73,7 +100,7 @@ const checkoutMode: CheckoutMode = (() => {
 })();
 ```
 
-The typed union forces the consumer to handle every state via exhaustive switch. Adding a state is a deliberate code change; setting `CHECKOUT_MODE=v3` accidentally falls back to `classic` rather than corrupting behavior.
+The typed union forces the consumer to handle every state via exhaustive switch. Adding a state is a deliberate code change; setting `CHECKOUT_MODE=v3` accidentally falls back to `classic` rather than corrupting behavior. But if `canary` and `full` run the *same* code (differing only in *who* gets it), that distinction belongs in the cohort, not the value — a boolean plus targeting is the simpler shape.
 
 ### Five-stage rollout — the canonical sequence
 
@@ -93,14 +120,15 @@ Each stage is a flag flip — seconds, no deploy. If a stage misbehaves, flip ba
 ### Consuming the flag — discriminated branch with shared parsing
 
 ```ts
-// ❌ Boolean if/else — easy to drift; hard to A/B.
+// ❌ Branching on an *untyped* ad-hoc boolean — no bounded keyspace, no default discipline.
+//    (A typed boolean flag is fine; the smell is the free-form `useNewCheckout` with no registry.)
 if (useNewCheckout) {
   return placeOrderV2(input);
 } else {
   return placeOrderV1(input);
 }
 
-// ✅ Exhaustive over the flag's union.
+// ✅ When the stages are distinct code paths, branch exhaustively over the flag's union.
 async function placeOrder(input: CheckoutInput): Promise<Order> {
   switch (checkoutMode) {
     case 'classic':
@@ -158,11 +186,42 @@ Every flag has a short doc — in code or in a flag-platform UI:
  */
 ```
 
-The metadata isn't ceremony — it's the *only* thing that prevents the flag from becoming permanent debt.
+A JSDoc comment is the *minimum* — fine for an env-var or in-code flag. But a comment can't be queried, audited, or drive an automated stale-flag report, and it drifts silently. Once a flag lives in a store, put the metadata in **structured, queryable fields** so a scheduled job can surface stale flags on its own:
 
-### Removal is part of the plan
+```ts
+// Flag row — metadata as columns, not prose. A nightly job can now find stale flags.
+interface Flag {
+  slug: FeatureId;
+  type: 'RELEASE' | 'EXPERIMENT' | 'OPERATIONAL' | 'KILL_SWITCH' | 'PERMISSION';
+  enabled: boolean;
+  description: string;
+  owner: string;
+  stale: boolean;        // set by a job when lastUsedAt ages out — indexed
+  lastUsedAt: Date | null;
+  updatedAt: Date;
+  updatedBy: UserId | null;
+}
+```
 
-Every flag has a documented end state. After the feature is fully released and stable for ~one cycle (two weeks, a month — set explicitly), the flag and the old code path are *deleted*.
+The metadata isn't busywork — it's the *only* thing that prevents a release flag from becoming permanent debt, and the ">6 months = bug" rule is only *enforceable* if it's structured enough for a job to check.
+
+### Not every flag is transient — classify by kind
+
+The removal discipline below applies to flags that exist to *ship a change*. But Fowler's taxonomy (cited in the Reference) names kinds with different lifespans, and conflating them makes the ">6 months = bug" rule fire on flags that are permanent **by design**:
+
+| Kind | Purpose | Lifespan |
+|---|---|---|
+| **Release** | Ship new behavior gradually | Transient — remove after full rollout |
+| **Experiment** | A/B test a variant | Transient — remove after the experiment concludes |
+| **Operational** | Toggle a behavior for ops (degrade a feature under load) | **Permanent** |
+| **Kill switch** | Cut a risky subsystem fast in an incident | **Permanent** |
+| **Permission** | Gate a feature to a plan/role/entitlement | **Permanent** — it's product config, not debt |
+
+Production systems make this a first-class field — a `type` enum on the flag row (`RELEASE | EXPERIMENT | OPERATIONAL | KILL_SWITCH | PERMISSION`). The staleness rule and the Red Flags below apply to **release and experiment** toggles only; the rest are not bugs for living long.
+
+### Removal is part of the plan (for release & experiment flags)
+
+Every *release/experiment* flag has a documented end state. After the feature is fully released and stable for ~one cycle (two weeks, a month — set explicitly), the flag and the old code path are *deleted*.
 
 The flag-removal PR:
 
@@ -222,7 +281,7 @@ You have env vars. Start there. Migrate to a config service when you need runtim
 
 ### "Flags become permanent debt"
 
-Only if you let them. The rule's removal-plan half is *equally important* as the introduction half. Document the target removal date in the flag's comment; track it in your issue tracker; treat a 6-months-old flag as a bug.
+Only if you let them. The rule's removal-plan half is *equally important* as the introduction half. Document the target removal date; track it in your issue tracker; treat a 6-months-old *release/experiment* flag as a bug. (Classify the flag first — operational, kill-switch, and permission flags are permanent and don't count as debt.)
 
 ### "We need the new feature on for everyone immediately"
 
@@ -232,8 +291,8 @@ Then the flag's stages compress — shadow for one day, canary for one day, full
 
 - A "feature flag" that's actually `process.env.ENABLE_X === 'true'` with no typed wrapper.
 - A PR description that includes "deploy plan: announce in chat, then merge and watch metrics."
-- A boolean flag that has two states forever (no shadow / canary / cleanup planning).
-- A flag that's been in the codebase >6 months with no removal plan.
+- An *untyped, unscoped* boolean — a raw `process.env.X` with no bounded keyspace and no per-subject targeting, so it can only flip globally and a typo'd name reads as off. (A typed boolean scoped per-user/team is *not* a red flag — it's the common good shape.)
+- A *release or experiment* flag that's been in the codebase >6 months with no removal plan. (Operational / kill-switch / permission flags are exempt — they're permanent by design.)
 - A flag whose default is on but the code still has the off branch — old branch is dead code.
 - A migration PR with no flag — the change goes from "off" to "on for 100% of users" the moment the deploy lands.
 - 10+ active flags with no inventory or owners.

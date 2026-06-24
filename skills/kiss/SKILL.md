@@ -97,6 +97,8 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 
 **Action:** Write the type by hand. If it doesn't catch a real bug a unit test would miss, it's not earning its complexity.
 
+*Exception:* a conditional type earns its keep when it derives a type that genuinely *can't* be hand-written — e.g. a polymorphic `as`-prop component whose accepted props must be `JSX.IntrinsicElements[T]`. The test is whether a plain type expresses the same constraint, not whether `infer` appears. (A conditional type that merely reshapes a known query result is the kind to delete.)
+
 ### 5. "It's a fun puzzle to read"
 
 **Pressure:** "Reading clever code is part of the craft."
@@ -108,8 +110,8 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 ## Red Flags
 
 - A line that takes longer to read than to copy-paste
-- Nested ternaries (`x ? a : y ? b : c`)
-- A method chain longer than 4 calls without an intermediate variable
+- Nested ternaries over un-named conditions (`x ? a : y ? b : c`) — the offense is the inlined logic, not the ternary form; name the conditions or extract a lookup
+- A method chain longer than 4 calls without an intermediate variable — *or* any chain (any length) that mixes transforms with a `.sort()`/in-place mutation, or chains off a possibly-`undefined` value
 - A regex longer than ~30 characters without a comment
 - Type-level wizardry (`infer`, conditional types, deep mapped types) where a plain type would do
 - A function whose generic signature is more code than its body
@@ -122,7 +124,8 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 | Symptom | Action |
 |---|---|
 | "Elegant" one-liner | Expand to clear multi-line |
-| Nested ternary | Convert to `if` / `else` |
+| Nested ternary as a *statement* (branching control flow) | Convert to `if` / `else` |
+| Nested ternary assigning one value to a `const` | Extract a helper or lookup map that returns the value — keep it `const`, don't introduce a mutable `let` |
 | Method chain ≥ 5 calls | Break into named intermediate steps |
 | Long inline regex | Several simple checks, or a commented constant |
 | Type-level inference | Hand-write the types |

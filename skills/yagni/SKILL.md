@@ -31,6 +31,8 @@ NEVER add capability before a real need exists. Wait for the second occurrence.
 - Not for "best practices say to include it"
 - Not for "I'm planning for scale"
 
+Count *real, exercised* implementations toward the "second occurrence." A `Noop`/null-object/identity fallback or an unreachable branch does **not** count as a second one. A factory that returns the same concrete type from every branch (or carries a TODO list of future types) has *one* implementation — no matter how many `if`s it contains — so the abstraction is still speculative.
+
 ## Detection: The Speculation Smell
 
 If your justification contains "might," "probably," "in case," or "eventually" — STOP:
@@ -130,6 +132,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 - A function parameter that callers always set the same way
 - The phrase "while I'm at it, let me also…"
 - An abstraction extracted on the first occurrence
+- Commented-out code or a dead `if`/branch kept "in case" a disabled feature returns (`// return [..., "office365"].includes(type)`)
 
 **All of these mean: delete the speculation. Build the concrete version.**
 
@@ -139,6 +142,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 |---|---|
 | Interface with one implementation | Delete the interface; inline the class |
 | Config option no caller sets | Delete the option; hardcode the default |
+| Commented-out / disabled speculative branch | Delete it; git history is the "in case" backup |
 | `Strategy` / `Factory` / `Manager` with one mode | Inline as a function |
 | "Just-in-case" schema column | Drop the column; add it when needed |
 | Pre-built cache / retry without measurement | Remove; add when profiling shows the need |

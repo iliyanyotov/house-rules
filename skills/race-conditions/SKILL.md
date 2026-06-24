@@ -97,6 +97,8 @@ function Countdown({ targetMs }: { targetMs: number }) {
 }
 ```
 
+`clearInterval` stops *future* fires but does **not** cancel an iteration already running. If the callback awaits (a `fetch` or mutation), the in-flight result can still land after cleanup — so pair the timer cleanup with an `AbortController`/`isMounted` guard: a `setInterval` whose body does `await fetch(...)` then `setState` needs *both* `clearInterval(id)` and a signal or guard.
+
 If a callback can fire after unmount (long-running timer, subscription with no abort) and you can't cancel it, guard with an `isMounted` ref — to drop a *stale* async result, not to dodge the harmless post-unmount no-op:
 
 ```tsx
@@ -145,6 +147,8 @@ async function withdraw(userId: UserId, amountCents: number) {
   });
 }
 ```
+
+The interactive `transaction(async tx => ...)` form is only needed when a later write *depends on* an earlier read, or you need an explicit row lock. Several writes that must land all-or-nothing but have no read-then-write between them just need one atomic batch — `db.batch([updatePayment, updateBooking])` — not the heavier interactive transaction.
 
 This covers the **single-row** read-then-write. When the invariant spans *multiple* rows (a sum of bookings, "at least one doctor on call", a uniqueness rule), a row lock on what you read isn't enough — the database's *isolation level* decides which anomalies (lost update, write skew, phantom) are even possible, and a plain transaction runs at a level that permits several. Choosing the isolation level or lock for the anomaly is its own database-side discipline; the `transaction-isolation` skill covers it.
 

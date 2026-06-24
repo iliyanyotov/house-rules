@@ -61,7 +61,7 @@ You are violating the rule if any of these are true:
 
 ### Three kinds of seam, ordered from cleanest to ugliest
 
-1. **Function-parameter seam** (cleanest) — add a parameter for the dependency; default it to the production value in the wrapper that production uses.
+1. **Function-parameter seam** (cleanest) — add a parameter for the dependency; default it to the production value in the wrapper that production uses. (Defaulting is a *retrofit* technique — it keeps the production call unchanged while you add tests. For code you're designing fresh, prefer a **required** parameter so the dependency can't be hidden again; see `functional-core-imperative-shell`.)
 2. **Constructor / closure seam** — for class methods or factory functions, accept the dependency at construction.
 3. **Module-import seam** (ugliest, last resort) — use module-mocking to swap the imported value at test time. Only when 1 and 2 aren't feasible (framework-bound code: route handlers, framework hooks).
 
@@ -81,7 +81,7 @@ export async function findStaleSessions() {
 type DbLike = Pick<typeof db, 'select'>;
 
 export async function findStaleSessions(
-  now: Date,
+  now: Date = new Date(),
   database: DbLike = db,
 ) {
   const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -92,7 +92,7 @@ export async function findStaleSessions(
 Production:
 
 ```ts
-const stale = await findStaleSessions(new Date());
+const stale = await findStaleSessions();   // both seams default to production values
 ```
 
 Test:
@@ -160,7 +160,7 @@ test('sends with the expected from address', async () => {
 
 ### Three cheap seams in one class — and zero module-mocking
 
-The seam types stack. A single class often has several hard dependencies — raw I/O (`fetch`), a collaborator (a repository/client), and the clock (`Date`). The first two get a cheap constructor seam, *defaulted to their production value*, so production constructs the object exactly as before while tests reach each one through a parameter — no module-mocking, no `globalThis.fetch =`. The clock is the exception: it needs no seam at all, because the test runner can freeze `new Date()` directly with fake timers. Inject what the runtime can't stub; don't inject what it can.
+The seam types stack. A single class often has several hard dependencies — raw I/O (`fetch`), a collaborator (a repository/client), and the clock (`Date`). The first two get a cheap constructor seam, *defaulted to their production value*, so production constructs the object exactly as before while tests reach each one through a parameter — no module-mocking, no `globalThis.fetch =`. The clock is the exception: it needs no seam at all, because the test runner can freeze the system clock directly with fake timers — which control *both* `new Date()` and `Date.now()`, so neither needs a parameter seam. Inject what the runtime can't stub; don't inject what it can.
 
 ```ts
 // ❌ Three hidden dependencies: real fetch, real Date, a `new`-ed client.
@@ -315,7 +315,7 @@ The indirection costs: one parameter, one default value. The benefit: every futu
 
 ### "Dependency injection frameworks are overkill"
 
-We're not talking about a DI framework. We're talking about *function parameters*. TS makes this cheap because the parameter type is a `Pick<>` of just what's used — no interface declarations, no container, no annotations. The "DI framework overkill" objection conflates DI containers with the pattern of passing dependencies in.
+We're not talking about a DI framework. We're talking about *function parameters*. TS makes this cheap because the parameter type is a `Pick<>` of just what's used — no interface declarations, no container, no annotations. The "DI framework overkill" objection mixes up DI containers with the pattern of passing dependencies in.
 
 ### "I'll just mock the import"
 

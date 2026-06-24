@@ -92,7 +92,7 @@ The boundary is `email: SendFn` — an injected adapter at the edge of your code
 
 ### Build domain entities with a schema-driven factory — don't mock them
 
-Where do `makeUser` / `makeInvoice` come from? A factory generates a valid entity *from its schema* and merges your overrides. The base is valid-by-construction; you specify only the fields the test cares about.
+Where do `makeUser` / `makeInvoice` come from? A factory builds a valid entity and merges your overrides — you specify only the fields the test cares about. Two common styles: **hand-curated** defaults (you write the base values once, in faker or plain literals) or **schema-generated** (a generator derives a valid instance from the schema). Hand-curated is the common case and needs no extra tooling; schema-generated auto-reflects schema changes if you have a generator.
 
 ```ts
 // generateMock: produce a valid sample value from a schema (e.g. zod's generators,
@@ -117,7 +117,7 @@ const user = { id: '1', status: 'active' } as unknown as User;
 const user = mock<User>({ status: 'active' });
 ```
 
-Both anti-patterns (a) **drift from the real schema** — the cast satisfies the compiler, not the validator, so an invalid `User` sails through; (b) **couple the test to fields it doesn't care about** — add a required field and you hand-edit every literal; (c) **hide shape changes** — when `User` gains or renames a field, the casts compile silently while the factory's `generateMock(userSchema)` reflects the new shape automatically.
+Both anti-patterns (a) **drift from the real schema** — the cast satisfies the compiler, not the validator, so an invalid `User` sails through; (b) **couple the test to fields it doesn't care about** — add a required field and you hand-edit every literal; (c) **hide shape changes** — when `User` gains or renames a field, the casts compile silently, while a factory updates in *one* place (and with a schema-generator, reflects the new shape automatically).
 
 The split is the same rule as everywhere in this skill: **construct domain objects (via factories from the schema); reserve mocks for the boundaries** the unit talks to (DB / HTTP / external SDK). Factories keep test data valid-by-construction and refactor-safe; mocks stay at the seam.
 
@@ -173,6 +173,8 @@ test('createOrder persists with status=pending', async () => {
 
 The mocked test gives false confidence — a typo in the column name, a missing index, a wrong table — the mock catches none of them. The DB test catches all of them because the boundary is exercised.
 
+A two-tier split is the common production pattern: unit tests *may* mock the DB boundary with a **typed deep mock** of the client (so column/method typos are still caught by the types), while a separate integration suite — run on its own in CI — exercises the real schema. What's forbidden is letting a mocked DB be your *only* DB coverage: if you mock the client in a unit test, there must be an integration test that runs the real query.
+
 Setup costs are real but bounded: spin up a test DB in `beforeAll`, reset between tests, drop in `afterAll`. Modern test runners keep this snappy.
 
 ### When a unit needs too many mocks — split the unit
@@ -217,7 +219,7 @@ Each leaf tests in isolation with 1–2 mocks. The orchestrator gets a small int
 
 ### "Mocking is faster than setting up a real DB"
 
-For one test, yes. Across the whole suite, no — real DB tests catch real bugs, and setup amortizes. Modern test runners with prepared fixtures keep DB tests under 100ms each. The "fast" mock test is also the test that lets a column-name typo ship.
+For one test, yes. Across the whole suite, no — real DB tests catch real bugs, and the setup cost is paid once and spread across every test. Modern test runners with prepared fixtures keep DB tests under 100ms each. The "fast" mock test is also the test that lets a column-name typo ship.
 
 ### "Mocks isolate the unit-under-test"
 

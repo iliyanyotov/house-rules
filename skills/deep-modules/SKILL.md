@@ -42,6 +42,7 @@ You are violating the rule if any of these are true:
 - A package's README has 30 named functions and you can't tell which one to start with.
 - Two callers always call `A`, `B`, `C` in the same order — that's not three functions, that's one.
 - A change to internal behavior requires updating five public signatures.
+- A module exports a high-level operation everyone imports *and* the lower-level helpers it composes — but those helpers have zero external callers. They're dead public surface widening the interface for nothing; stop exporting them (see `dead-code-deletion-on-sight`).
 
 ## The Pattern
 
@@ -168,7 +169,7 @@ Utilities are the worst offenders. They grow public-by-accident: someone exposes
 
 - A module's `index.ts` re-exports everything in the directory.
 - A function with `Options` or `Config` parameter containing 8+ fields.
-- A wrapper function whose body is `return underlying(...args)` plus minor renaming.
+- A wrapper whose body is `return underlying(...args)` plus minor renaming — *or* one that only bakes in a default or two every caller would pass anyway (a `post()` over a deeper `request()` that just sets the method and `JSON.stringify`s the body). It's still tax: it hides the defaults shallowly without removing any *decision*. A wrapper earns its keep only when it absorbs a real decision — a retry policy, a template, an auth step — the caller would otherwise have to make.
 - A class with public method counts in the double digits.
 - A README that documents 20 separate functions with no "start here" entry.
 - A code review that asks "should I import the helper or build it inline" — that's a sign the helper isn't load-bearing enough to exist.
@@ -191,6 +192,7 @@ Utilities are the worst offenders. They grow public-by-accident: someone exposes
 
 - `single-responsibility` — "one reason to change" is not "small surface"
 - `interface-segregation` — both hide; the module hides implementation, ISP hides unused methods
+- `dead-code-deletion-on-sight` — exported helpers with zero external callers are dead public surface
 
 ## Reference
 

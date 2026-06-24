@@ -236,7 +236,7 @@ So in a DTO codebase the rule sharpens rather than disappears:
 if (booking.status === 'confirmed' && booking.startsAt > now && !booking.cancelledAt) {
   // ... cancel
 }
-// src/services/booking/rescheduleBookingService.ts  — the SAME rule, drifting
+// src/services/booking/rescheduleBookingService.ts  — the SAME rule, ALREADY divergent
 if (booking.status === 'confirmed' && booking.startsAt > now) { /* ... */ }
 
 // ✅ One domain module owns the rule; services tell.
@@ -251,6 +251,8 @@ export function cancelBooking(booking: Booking, now: Date): CancelResult {
 ```
 
 The entity stays a pure DTO; the *behavior* concentrates in one named module per entity instead of smearing across every service that handles it. If your services each carry their own `if (entity.status === …)` rule, that's the violation — not the absence of methods on the entity.
+
+Note the two copies above are already *inconsistent* — `cancel` checks `!cancelledAt`, `reschedule` forgot it. Duplicated rules don't merely risk drifting later; they routinely ship divergent from day one. The single owner (`canCancel`) makes that impossible.
 
 **The guard:** "entities must be plain data" justifies *no methods on the type*. It does **not** justify scattering the entity's rules across its callers. Give the entity a domain-function module and tell *it*.
 
@@ -292,6 +294,7 @@ Apply incrementally. Next time you'd write `if (entity.x === ...)` outside the e
 - A `validators/` directory disconnected from the types it validates.
 - A workflow function whose body is a long `if/else` over entity state.
 - A bug post-mortem where "we forgot to check X in one place." The rule was duplicated; only one copy got fixed.
+- **The flag-bag half-measure:** `isConfirmed` / `isCancelled` booleans extracted into a context object — but computed in a *caller* (a UI component, a context-builder) rather than the entity's domain module, while other code still re-reads raw `entity.status`. The tell is that the flags and the raw checks coexist with no single owner. The fix is still a per-entity domain module — but the booleans must *originate* there, not be derived ad hoc upstream.
 - A "feature envy" smell — function uses another module's fields more than its own arguments.
 
 **All of these mean: the decision belongs in the module that owns the data, not in the caller.**
