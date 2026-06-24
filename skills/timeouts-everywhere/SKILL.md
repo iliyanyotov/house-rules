@@ -198,7 +198,7 @@ async function fulfillOrder(orderId: OrderId): Promise<void> {
     signal: AbortSignal.any([outer, AbortSignal.timeout(5_000)]),
   });
   const charge = await payments.charge({ orderId }, { signal: outer });
-  await orders.markFulfilled(orderId);
+  await orders.markFulfilled(orderId, { signal: outer });
 }
 ```
 

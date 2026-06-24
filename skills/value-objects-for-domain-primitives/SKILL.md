@@ -209,7 +209,7 @@ export const IsoDate = {
     return d.toISOString() as IsoDate;
   },
   parse(s: string): IsoDate {
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(s)) {
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(s)) {
       throw new Error(`Not an ISO date: ${s}`);
     }
     return s as IsoDate;

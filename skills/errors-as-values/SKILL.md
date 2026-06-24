@@ -7,14 +7,14 @@ description: Use when a function can fail in more than one distinguishable way a
 
 ## Overview
 
-**When a failure is real and the caller must distinguish its causes, model it as a typed value — a discriminated `Result<T, E>` whose `E` is an exhaustive union — not a thrown exception, not a `string`, not a bare `Error`.** The success and the failure both travel in the return type. The caller pattern-matches; the compiler enforces that every failure case is handled.
+**When a failure is real and the caller must distinguish its causes, the default is to model it as a typed value — a discriminated `Result<T, E>` whose `E` is an exhaustive union — not a `string`, not a bare `Error`.** The success and the failure both travel in the return type. The caller pattern-matches; the compiler enforces that every failure case is handled. (There is one disciplined alternative — a typed error thrown to a *single* top-level boundary; see "When throwing is the right call." What's never acceptable is a *stringly-typed* error, return or throw.)
 
 A thrown exception is invisible in the signature: nothing tells the caller it can happen, what causes it, or which causes are distinct. A typed error value is the opposite — it is *in the type*, exhaustive, and checkable.
 
 ## The Iron Rule
 
 ```
-NEVER signal a distinguishable, recoverable failure by throwing or by a stringly-typed error. Return Result<T, E> with E a discriminated union.
+NEVER signal a distinguishable, recoverable failure with a stringly-typed error. Return Result<T, E> with E a discriminated union by default — or, as a disciplined alternative, throw a *typed* error to one top-level boundary (see "When throwing is the right call"). Never a bare string.
 ```
 
 **No exceptions:**

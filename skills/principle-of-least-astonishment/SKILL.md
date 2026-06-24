@@ -24,7 +24,7 @@ If you have to read the body to know what the function does, the name is wrong.
 The rule has three dimensions:
 
 1. **Names match behavior.** `compute` shouldn't mutate. `find` shouldn't throw on not-found (use `findOrThrow` if it does). `save` shouldn't read.
-2. **Signatures match conventions.** A function returning `Promise<T>` must actually await something. Parameter order must match the convention callers expect.
+2. **Signatures match conventions.** A function returning `Promise<T>` should actually be async on *some* path — don't make it `async` if *every* path is synchronous (see "Async functions are honest about being async"). Parameter order must match the convention callers expect.
 3. **Side effects are discoverable.** If a function logs, queues a job, mutates a parameter, or talks to the network — its name should say so.
 
 ### Names match behavior

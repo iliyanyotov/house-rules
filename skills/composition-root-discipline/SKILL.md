@@ -16,7 +16,7 @@ The load-bearing invariant is **no construction outside a composition root**, no
 ## The Iron Rule
 
 ```
-NEVER instantiate a service, repository, or client outside the one composition root.
+NEVER instantiate a service, repository, or client outside a composition root (one in a small app; a handful of per-feature roots in a large one — never inline in the consumers).
 ```
 
 **No exceptions:**

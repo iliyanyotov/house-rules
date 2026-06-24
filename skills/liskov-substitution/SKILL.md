@@ -20,7 +20,7 @@ NEVER create a subtype that breaks the supertype's contract — no throw-in-over
 **No exceptions:**
 - Not for "it's the standard approach"
 - Not for "I'll note it as an anti-pattern"
-- Not for "the requirements say to extend it"
+- Not for "the requirements say to extend it" — push back first (the requirement usually doesn't *force* a broken hierarchy). If it genuinely does, that's not an exception to the rule; it's a known violation you document as tech debt and accept (see Pressure Resistance), eyes open.
 - Not for "throwing makes the limitation explicit"
 
 ## Why

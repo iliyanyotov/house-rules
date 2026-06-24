@@ -52,7 +52,7 @@ You are violating the rule if any of these are true:
 - A function imports a side-effecting module at the top and calls it inside its body, with no way to substitute the import for a test.
 - A "test" relies on a real network, real DB, real filesystem, real wall-clock time.
 - A test uses module-mocking (replacing whole modules at import time) to substitute 3+ modules per file.
-- A test sets `globalThis.fetch = mockFn` or `Date.now = () => fixedTime` as setup.
+- A test *hand-patches* a global as setup — `globalThis.fetch = mockFn`, or `Date.now = () => fixedTime` written by hand. (Freezing the clock via your test runner's built-in fake timers is *not* this — that's the approved tool for the clock; see "Three cheap seams." The smell is manual monkey-patching, not clock control itself.)
 - A unit test takes more than ~50ms to run.
 - A bug fix is blocked on "we'd need to refactor a lot first."
 - The phrase "it's tested in integration" appears for code where unit-level coverage would be cheaper.
@@ -102,6 +102,9 @@ test('finds sessions older than 7 days', async () => {
   const fakeDb = {
     select: () => ({ from: () => ({ where: () => Promise.resolve([{ id: 's1' }]) }) }),
   };
+  // Both seams supplied: a fixed `now` and a fake db. The fake returns a canned
+  // row, so this test exercises the *seam wiring* — that `now` and `db` flow in;
+  // assert the cutoff arithmetic separately against the cutoff the fake receives.
   const result = await findStaleSessions(new Date('2026-05-17'), fakeDb);
   expect(result).toEqual([{ id: 's1' }]);
 });

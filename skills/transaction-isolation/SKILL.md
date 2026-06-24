@@ -128,7 +128,7 @@ async function goOffCall(doctorId: DoctorId, shiftId: ShiftId) {
 async function goOffCall(doctorId: DoctorId, shiftId: ShiftId) {
   await db.transaction(async (tx) => {
     // FOR UPDATE on the parent: a second transaction blocks here until the first commits.
-    await tx.select().from(shiftRows).where(eq(shiftRows.shiftId, shiftId)).for('update');
+    await tx.select().from(shifts).where(eq(shifts.shiftId, shiftId)).for('update');
     const onCall = await tx.select().from(shifts)
       .where(and(eq(shifts.shiftId, shiftId), eq(shifts.onCall, true)));
     if (onCall.length <= 1) throw new MinimumCoverageError();

@@ -169,8 +169,8 @@ const retryAfterMs = (err: unknown): number | undefined => {
   return h ? Number(h) * 1000 : undefined;   // seconds → ms
 };
 
-// In the loop: server value wins, still capped by the remaining budget.
-const delay = Math.min(retryAfterMs(err) ?? Math.random() * expBackoff, budgetRemaining);
+// In the loop: server value wins, still capped by `remaining` (the budget left, from the canonical loop above).
+const delay = Math.min(retryAfterMs(err) ?? Math.random() * expBackoff, remaining);
 ```
 
 On a 429/503 carrying `Retry-After` (or `RateLimit-Reset`), the server is telling you exactly when it'll be ready — that value beats client backoff. Without a hook for it, "honor `Retry-After`" is advice the loop can't follow.

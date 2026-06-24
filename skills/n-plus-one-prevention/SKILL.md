@@ -17,11 +17,13 @@ N+1 is the pattern where you fetch N items, then make N more queries to get rela
 NEVER put a database query inside a loop. One query for the list; one query for each relation.
 ```
 
-**No exceptions:**
+**No exceptions** — including but not limited to:
 - Not for "it's only a few items"
 - Not for "the query is fast"
 - Not for "we'll cache it"
 - Not for "the ORM handles it"
+- Not for "it's simpler to loop"
+- Not for "it's an internal endpoint"
 
 ## Why
 

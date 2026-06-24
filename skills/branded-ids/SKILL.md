@@ -50,7 +50,7 @@ declare const brand: unique symbol;
 export type Brand<T, B extends string> = T & { readonly [brand]: B };
 ```
 
-Two lines. Zero runtime cost. The `unique symbol` makes the brand uncolonisable from outside the file.
+Two lines. Zero runtime cost. The `unique symbol` makes the brand impossible to forge from outside the file.
 
 ### Defining branded IDs
 

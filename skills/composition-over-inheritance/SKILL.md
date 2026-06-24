@@ -19,7 +19,7 @@ NEVER use inheritance when composition would work. Default to composition; reach
 
 **No exceptions:**
 - Not for "it's the OOP way"
-- Not for "is-a relationship"
+- Not for an *assumed* "is-a relationship" (a true is-a that passes the substitutability test is the legitimate exception — see "When inheritance *is* the right tool")
 - Not for "code reuse via extends"
 - Not for "polymorphism"
 

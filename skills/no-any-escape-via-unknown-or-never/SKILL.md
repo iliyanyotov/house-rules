@@ -44,7 +44,7 @@ You are violating the rule if any of these are true:
 
 - `: any` appears in a parameter, return, field, or variable annotation.
 - `as any` appears anywhere outside a *single* declared boundary adapter for a typeless library.
-- `Array<any>`, `Record<string, any>`, `Promise<any>`, `Map<string, any>`.
+- `Array<any>`, `Record<string, any>` (for non-telemetry data — see the metadata/JSON-column pattern), `Promise<any>`, `Map<string, any>`.
 - `// @ts-ignore` or `// @ts-expect-error` without an inline reason comment naming the constraint.
 - A function returns `unknown` and the caller immediately `as`-casts instead of narrowing.
 - An `exhaustive-switch`'s `default` branch handles a real future variant via `as any` cast, not `never`.

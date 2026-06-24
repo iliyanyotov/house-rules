@@ -30,7 +30,7 @@ A domain has a vocabulary. *"Consultation."* *"Diagnosis."* *"Pull request."* *"
 When developers invent parallel vocabulary, three things happen:
 
 1. **Translation tax.** Every discussion between developers and non-developers has a translation step. Every onboarding requires learning two glossaries.
-2. **Domain drift.** When the business pivots, the code lags — because what the business now calls X is still called Y in code. Refactor-or-renaming-debt accumulates.
+2. **Domain drift.** When the business pivots, the code lags — because what the business now calls X is still called Y in code. Renaming debt accumulates.
 3. **Bug-class via mis-mapping.** A developer maps "user" to the User entity when the business actually meant "customer" (a different entity). The bug surfaces at runtime, in production, in a spreadsheet of weird records.
 
 The fix is structural: **adopt the domain's words and update them when the domain updates them.** Names in code are not for developers; they're for everyone who reads the code over the project's lifetime — including the future you who's forgotten what `proc_v2_holder` was supposed to mean.
