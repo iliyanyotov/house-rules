@@ -30,7 +30,7 @@ Claude Code indexes the `description:` from every installed skill and loads the 
 
 ## Writing or fixing one
 
-Every skill follows [`SKILL_TEMPLATE.md`](./SKILL_TEMPLATE.md): trigger-only frontmatter, one of three body shapes (posture, pattern reference, or technical rule), generic examples, 2–4 citations. Run new skills through the checklist at the bottom of the template before opening a PR.
+Every skill follows [`SKILL_TEMPLATE.md`](./SKILL_TEMPLATE.md): trigger-only frontmatter, an honestly labeled invariant/default/heuristic, generic examples, and 2–4 citations. Run new skills through the checklist at the bottom of the template before opening a PR.
 
 Bar for changes: show me the code where this rule would have prevented the bug.
 
