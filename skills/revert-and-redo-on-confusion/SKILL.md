@@ -69,7 +69,8 @@ Every refactor or debugging session starts from a known-good state. Confirm the 
 
 ```bash
 # Before starting work — confirm everything passes.
-npm test && npm run type-check && npm run lint
+bun test && bun run type-check && bun run lint
+# (npm: npm test && npm run type-check && npm run lint — same idea, any runner)
 
 # Confirm there are no unrelated local changes.
 git status --short

@@ -8,7 +8,7 @@ Every skill comes from the same four places: the books and talks worth re-readin
 
 ## What's in it
 
-Type-driven correctness, module shape, resilience, testing discipline, change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Node.js / Postgres; the rules themselves are language-agnostic.
+Type-driven correctness, module shape, resilience, testing discipline, security (authorization, injection, supply chain), async correctness, change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Bun / Node.js / Postgres; the rules themselves are language-agnostic.
 
 ## How a skill works
 

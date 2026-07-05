@@ -213,6 +213,9 @@ That's about boundaries you don't control. Within one process, the boundary is t
 - `make-illegal-states-unrepresentable` — parsing yields the narrowed/union type
 - `no-any-escape-via-unknown-or-never` — narrow from `unknown`, never `any`
 - `prefer-type-inference-annotate-at-boundaries` — annotate the boundary, infer inward
+- `fail-fast` — env/config at startup is a parse boundary too: one typed parse at boot, refuse to start on failure
+- `authorize-every-access` — parsing proves the shape is legal; authorization proves *this caller* may act on *this object* — different questions
+- `parameterize-every-query` — a parsed value is still data: bind it, never concatenate it into an interpreter
 
 ## Reference
 

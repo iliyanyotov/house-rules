@@ -300,6 +300,7 @@ It's a smaller hassle than the breach. Secret managers make rotation a 5-minute 
 
 - `fail-fast` — reject missing/malformed secrets at startup, at the boundary
 - `parse-dont-validate` — parse secrets into a typed env at the boundary, once
+- `pin-and-verify-dependencies` — the sibling intake risk: install-time supply chain compromise steals the secrets this skill protects
 
 ## Reference
 

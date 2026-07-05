@@ -194,6 +194,10 @@ They will — from logs, metrics, breaker state. They don't need to know via *ev
 
 A bare `try { ... } catch { return null; }` collapses three states (loading, broken, empty) into one. The caller can't tell what happened. Push the criticality decision into the *fan-out shape*, not into ad-hoc try/catch.
 
+### "We built a fallback path, so we're covered"
+
+A fallback that only runs during incidents is code that is never exercised until the worst possible moment — and then it runs cold, under the exact load that triggered it. AWS's engineering guidance argues against *static fallback* for precisely this reason: the untested branch becomes the outage. Prefer fallbacks that run continuously as part of the normal path (the cache you read on every request, the default you render whenever data is absent), keep designed fallbacks trivially simple, and exercise the degraded path routinely — a forced-degrade toggle in staging beats discovering the fallback's own bug mid-incident.
+
 ## Red Flags
 
 - A `Promise.all` of mixed-criticality fetches.
@@ -227,3 +231,4 @@ A bare `try { ... } catch { return null; }` collapses three states (loading, bro
 - Michael Nygard, *Release It!* 2e (2018) — *steady state* and *fail fast* patterns. Stability is achieved by isolating failure domains, not by preventing all failures.
 - Netflix Hystrix design notes — *fallback* as a first-class concept in resilience. The library is in maintenance, but the pattern is canonical.
 - Google SRE Book, ch. 4 ("Service Level Objectives") — different features can have different SLOs; the page's overall SLO is *not* the AND of all feature SLOs unless you design it that way.
+- Jacob Gabrielson, ["Avoiding fallback in distributed systems"](https://aws.amazon.com/builders-library/avoiding-fallback-in-distributed-systems/) (AWS Builders' Library) — the counterweight: rarely-exercised fallback code fails when first exercised; prefer continuously-run degraded paths over incident-only branches.

@@ -44,6 +44,7 @@ You are violating the rule if any of these are true:
 - A field is typed as `string` with a code comment "must be a valid email" or "ISO-8601 date" or similar.
 - The same validation regex / range check appears in 3+ files.
 - Worse than a re-checked range: re-implemented *conversion* logic. A `convertToSmallestUnit(amount, currency)` copy-pasted across modules carries an embedded constant table (which currencies are zero-decimal) that drifts between copies — so the same input converts differently depending on which file you import. That's a correctness bug, not just duplication; one `Money` factory owns one table.
+- A money amount lives in a binary float — a fractional-dollar `number`, a `real`/`double precision` column — instead of integer minor units or a decimal type.
 - A bug post-mortem cites "passed cents but expected dollars" or "wrong currency added."
 - Two function parameters of the same primitive type can be swapped without a typecheck error, and getting the order wrong is a real risk.
 
@@ -108,6 +109,8 @@ function chargeCustomer(customerId: CustomerId, amount: Money) {
   // `amount` is already valid. Just use it.
 }
 ```
+
+The integer `minorUnits` field is itself the load-bearing choice, not a style preference. IEEE-754 binary floats cannot represent most decimal fractions — `0.1 + 0.2 !== 0.3` — so float money accumulates off-by-a-cent errors that surface months later as reconciliation failures nobody can trace to a single line. Store integer minor units (or a true decimal type — Postgres `numeric`, never `real`/`double precision`) end to end, and convert to display units only at the formatting edge, as `toString` does above.
 
 Whether money may be **negative** is a per-domain decision, not a universal law: a charge amount is non-negative, but a refund, a ledger delta, or an account balance is legitimately signed. The example above enforces non-negative as *one* domain's rule — model a signed `LedgerAmount` separately rather than forcing every money type through the same non-negativity check.
 
