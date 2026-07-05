@@ -232,6 +232,8 @@ Internal endpoints get hit by cron, by background jobs, by data exports, by retr
 
 - `transaction-isolation` — both DB-query disciplines invisible until scale
 - `race-conditions` — invisible-until-scale data-access bugs
+- `cap-async-fan-out` — after collapsing per-item queries into one batch, cap the concurrency of what legitimately remains a fan-out
+- `paginate-unbounded-reads` — the sibling bound: this skill caps query *count* per request; that one caps result *size* per query
 
 ## Reference
 

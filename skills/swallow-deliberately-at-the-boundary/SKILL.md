@@ -199,6 +199,7 @@ There is exactly one place a `catch` may decline to re-throw: an optional step, 
 - `fail-fast` — the inverse it carves an exception to
 - `graceful-degradation-defaults` — sibling deliberate-fallback pattern
 - `dead-letter-and-replay` — owed optional work: defer instead of drop
+- `no-floating-promises` — the reporting `.catch` this skill requires is that skill's mandatory observation; a detached best-effort call satisfies both or neither
 
 ## Reference
 

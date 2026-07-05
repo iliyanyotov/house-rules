@@ -248,6 +248,7 @@ Then your queries scan an ever-growing set of soft-deleted rows. The optimizer s
 
 - `idempotency-keys-on-writes` — the keys table grows; it needs a purge
 - `dead-letter-and-replay` — the dead-letter table grows; it needs a purge
+- `paginate-unbounded-reads` — this skill bounds what you *store*; that one bounds what a single query *reads* — same bounded-batch discipline
 
 ## Reference
 
