@@ -29,7 +29,7 @@ The same idea applies in reverse, to **outbound** delivery you own: a webhook or
 
 You control your own writes; you can re-run them. You do **not** control a third party's event stream. When a webhook handler throws, one of two bad things happens: the producer gives up after its own retry budget and the event is **lost forever**, or the producer retries indefinitely and a single **poison event** hammers you on every redelivery. Either way, your data silently drifts out of sync with the source of truth, and you find out days later from a confused user.
 
-The fix is structural. Store the **raw, unparsed** event the moment processing fails, with enough metadata to replay it. Bound in-line retries so a poison event can't loop. Make the handler idempotent so replay — manual or automated — is always safe. The dead-letter table becomes the durable record of "things we received but couldn't yet process," and replay turns a lost event into a recoverable one.
+The fix is structural. Store the **raw, unparsed** event the moment processing fails, with enough metadata to replay it. Bound in-line retries so a poison event can't loop. Make the handler idempotent so replay — manual or automated — is always safe. The dead-letter table becomes the durable record of "things we received but couldn't yet process", and replay turns a lost event into a recoverable one.
 
 There's a rung-ordering worth naming before you have any of this: if you have **no** dead-letter store yet, returning a 5xx so the provider retries is *strictly better* than catch-log-return-200. The 5xx is lossy only if the provider's own retry budget exhausts; ACK-and-drop is lossy immediately. The fully-correct state is persist-then-2xx — but never let "we return 500" be mistaken for the worst case. The worst case is the silent 200.
 
@@ -52,9 +52,15 @@ You are violating the rule if any of these are true:
 Before doing work, claim the event by its provider-supplied ID in the same transaction as the side effect. This is the consumer side of `idempotency-keys-on-writes` and it's the precondition for safe replay.
 
 ```ts
+// Ingress authenticates (freshness-checked) ONCE; `process` is the replayable core.
 async function handleEvent(raw: string, signature: string) {
-  const event = verifyAndParse(raw, signature);          // authenticate first
+  verifySignature(raw, signature);       // freshness-checked; a stale/forged signature is a 4xx
+  await process(parse(raw));
+}
 
+// The replayable core: dedupe + apply. It never re-checks the signature, so replay can't fail
+// on a signature that has since gone stale.
+async function process(event: PaymentEvent) {
   await db.transaction(async (tx) => {
     const claimed = await tx.processedEvents.insertOnce({ eventId: event.id });
     if (!claimed) return;                                 // duplicate delivery — no-op
@@ -69,14 +75,15 @@ If processing throws, persist the original payload — unparsed — plus what yo
 
 ```ts
 async function handleEvent(raw: string, signature: string) {
+  verifySignature(raw, signature);   // a forged/stale signature is a rejected request (4xx), never dead-lettered
+
   try {
-    const event = verifyAndParse(raw, signature);
-    await processIdempotently(event);
+    await process(parse(raw));       // parse + apply; a schema mismatch here IS dead-lettered
   } catch (err) {
     await deadLetters.create({
-      raw,                       // exact original bytes — replay needs these
-      signature,                 // so replay can re-verify
+      raw,                       // exact original bytes — replay re-parses these
       source: 'payment-provider',
+      verifiedAt: new Date(),    // provenance: signature already authenticated, so replay won't re-verify
       error: serializeError(err),
       attempts: 1,
       receivedAt: new Date(),
@@ -89,6 +96,8 @@ async function handleEvent(raw: string, signature: string) {
 
 Note the acknowledgement decision: once the event is durably in your dead-letter store, return success to the producer. You have taken ownership of recovery; letting the producer keep retrying a poison event buys nothing.
 
+The store holds raw, already-authenticated payloads that may carry PII or card data. Encrypt it at rest, restrict read access to operators, and give it a documented retention window (sub-pattern 5) — a dead-letter table is a durable copy of sensitive inbound data, not a debug scratchpad.
+
 The store can be a dedicated table *or* a status/attempts column on the work table — "dead-letter" is a role, not necessarily a separate table. A failed row that stays in the same table counts only if both hold: it is (a) excluded from the normal processing query (so it isn't silently retried forever or treated as pending) and (b) reachable by replay. What's non-negotiable is the durable *raw* record plus a replay path — not a second table.
 
 ### Sub-pattern 3 — Bound in-line retries before dead-lettering
@@ -97,12 +106,13 @@ A transient blip deserves a couple of immediate retries; a poison event deserves
 
 ```ts
 async function handleWithBudget(raw: string, signature: string, maxAttempts = 3) {
+  verifySignature(raw, signature);              // once, at ingress — not re-checked per attempt
   for (let attempt = 1; ; attempt++) {
     try {
-      return await processIdempotently(verifyAndParse(raw, signature));
+      return await process(parse(raw));
     } catch (err) {
       if (attempt >= maxAttempts || !isTransient(err)) {
-        await deadLetters.create({ raw, signature, error: serializeError(err), attempts: attempt, receivedAt: new Date() });
+        await deadLetters.create({ raw, verifiedAt: new Date(), error: serializeError(err), attempts: attempt, receivedAt: new Date() });
         return;
       }
       await sleep(backoffWithJitter(attempt));
@@ -113,14 +123,19 @@ async function handleWithBudget(raw: string, signature: string, maxAttempts = 3)
 
 ### Sub-pattern 4 — Replay must be idempotent and safe
 
-Replay is just "run the handler again on the stored bytes." Because the handler dedupes on arrival (sub-pattern 1) and the work is idempotent, replaying is safe whether the original partially applied or not at all. Delete (or mark resolved) on success.
+Replay re-runs the *processing* core (`process`) on the stored bytes — **not** the ingress path, so it never re-verifies a signature that has since gone stale. Because `process` dedupes on arrival (sub-pattern 1) and the work is idempotent, replaying is safe whether the original partially applied or not at all. Mark resolved (or delete) **only after** a confirmed success.
 
 ```ts
 async function replayDeadLetter(id: DeadLetterId) {
   const dl = await deadLetters.findById(id);
   if (!dl) return;
-  await handleEvent(dl.raw, dl.signature);   // same path — re-verifies, re-dedupes, re-applies
-  await deadLetters.markResolved(id);        // or delete
+  try {
+    await process(parse(dl.raw));           // re-parse + re-apply; does NOT re-verify the signature
+    await deadLetters.markResolved(id);     // resolved ONLY after a confirmed success (or delete)
+  } catch (err) {
+    // Still failing: record the attempt on the SAME row — never spawn a second, indistinguishable dead-letter.
+    await deadLetters.recordReplayFailure(id, serializeError(err));
+  }
 }
 ```
 
@@ -136,7 +151,7 @@ The dead-letter store grows; left alone it grows forever. Delete on successful r
 
 **"We'll just re-sync the whole entity from the API if we miss something."** Re-syncing is a *guess* that you noticed the gap, that the API still exposes the lost transition, and that a full refetch reconstructs it. Many events are deltas (`order.refunded`, `subscription.canceled`) whose effect can't be reconstructed from current state. Dead-lettering preserves the actual event; re-sync hopes you can reverse-engineer it.
 
-**"Logging the error is enough — we'll see it and fix it."** A log line is not replayable. You can read it, but you can't re-drive the side effect from it, and you certainly can't re-verify the signature from a truncated log. Persist the structured, raw event so recovery is a button, not an archaeology project.
+**"Logging the error is enough — we'll see it and fix it."** A log line is not replayable. You can read it, but you can't re-drive the side effect from a truncated log line. Persist the structured, raw event so recovery is a button, not an archaeology project.
 
 **"Catch, log, return 200 keeps the producer happy."** It does — and it discards the event in the same breath. Acknowledging *and* dropping is the worst outcome: the producer thinks you handled it, so it never retries, and you have nothing. ACK only after the event is durably stored.
 

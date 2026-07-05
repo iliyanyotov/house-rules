@@ -193,11 +193,10 @@ Yes. The tests can land as a separate PR — characterization first, then the fi
 
 ## Related
 
-- `tdd` — the brownfield counterpart to test-first
+- `tdd` — the greenfield test-first discipline; this skill is its brownfield counterpart
 - `seams-for-untestable-code` — add a seam first, then characterize
 
 ## Reference
 
 - Michael Feathers, *Working Effectively with Legacy Code* (2004) — the canonical book on this discipline. Feathers' famous definition: **"legacy code is code without tests."** The characterization-test pattern is the entry point to changing legacy code safely.
-- Kent Beck, *Test-Driven Development by Example* (2002) — covers the variant where you add tests to existing code by running it and recording the outputs.
 - Martin Fowler, *Refactoring* (2nd ed., 2018) — every refactoring in the catalog assumes you have a green test suite. The first step before any refactor: "ensure you have a solid set of tests for this section of code."

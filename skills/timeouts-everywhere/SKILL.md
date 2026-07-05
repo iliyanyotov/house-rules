@@ -1,6 +1,6 @@
 ---
 name: timeouts-everywhere
-description: Use when writing or reviewing code that calls another system — HTTP, database, queue, RPC, LLM, third-party SDK. Use when adding a new external integration. Use when reviewing a function whose await chain has no timeout signal. Use when a deployment hangs, or a serverless function hits its hard wall.
+description: Use when an HTTP, database, queue, RPC, LLM, or SDK call has no explicit deadline; when an await chain hangs; or when a serverless function reaches its platform wall.
 ---
 
 # Timeouts, Everywhere
@@ -71,6 +71,8 @@ try {
 
 The discipline is the deadline, not the specific API.
 
+An abort signal is cooperative. `fetch` observes it, but an arbitrary SDK may ignore it. A timeout wrapper can guarantee that the caller regains control by the deadline; it cannot guarantee ignored underlying work stopped. Prefer adapters with real cancellation, and keep writes idempotent in case work finishes after the caller times out.
+
 ### Composing timeouts with user cancellation
 
 ```ts
@@ -89,11 +91,14 @@ const db = createDbClient({
   connectTimeoutMs: 10_000,
 });
 
-// ✅ Statement-level timeout, set per session for long-running queries.
-await db.execute(`SET statement_timeout = '15s'`);
+// ✅ Transaction-local statement timeout; it resets automatically at transaction end.
+await db.transaction(async (tx) => {
+  await tx.execute(`SET LOCAL statement_timeout = '15s'`);
+  return runBoundedQuery(tx);
+});
 ```
 
-Never leave `statement_timeout` at the server default — on most production databases that default is *unbounded*.
+Never leave statement execution unbounded. Configure a client/role default when appropriate, or use `SET LOCAL` inside a transaction. Avoid an unscoped session-level `SET` on pooled connections: it can leak policy into the next borrower.
 
 ### Third-party SDKs — pass the timeout in the constructor
 
@@ -194,10 +199,10 @@ A function that does three external calls needs an outer timeout *in addition to
 async function fulfillOrder(orderId: OrderId): Promise<void> {
   const outer = AbortSignal.timeout(20_000);
 
-  const inventory = await fetch(invUrl, {
+  await inventory.reserve(orderId, {
     signal: AbortSignal.any([outer, AbortSignal.timeout(5_000)]),
   });
-  const charge = await payments.charge({ orderId }, { signal: outer });
+  await payments.charge({ orderId }, { signal: AbortSignal.any([outer, AbortSignal.timeout(5_000)]) });
   await orders.markFulfilled(orderId, { signal: outer });
 }
 ```

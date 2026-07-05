@@ -1,6 +1,6 @@
 ---
 name: branded-ids
-description: Use when defining a domain entity, declaring a function that takes IDs as parameters, writing a schema, or accepting a `slug` parameter in a handler. Use when a function signature has two or more `string` parameters that represent different things — `userId`, `orgId`, `invoiceId`, `slug`. Use when a bug was caused by passing the wrong ID to the right slot. Use when a query helper accepts a raw `string` for an entity identifier.
+description: Use when declaring a function that takes IDs as parameters, or accepting a `slug` parameter in a handler. Use when defining an entity's ID field in a schema. Use when a function signature has two or more `string` parameters that represent different things — `userId`, `orgId`, `invoiceId`, `slug`. Use when a bug was caused by passing the wrong ID to the right slot. Use when a query helper accepts a raw `string` for an entity identifier.
 ---
 
 # Branded IDs
@@ -127,7 +127,7 @@ export type UserId = Brand<string, 'UserId'>;
 // 2. A typed generator mints prefixed IDs already typed to the brand.
 const PREFIX = { user: 'u', order: 'o', invoice: 'in' } as const;
 type Entity = keyof typeof PREFIX;
-type IdOf<E extends Entity> = E extends 'user' ? UserId : Brand<string, E>;
+type IdOf<E extends Entity> = E extends 'user' ? UserId : Brand<string, `${Capitalize<E>}Id`>;
 
 export const idGenerator = {
   id: <E extends Entity>(entity: E): IdOf<E> =>
@@ -159,7 +159,9 @@ async function handleGetUser(rawId: string) {
 }
 
 async function loadUser(id: UserId): Promise<{ id: UserId }> {
-  return db.query.users.findFirst({ where: eq(users.id, id) });
+  const user = await db.query.users.findFirst({ where: eq(users.id, id) });
+  if (!user) throw new UserNotFoundError(id); // findFirst returns `T | undefined`
+  return user;
 }
 ```
 
@@ -216,5 +218,5 @@ Translate at the seam. Inside your code, types are branded. At the library bound
 
 ## Reference
 
-- Dan Vanderkam, *Effective TypeScript* 2e (2024), item 37 ("Use Branded Types for Nominal Typing") — the canonical TS treatment.
+- Dan Vanderkam, *Effective TypeScript* 2e (2024), item 64 ("Consider Brands for Nominal Typing") — the canonical TS treatment.
 - Benjamin Pierce, *Types and Programming Languages* (2002), ch. 19 — the original "nominal vs structural" type-theory distinction the pattern stands on.

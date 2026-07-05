@@ -34,14 +34,16 @@ POST /api/checkout
  ├── payments.charge()      (payment provider)    — critical path
  ├── db.insert(orders)      (database)            — critical path
  ├── bot.verify()           (bot-detection)       — degradable (fail-open or skip)
- └── mailer.send()          (email provider)      — degradable (fire-and-forget)
+ └── mailer.send()          (email provider)      — degradable (enqueue to durable queue)
 ```
 
 If all four share *one* `withTimeout(15_000)` helper and *one* implicit concurrency model ("one function instance at a time"), then a 14-second mailer hang blocks the function instance for 14 seconds. Payments, bot-detection, and the database are fine — but they wait behind the mailer because the instance is busy. Multiply by traffic: your `/api/checkout` p99 latency *is* the mailer's p99 latency, even on requests where the email never matters.
 
-The bulkhead rule: give each dependency its **own** timeout (sized to that dep's real p99), its **own** in-flight cap, its **own** breaker state. When the mailer hangs, only the mailer bulkhead fills. The other three deps have free capacity.
+The bulkhead rule: give each dependency its **own** timeout (sized to that dep's real p99), its **own** in-flight cap, its **own** breaker state. When the mailer hangs, its *timeout* bounds each slow call (3s, not 14) and its *cap* stops hung sends from eating the instance — only the mailer bulkhead fills. The other three deps have free capacity.
 
 This converts "a third-party outage takes down /api/checkout" into "a third-party outage degrades the email step alone — the order still books."
+
+One scope note: a module-scope `maxInFlight` is **per instance**. Under autoscaling, the downstream sees up to cap × instance count — the bulkhead protects *your* instance's capacity, not the downstream service. Protecting a fragile downstream needs a shared limiter or the downstream's own shedding.
 
 ## Detection
 
@@ -73,6 +75,11 @@ class BulkheadSaturatedError extends Error {
   constructor(name: string) { super(`${name}_bulkhead_saturated`); }
 }
 
+// Typed, so callers match on the class — never on a message string (see `errors-as-values`).
+class DependencyUnavailableError extends Error {
+  constructor(readonly dependency: string) { super(`${dependency}_unavailable`); }
+}
+
 function makeBulkhead(name: string, opts: { timeoutMs: number; maxInFlight: number }): Bulkhead {
   let inFlight = 0;
   const breaker = new Breaker(name, { /* see circuit-breaker-on-flaky-deps */ });
@@ -86,7 +93,7 @@ function makeBulkhead(name: string, opts: { timeoutMs: number; maxInFlight: numb
       try {
         return await breaker.run(
           () => op(AbortSignal.timeout(opts.timeoutMs)),
-          () => { throw new Error(`${name}_unavailable`); },
+          () => { throw new DependencyUnavailableError(name); },
         );
       } finally {
         inFlight--;
@@ -107,31 +114,48 @@ export const dbBulkhead = makeBulkhead('db', { timeoutMs: 5_000, maxInFlight: 10
 ```ts
 export async function handleCheckout(req: Request) {
   const parsed = CheckoutInput.parse(await req.json());
+  const idempotencyKey = req.headers.get('idempotency-key');
+  if (!idempotencyKey) return json({ error: 'missing_idempotency_key' }, { status: 400 });
 
   // Each step runs inside its own bulkhead.
   // A hang in any one step can't drain the others' capacity.
   const verified = await botBulkhead.run((signal) =>
     bot.verify(parsed.token, { signal })
   );
-  if (!verified) return json({ error: 'bot' }, 400);
+  if (!verified) return json({ error: 'bot' }, { status: 400 });
 
   const charge = await paymentBulkhead.run((signal) =>
-    payments.charge(parsed.charge, { signal })
+    payments.charge(parsed.charge, { signal, idempotencyKey })
   );
-  const order = await dbBulkhead.run((signal) =>
-    db.insert(orders).values({ chargeId: charge.id }).returning() // Drizzle on Postgres
-  );
-
-  // Email is non-critical: degrade gracefully, don't fail the request.
-  mailerBulkhead.run((signal) =>
-    mailer.send(welcomeEmail(order), { signal })
-  ).catch((err) =>
-    log.warn('welcome_email_failed', { orderId: order.id, err: err.message })
-  );
+  // The order and the owed email enter durable storage atomically. A broker enqueue after
+  // commit can fail; an outbox row in this transaction cannot be silently lost.
+  // The key also dedupes the *local* write: forwarding it to the charge protects only the
+  // third party, so store it on the order under a unique constraint and no-op on conflict —
+  // otherwise a retried request writes a second order and a second welcome-email.
+  const order = await dbBulkhead.run((signal) => db.transaction(async (tx) => {
+    const [created] = await tx.insert(orders)
+      .values({ chargeId: charge.id, idempotencyKey })
+      .onConflictDoNothing({ target: orders.idempotencyKey })
+      .returning();
+    // Conflict → this key already produced an order; re-read it instead of inserting again.
+    if (!created) {
+      const existing = await tx.query.orders.findFirst({ where: eq(orders.idempotencyKey, idempotencyKey) });
+      if (!existing) throw new Error('order_missing_for_idempotency_key'); // conflict implies the row exists
+      return existing;
+    }
+    await tx.insert(outbox).values({
+      topic: 'welcome-email',
+      aggregateId: created.id,
+      payload: { orderId: created.id },
+    });
+    return created;
+  }, { signal }));
 
   return json({ order });
 }
 ```
+
+An outbox relay reads committed rows and sends through the **mailer bulkhead** (its own timeout, cap, retry, and breaker), marking each row delivered only after provider success. If email is truly optional and may be lost, say that as a product decision; do not imply durability and then swallow enqueue failure.
 
 The shape that most often *lacks* bulkheads is a parallel fan-out — `Promise.all` over several deps with one shared catch and no per-dep budget:
 
@@ -140,7 +164,8 @@ The shape that most often *lacks* bulkheads is a parallel fan-out — `Promise.a
 const [user, orders, recs] = await Promise.all([fetchUser(id), fetchOrders(id), fetchRecs(id)]);
 
 // ✅ Each call runs in its own bulkhead (own timeout + cap); allSettled keeps failures isolated.
-const [user, orders, recs] = await Promise.allSettled([
+// Each result is a PromiseSettledResult — unwrap `.status`/`.value`/`.reason` per call.
+const [userResult, ordersResult, recsResult] = await Promise.allSettled([
   userBulkhead.run((s) => fetchUser(id, { signal: s })),
   orderBulkhead.run((s) => fetchOrders(id, { signal: s })),
   recsBulkhead.run((s) => fetchRecs(id, { signal: s })),

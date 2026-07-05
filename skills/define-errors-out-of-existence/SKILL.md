@@ -1,6 +1,6 @@
 ---
 name: define-errors-out-of-existence
-description: Use when designing an API, function signature, or library boundary. Use when about to throw an exception for a common, non-exceptional input. Use when a caller will immediately wrap your call in `try`/`catch` to handle a "normal" case. Use when the error case is more common than the success case.
+description: Use when about to throw an exception for a common, non-exceptional input. Use when designing an API boundary whose "error" is really an expected outcome (not-found, empty, already-exists). Use when a caller will immediately wrap your call in `try`/`catch` to handle a "normal" case. Use when the error case is more common than the success case.
 ---
 
 # Define Errors Out of Existence
@@ -113,19 +113,25 @@ async function createOrder(input: unknown) {
   return orders.create(parsed);
 }
 
-// ✅ The "user typed something wrong" case is not exceptional. Return it.
-type Result<T, E = string> = { ok: true; data: T } | { ok: false; error: E };
+// ✅ The "user typed something wrong" case is not exceptional. Return it —
+//    with a structured error, never a bare string (see `errors-as-values`).
+type Result<T, E> = { ok: true; data: T } | { ok: false; error: E };
+type FieldIssue = { field: string; message: string };
 
-async function createOrder(input: unknown): Promise<Result<Order>> {
+async function createOrder(input: unknown): Promise<Result<Order, FieldIssue[]>> {
   const parsed = OrderInput.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.message };
-
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues.map((i) => ({ field: i.path.join('.'), message: i.message })),
+    };
+  }
   const order = await orders.create(parsed.data);
   return { ok: true, data: order };
 }
 ```
 
-The caller pattern-matches on `result.ok` instead of catching. Exceptions are reserved for "database is on fire," which is genuinely exceptional and *should* propagate to the global handler.
+The caller pattern-matches on `result.ok` instead of catching. Exceptions are reserved for "database is on fire", which is genuinely exceptional and *should* propagate to the global handler.
 
 Note `safeParse` *already* hands you a tagged result — `{ success: true; data } | { success: false; error }`. At a Zod boundary you often don't need a custom `Result` type at all; just return `safeParse`'s output (or map it) instead of calling `.parse()` and catching. The custom `Result` earns its place only when you're *combining* failures from sources that aren't already tagged.
 
@@ -212,5 +218,5 @@ Two failure modes, two treatments. Validation failures (user input, schema misma
 
 ## Reference
 
-- John Ousterhout, *A Philosophy of Software Design* (2018), ch. 19 ("Define Errors Out of Existence") — the canonical chapter; the `substring` example is his.
+- John Ousterhout, *A Philosophy of Software Design* (2018), ch. 10 ("Define Errors Out of Existence") — the canonical chapter; the `substring` example is his.
 - Joe Duffy, ["The Error Model"](http://joeduffyblog.com/2016/02/07/the-error-model/) (2016) — distinguishes recoverable returns from abnormal exceptions. The architectural argument for why most "errors" should be values.

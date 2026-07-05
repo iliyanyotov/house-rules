@@ -45,7 +45,7 @@ You are violating the rule if any of these are true:
 ### Fetch state — the canonical example
 
 ```ts
-// ❌ Eight combinations. Four are legal. Four are bugs waiting.
+// ❌ Sixteen combinations. Four are legal. Twelve are bugs waiting.
 type FetchState<T> = {
   isLoading: boolean;
   isError: boolean;
@@ -79,7 +79,7 @@ The narrowing comes from the discriminant. Impossible branches don't exist.
 ### Form submission — the most common offender
 
 ```ts
-// ❌ Three useState, eight combinations, half are bugs.
+// ❌ Three useState, twelve combinations, most are bugs.
 const [isSubmitting, setIsSubmitting] = useState(false);
 const [isSubmitted, setIsSubmitted] = useState(false);
 const [submitStatus, setSubmitStatus] = useState<{
@@ -104,7 +104,7 @@ const [state, setState] = useState<SubmitState>({ kind: 'idle' });
 
 The transition `idle → submitting → success | error` is encoded in the type. The component cannot render in an impossible state because impossible states don't exist.
 
-Collapse *correlated* state, not *orthogonal* state. In a multi-step form the wizard step is its own union (`WizardStep`) and the submit lifecycle is a *second* union (`SubmitState`) — they vary independently, so forcing them into one union creates impossible-product noise, not safety. The rule is "one union per axis of variation," not "one union per component."
+Collapse *correlated* state, not *orthogonal* state. In a multi-step form the wizard step is its own union (`WizardStep`) and the submit lifecycle is a *second* union (`SubmitState`) — they vary independently, so forcing them into one union creates impossible-product noise, not safety. The rule is "one union per axis of variation", not "one union per component."
 
 ### "Either A or B" — never two correlated optionals
 
@@ -176,7 +176,7 @@ Convert at the boundary. The external shape is wire-level; your type is domain-l
 | "Booleans are simpler to read" | Until two of them are true. |
 | "I might need more states later" | Add a variant. That's the whole point of unions. |
 | "It's hard to construct intermediate states" | Intermediate states are themselves variants. If you can't name one, you don't have it. |
-| "Unions don't compose well" | They compose via union: `A | B | C`. They don't compose via spread — by design. |
+| "Unions don't compose well" | They compose via union: `A \| B \| C`. They don't compose via spread — by design. |
 | "It's faster to write four booleans" | And slower to debug for the rest of the type's life. |
 
 ## Related

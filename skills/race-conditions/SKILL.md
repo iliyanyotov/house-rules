@@ -59,15 +59,19 @@ function ProfilePanel({ userId }: { userId: UserId }) {
 // ✅ Cancel the in-flight request when the effect re-runs or the component unmounts.
 function ProfilePanel({ userId }: { userId: UserId }) {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     fetchProfile(userId, { signal: controller.signal })
       .then(setProfile)
       .catch((err) => {
-        if (err.name !== 'AbortError') throw err;
+        // Don't `throw` inside .catch — it becomes an *unhandled rejection*, not a controlled
+        // path. Route it into state and rethrow during render so an ErrorBoundary catches it.
+        if (err.name !== 'AbortError') setError(err);
       });
     return () => controller.abort();
   }, [userId]);
+  if (error) throw error; // surfaced to the nearest ErrorBoundary
 }
 ```
 
@@ -104,7 +108,12 @@ If a callback can fire after unmount (long-running timer, subscription with no a
 ```tsx
 function ActiveCountdown({ expiryMs }: { expiryMs: number }) {
   const isMounted = useRef(true);
-  useEffect(() => () => { isMounted.current = false; }, []);
+  // Reset on each setup: under StrictMode, effects run setup → cleanup → setup, so a ref only
+  // cleared on cleanup would stay false after the second mount and drop every result in dev.
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
 
   useExpiry(expiryMs, () => {
     if (!isMounted.current) return;   // unmounted — drop this stale result
@@ -116,9 +125,11 @@ function ActiveCountdown({ expiryMs }: { expiryMs: number }) {
 
 ```ts
 // ❌ Two concurrent withdrawals both see balance=100, both subtract 50,
-//    both write 50. Net: $50 deducted twice from a $100 starting balance.
+//    both write 50. Net: two $50 withdrawals, but the balance drops by
+//    only $50 — one update is silently lost.
 async function withdraw(userId: UserId, amountCents: number) {
   const [user] = await users.findById(userId);
+  if (!user) throw new Error(`user ${userId} not found`);
   if (user.balanceCents < amountCents) throw new InsufficientFundsError();
   await users.update(userId, { balanceCents: user.balanceCents - amountCents });
 }
@@ -140,6 +151,7 @@ async function withdraw(userId: UserId, amountCents: number) {
     const [user] = await tx
       .select().from(users).where(eq(users.id, userId))
       .for('update');
+    if (!user) throw new Error(`user ${userId} not found`);
     if (user.balanceCents < amountCents) throw new InsufficientFundsError();
     await tx.update(users)
       .set({ balanceCents: user.balanceCents - amountCents })
@@ -214,5 +226,5 @@ If the race silently corrupts data, the user doesn't see an error — that's the
 ## Reference
 
 - Dan Abramov, ["A Complete Guide to useEffect"](https://overreacted.io/a-complete-guide-to-useeffect/) — why effects + state are inherently racy and how cleanup eliminates the race.
-- Marc Brooker (AWS), ["Caching with consistency"](https://brooker.co.za/blog/2020/11/16/cache.html) — broader systems take on read-then-write races.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (2017), ch. 7 — lost updates and write skew: the database-side taxonomy of read-then-write races.
 - [Postgres docs on transaction isolation levels](https://www.postgresql.org/docs/current/transaction-iso.html) — required reading before claiming "the DB handles it."

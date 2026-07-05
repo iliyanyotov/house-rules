@@ -1,6 +1,6 @@
 ---
 name: immutability
-description: Use when designing a function parameter or a piece of shared state. Use when tempted to `.push`, `.splice`, `.sort` in place, reassign an object property, or pass an object that the callee will mutate. Use when reviewing a function that takes input and returns nothing but "modifies it for you."
+description: Use when tempted to `.push`, `.splice`, `.sort` in place, reassign an object property, or pass an object that the callee will mutate. Use when reviewing a function that takes input and returns nothing but "modifies it for you."
 ---
 
 # Immutability
@@ -27,9 +27,9 @@ NEVER mutate a value the caller passed in. Build a new one and return it.
 
 Mutation entangles call sites. A function that mutates its argument is invisible in the type signature: `function process(items: Item[]): void` looks identical whether it appends, sorts, or wipes the array. Callers have to *know* which one — and they don't.
 
-Immutable inputs make functions composable. The same array can be passed to three functions without copy-defensiveness. Memoization works. Equality checks are meaningful. Time-travel debugging is feasible. UI frameworks that depend on reference equality (React, Solid) re-render correctly.
+Immutable inputs make functions composable. The same array can be passed to three functions without copy-defensiveness. Memoization and reference-based change detection become predictable. Equality checks are meaningful. Time-travel debugging is feasible. Frameworks differ in their reactivity models, so immutability is a reliable state-management contract—not a claim that every UI framework detects changes the same way.
 
-The cost is microscopic. Modern engines handle structural sharing well. The cost of mutation, on the other hand, is debugging shared-state bugs at 2am.
+The cost is microscopic. A shallow copy (`{ ...obj }`, `[...arr]`) is O(top-level) and cheap; nested values are shared by reference, not deep-copied. The cost of mutation, on the other hand, is debugging shared-state bugs at 2am.
 
 ## Detection
 
@@ -162,7 +162,7 @@ return rows.toSorted(byDate);
 
 ### "Copying everything is slow"
 
-In hot paths, measure. In application code, the cost is well below any threshold that matters. Modern engines structurally share; UI frameworks depend on reference equality for their own correctness — mutation defeats every optimization the framework offers.
+Measure allocation and copy cost where data is large or the path is hot. A spread copies only the top level (nested values are shared by reference), so it is one shallow allocation, not a deep copy—but even shallow O(n) work can matter at scale. Persistent structural sharing comes from libraries like Immutable.js or Immer, not from the engine. Prefer immutable updates as the default contract; optimize only from measurements and keep any mutation locally owned.
 
 ### "I'm the only caller, I know it's safe to mutate"
 
@@ -170,7 +170,7 @@ You are *now*. The next person on the codebase is not. The signature lies; their
 
 ### "Immutable code is more verbose"
 
-`{ ...obj, field: x }` is 18 characters. `obj.field = x` is 13. Five characters bought you a future without an entire class of bugs. Pay them.
+`{ ...obj, field: x }` is 20 characters. `obj.field = x` is 13. Seven characters bought you a future without an entire class of bugs. Pay them.
 
 ### "Sort in place is faster"
 
@@ -200,7 +200,7 @@ Rename: `withUpdatedUser`, `updatedUser`, or use a verb-noun convention that ret
 | "Performance" | Profile first. The cost is usually unmeasurable. |
 | "JS arrays are passed by reference, mutation is idiomatic" | "Idiomatic" doesn't mean "correct." Modern array methods (`toSorted`, `with`, `toReversed`) exist because the idiom was wrong. |
 | "I'm building it up incrementally" | Build it up in a *local* variable that hasn't escaped — but `const tmp = input` is **not** a copy, it's the same reference, so mutating `tmp` mutates the caller. "Locally constructed" means `[...input]`, `{ ...input }`, or `new Date(input.getTime())`, not an aliased parameter. |
-| "Spread copies are O(n)" | So is iterating to apply the change. The constant factor is identical. |
+| "Spread copies are O(n)" | True — and rarely the bottleneck. The copy is shallow; nested values are shared by reference. Profile before optimizing a hot path. |
 | "Mutation makes APIs simpler" | It makes the API *shorter*. It makes everything that consumes the API *more complex*. |
 
 ## Related
@@ -211,5 +211,5 @@ Rename: `withUpdatedUser`, `updatedUser`, or use a verb-noun convention that ret
 ## Reference
 
 - ECMAScript 2023, ["Change Array by Copy"](https://github.com/tc39/proposal-change-array-by-copy) — adds `toSorted`, `toReversed`, `toSpliced`, `with`. The language now provides immutable equivalents for every legacy mutating array method.
-- Dan Vanderkam, *Effective TypeScript* 2e (2024), item 17 ("Use `readonly` to Avoid Errors Associated with Mutation") — the canonical TS treatment.
+- Dan Vanderkam, *Effective TypeScript* 2e (2024), item 14 ("Use `readonly` to Avoid Errors Associated with Mutation") — the canonical TS treatment.
 - Rich Hickey, ["The Value of Values"](https://www.infoq.com/presentations/Value-Values/) (JaxConf 2012) — the architectural case for immutability as the foundation of correctness.

@@ -14,7 +14,7 @@ User IDs, email addresses, URL paths with parameters, free-text fields — these
 ## The Iron Rule
 
 ```
-NEVER put unbounded user input into a metric label, error tag, cache key, or span name.
+NEVER put unbounded user input into a metric label, error tag, or span name — and never key a cache on an unbounded *parameter-tuple* (a single entity ID like `invoice:${id}` is fine; see Cache keys).
 ```
 
 **No exceptions:**
@@ -74,23 +74,18 @@ User-level data lives in *logs* and *traces*, where the system is designed for u
 When you wrap an external dependency (a `PaymentClient`, a `SearchClient`) to count calls, the right label is the method name — a fixed set of constants known at code time. The trap is labeling by *what the call was about*.
 
 ```ts
-// metrics/clientCalls.ts
-const clientCalls = counter('client.calls', {
-  labelNames: ['apiName'],  // ← always one of a fixed set of method names
-});
-
 // ✅ apiName is a static, bounded set: "fetchUser" | "createOrder" | "listInvoices" | …
 //    Cardinality = number of client methods (dozens, fixed at code time).
 async function fetchUser(userId: UserId) {
-  clientCalls.inc({ apiName: 'fetchUser' });
+  counter('client.calls', 1, { apiName: 'fetchUser' });
   return paymentClient.get(`/users/${userId}`);
 }
 
 // ❌ One time series per user/order/email/URL — unbounded, grows with traffic.
-clientCalls.inc({ apiName: userId });                 // entity ID
-clientCalls.inc({ apiName: order.id });               // entity ID
-clientCalls.inc({ apiName: user.email });             // free-text identity
-clientCalls.inc({ apiName: `/users/${userId}` });     // full path with params
+counter('client.calls', 1, { apiName: userId });               // entity ID
+counter('client.calls', 1, { apiName: order.id });             // entity ID
+counter('client.calls', 1, { apiName: user.email });           // free-text identity
+counter('client.calls', 1, { apiName: `/users/${userId}` });   // full path with params
 ```
 
 A good label has a small, **known-at-code-time domain**: a method name, a status code, a region, a boolean. Never something whose domain is "every value a user can produce." The entity ID and URL go in *logs* and *trace attributes* — searchable, never grouped.
@@ -113,7 +108,7 @@ tracker.setUser({ id: user.id, email: user.email });
 tracker.setContext('order', { id: order.id, amount: order.amountCents });
 ```
 
-The user-object and context fields store data on the *event* but don't create indexed dimensions. They're searchable but don't multiply cardinality.
+User-object and context fields store data on the *event* rather than in metric labels. Whether they create indexed dimensions, searchable facets, or additional billing is provider-specific. Treat them as non-metric context only after checking the backend's indexing and quota model.
 
 Production error-tracker wrappers follow exactly this split — a code-time-constant `functionName` in indexed `tags`, the call arguments in non-indexed `extra` — so fingerprints stay bounded to the number of instrumented functions, not the number of calls.
 
@@ -146,7 +141,7 @@ const result = await cache.get(`invoice:${invoiceId}`);
 // Or, if caching searches is genuinely valuable: hash the normalized query
 // AND set a short TTL so unused entries fall out fast.
 const normalized = q.toLowerCase().trim();
-const result = await cache.get(`search:${hash(normalized)}`, { ttl: 60 });
+const result = await cache.getOrSet(`search:${hash(normalized)}`, () => runSearch(normalized), { ttl: 60 });
 ```
 
 The hash variant bounds the *key length* but not the *number of keys* — make sure the TTL is short enough that low-hit keys evict.
@@ -170,7 +165,9 @@ tracer.startSpan('GET /api/invoices/[id]', {
 });
 ```
 
-OpenTelemetry semantic conventions distinguish *operation name* (low-card, used for grouping) from *attributes* (any cardinality).
+OpenTelemetry semantic conventions distinguish *operation name* (low-card, used for grouping) from *attributes* (which may carry higher-cardinality values when the configured backend and budget permit it).
+
+Some tracing/observability backends index or bill per unique attribute value (or per unique event), so verify your provider's model before using a high-cardinality attribute — the metric-vs-attribute split bounds *metric* cardinality, not necessarily your trace or event bill.
 
 ### Cardinality budget — name it
 
@@ -234,7 +231,12 @@ Development data flows through the same pipelines and contributes to the same in
 | "We pay for unlimited cardinality" | No vendor offers truly unlimited; even high-cardinality observability tools have practical limits. And the queries slow down before the bill does. |
 | "It's the only way to find specific events" | Use logs or traces, which are designed for it. Metrics aren't. |
 
+## Related
+
+- `steady-state-purge-unbounded-growth` — bounded keyspaces also need retention and capacity plans
+- `secrets-handling` — moving data out of indexed tags does not make sensitive context safe
+
 ## Reference
 
 - Charity Majors, Liz Fong-Jones, George Miranda, *Observability Engineering* (O'Reilly, 2022) — chapters on cardinality and the distinction between metrics, logs, and traces. The core insight: *observability is high-cardinality by design; metrics are aggregate by design; mixing the two ends badly.*
-- [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) — the formal distinction between *names* (low-card, for grouping) and *attributes* (any cardinality, for context).
+- [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) — distinguishes stable operation names from contextual attributes; backend indexing and billing still determine the safe attribute budget.

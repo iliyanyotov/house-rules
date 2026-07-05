@@ -14,7 +14,7 @@ Refactor-resistance is the test for the test: if you can restructure the unit's 
 ## The Iron Rule
 
 ```
-NEVER assert on internal helpers, private methods, or call order — only on observable outcomes.
+NEVER assert on internal helpers, private methods, or internal call order — only on observable outcomes.
 ```
 
 **No exceptions:**
@@ -65,7 +65,7 @@ export function deposit(account: Account, amount: Money): Account {
 
 // ❌ Asserts on the helper. Inline `addMoney` → test breaks for no real reason.
 test('deposit calls addMoney with the right args', () => {
-  const spy = spyOn(money, 'addMoney');
+  const spy = spyOn(moneyLib, 'addMoney');
   deposit(account, money(100));
   expect(spy).toHaveBeenCalledWith(account.balance, money(100));
 });
@@ -212,6 +212,6 @@ The helper's args are *closer* to your fingers — they're inside the same modul
 ## Reference
 
 - Vladimir Khorikov, *Unit Testing: Principles, Practices, and Patterns* (2020), ch. 4–5 — the modern canonical articulation. The four pillars: protection against regressions, refactor resistance, fast feedback, maintainability.
-- Kent Beck, *Test-Driven Development by Example* (2002) — "test through the door"; the original framing of tests written against external behavior.
+- Sandi Metz, "The Magic Tricks of Testing" (RailsConf 2013) — the incoming/outgoing message grid: assert on the results of incoming messages through the public interface, not on internals.
 - Steve Freeman & Nat Pryce, *Growing Object-Oriented Software, Guided by Tests* (2009) — "listen to your tests"; mock at the right seams (adapters), not at internals.
 - Gary Bernhardt, "Boundaries" (2012) — functional core / imperative shell as the architectural pattern that makes behavior testing trivial.

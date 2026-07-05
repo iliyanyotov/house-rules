@@ -9,18 +9,17 @@ description: Use when adding a new variant to an existing union, a new case to a
 
 **Modules should be open for extension and closed for modification.** Add new behavior by *adding new code* — a new variant, a new module, a new handler — not by editing existing branching. The existing branches stay stable; the new behavior lands as new code that the type system or registry connects.
 
-In a TS/functional stack, this most often translates to: **add a new variant to a discriminated union and handle it in every consumer (the compiler enforces this via exhaustiveness checks) rather than adding a new `if` branch inside an existing function.**
+In a TS/functional stack this takes two forms, and *which* one is closed for modification depends on what grows — new operations vs new kinds (the expression-problem tradeoff, below): a **discriminated union + exhaustive switch** when the set of kinds is stable, or a **registry / port** when kinds are open-ended. Either way, new behavior lands as *new code* the type system or registry connects — never a new `if` branch quietly bolted into a stable function.
 
 ## The Iron Rule
 
 ```
-NEVER add a new kind by editing an existing if-chain. Add a variant; let the compiler force consumer updates.
+NEVER add a new kind by editing an existing if-chain. Make it an addition the type system or a registry connects — a union variant (compiler-checked) or a new module in a registry.
 ```
 
-**No exceptions:**
+**No exceptions — once a second variant exists** (before that, an `if/else` is fine; see "When NOT to OCP"):
 - Not for "adding an `if` is faster"
-- Not for "we don't know what variants will exist"
-- Not for "I just need to add one if"
+- Not for "I just need to add one *more* if" (you've done this before)
 - Not for "discriminated unions are TS-specific magic"
 
 ## Why
@@ -31,7 +30,7 @@ The classical OO statement (Meyer 1988; Martin 1996) is about class inheritance 
 
 The wins:
 
-1. **Existing tests stay green.** Pure additions don't break existing assertions.
+1. **Existing tests stay green — when the change is genuinely additive.** A new *operation*, or a new leaf under a build-generated registry, touches no existing code. (Adding a *variant* to a union does edit every consumer — the exhaustiveness check makes that edit safe and mechanical, but it's still a change, and its tests move with it.)
 2. **The compiler enforces consumer updates.** Adding a variant to a union forces every `switch (kind)` to handle the new case — a moving safety net.
 3. **Git history stays focused.** New behavior = new files / new variants. The diff localizes to the change.
 4. **Reasoning stays bounded.** "What does this module do?" — read the registry/union once, understand the closed set.
@@ -51,6 +50,15 @@ You are violating the rule if any of these are true:
 - The phrase "add another flag to the function" appears in code review.
 
 ## The Pattern
+
+### Two axes — which "closed" you're buying
+
+New behavior grows along one of two axes, and the mechanisms trade off (this is the *expression problem*):
+
+- **New operations over a fixed set of kinds** → **discriminated union + exhaustive switch**. A new operation is a new function; existing functions don't change. But adding a new *variant* deliberately edits *every* consumer — the exhaustiveness check herds you through them. That's modification *made safe*, not the absence of modification; don't mistake compiler-forced edits for "closed for modification."
+- **New kinds in an open-ended set** → **registry / port / plugin contract**. A new kind is a new module plus a registry entry — or, with a build-generated map, no consumer edit at all. *This* is the form genuinely closed for modification against new kinds.
+
+Pick by what actually grows: a closed set of kinds with many operations → union; an open set of kinds → registry/ports. The sections below show both.
 
 ### Discriminated union as the extension point
 
@@ -115,7 +123,7 @@ export const cardMethod: PaymentMethod = {
 };
 
 // src/payments/bank.ts
-export const bankMethod: PaymentMethod = { kind: 'bank', charge: /* ... */ };
+export const bankMethod: PaymentMethod = { kind: 'bank', charge: (amount: Money) => { /* ... */ } };
 
 // src/payments/index.ts
 import { cardMethod } from './card';

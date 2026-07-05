@@ -25,7 +25,7 @@ NEVER assume a transaction is safe at the default isolation level. Match the lev
 
 ## Why
 
-"ACID" promises that each transaction is *atomic, consistent, isolated, durable* — but **Isolation is a dial, not a guarantee.** SQL defines four levels (`READ UNCOMMITTED`, `READ COMMITTED`, `REPEATABLE READ`, `SERIALIZABLE`), and each *permits* a set of anomalies. The default on Postgres, SQL Server, and Oracle is `READ COMMITTED`; MySQL/InnoDB defaults to the stronger `REPEATABLE READ`. Neither default is enough — a stronger-sounding name does not save you, because InnoDB's `REPEATABLE READ` (unlike Postgres `SERIALIZABLE`/SSI) still allows the read-then-write anomalies below. Both prevent dirty reads but still allow:
+"ACID" promises that each transaction is *atomic, consistent, isolated, durable* — but **Isolation is a dial, not a guarantee.** SQL defines four levels (`READ UNCOMMITTED`, `READ COMMITTED`, `REPEATABLE READ`, `SERIALIZABLE`), and each *permits* a set of anomalies. The default on Postgres, SQL Server, and Oracle is `READ COMMITTED`; MySQL/InnoDB defaults to the stronger `REPEATABLE READ`. Neither default is enough — a stronger-sounding name does not save you. `READ COMMITTED` permits all three anomalies below. InnoDB's `REPEATABLE READ` prevents phantom reads (via next-key locks) but still allows the two read-then-write anomalies — lost update and write skew; only a true `SERIALIZABLE` level forbids all three (Postgres implements it as SSI). Both defaults prevent dirty reads but still allow:
 
 - **Lost update** — two transactions read a value, both modify it, the second overwrites the first. (Balance, counter, inventory.)
 - **Write skew** — two transactions each read a set of rows, each makes a decision that's valid *given what it read*, and both commit — but together they violate an invariant neither could see the other breaking. (Two doctors both go off-call because each saw the other still on; two bookings for the last seat.)
@@ -55,6 +55,7 @@ You are violating the rule if any of these are true:
 //    balance=100 before either writes; the second commit overwrites the first.
 await db.transaction(async (tx) => {
   const [acct] = await tx.select().from(accounts).where(eq(accounts.id, id));
+  if (!acct) throw new AccountNotFoundError(id);
   await tx.update(accounts)
     .set({ balanceCents: acct.balanceCents - amount })
     .where(eq(accounts.id, id));
@@ -72,6 +73,7 @@ await db.transaction(async (tx) => {
   const [acct] = await tx
     .select().from(accounts).where(eq(accounts.id, id))
     .for('update');                       // SELECT ... FOR UPDATE
+  if (!acct) throw new AccountNotFoundError(id);
   if (acct.balanceCents < amount) throw new InsufficientFundsError();
   await tx.update(accounts)
     .set({ balanceCents: acct.balanceCents - amount })
@@ -89,6 +91,7 @@ Use when contention is **high** and you'd rather serialize the conflicting write
 async function applyDiscount(id: AccountId, pct: number): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {
     const [acct] = await db.select().from(accounts).where(eq(accounts.id, id));
+    if (!acct) throw new AccountNotFoundError(id);
     const next = Math.round(acct.balanceCents * (1 - pct));
 
     const updated = await db.update(accounts)
@@ -117,22 +120,23 @@ async function goOffCall(doctorId: DoctorId, shiftId: ShiftId) {
       .where(and(eq(shifts.shiftId, shiftId), eq(shifts.onCall, true)));
     if (onCall.length <= 1) throw new MinimumCoverageError();   // checks OTHER rows
     await tx.update(shifts).set({ onCall: false })
-      .where(eq(shifts.doctorId, doctorId));
+      .where(and(eq(shifts.shiftId, shiftId), eq(shifts.doctorId, doctorId)));
   });
 }
 ```
 
 ```ts
-// ✅ Lock the conflict set's parent row first. The shift row is the natural
-//    aggregate root; locking it serializes all coverage decisions for that shift.
+// ✅ No separate parent row exists here (a shift's assignments are many rows), so serialize on
+//    the shift *key* with an advisory lock — not FOR UPDATE over the multi-row set, which locks
+//    more than the decision and still can't cover assignments that don't exist yet (phantoms).
 async function goOffCall(doctorId: DoctorId, shiftId: ShiftId) {
   await db.transaction(async (tx) => {
-    // FOR UPDATE on the parent: a second transaction blocks here until the first commits.
-    await tx.select().from(shifts).where(eq(shifts.shiftId, shiftId)).for('update');
+    // A second transaction blocks on the same key until the first commits.
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${shiftId}))`);
     const onCall = await tx.select().from(shifts)
       .where(and(eq(shifts.shiftId, shiftId), eq(shifts.onCall, true)));
     if (onCall.length <= 1) throw new MinimumCoverageError();
-    await tx.update(shifts).set({ onCall: false }).where(eq(shifts.doctorId, doctorId));
+    await tx.update(shifts).set({ onCall: false }).where(and(eq(shifts.shiftId, shiftId), eq(shifts.doctorId, doctorId)));
   });
 }
 
@@ -146,13 +150,13 @@ async function goOffCall(doctorId: DoctorId, shiftId: ShiftId) {
         .where(and(eq(shifts.shiftId, shiftId), eq(shifts.onCall, true)));
       if (onCall.length <= 1) throw new MinimumCoverageError();
       await tx.update(shifts).set({ onCall: false })
-        .where(eq(shifts.doctorId, doctorId));
+        .where(and(eq(shifts.shiftId, shiftId), eq(shifts.doctorId, doctorId)));
     }),
   );
 }
 ```
 
-`FOR UPDATE` on the rows you *read* **does not** help here — the anomaly is between what one transaction reads and what the other writes, and the dangerous case is often rows that don't exist yet (phantoms). The two real options are shown above: lock the conflict set's **parent row** (`FOR UPDATE` on the shift, or an advisory lock keyed on `shiftId`), or lift the transaction to **`SERIALIZABLE`** (Postgres's SSI detects the conflict and aborts one). Choose by whether a natural parent exists: when the conflict set hangs off one row (shift → coverage, account → line items), locking that parent is cheaper and needs no retry loop; reserve `SERIALIZABLE` for invariants with no natural parent to lock (phantoms across an open predicate).
+`FOR UPDATE` on the rows you *read* **can** work here — when every row the decision depends on already exists, locking the read set forces the conflicting transactions to serialize (Kleppmann presents exactly this as a write-skew fix). But it misses phantoms — conflict rows not yet inserted can't be locked — and it locks more than the decision needs, so an advisory lock or `SERIALIZABLE` stays the recommended default. The three real options: when a **genuine parent row** exists (a `shift` header row, an `account` row for its line items), `FOR UPDATE` that *single* row; when the conflict set is many rows with no parent — or the dangerous case is rows that don't exist yet — take an **advisory lock on the key** (`pg_advisory_xact_lock` on `shiftId`, as above) so even phantoms serialize; or lift the transaction to **`SERIALIZABLE`** (Postgres's SSI detects the conflict and aborts one). `FOR UPDATE` over a multi-row set is none of these — it misses phantoms and locks more than the decision. Choose by whether a natural parent exists: locking one parent row is cheaper and needs no retry loop; reserve `SERIALIZABLE` for invariants with no parent to lock (phantoms across an open predicate).
 
 ### `SERIALIZABLE` is a contract: you MUST retry on serialization failure
 
@@ -209,6 +213,7 @@ A unique constraint is the cheapest concurrency control there is: the database e
 | Single-row counter / balance | Atomic `UPDATE ... WHERE` (see `race-conditions`) |
 | Single resource, high contention, short critical section | `SELECT ... FOR UPDATE` |
 | Single resource, low contention, long think-time / optimistic UI | Version column + retry |
+| Read-then-write where lost update is the only anomaly in play | `REPEATABLE READ` + retry — Postgres RR (snapshot isolation) aborts the second writer ("could not serialize access due to concurrent update"); retry like `40001` |
 | Invariant spanning multiple/absent rows (write skew, phantom) | `SERIALIZABLE` + retry, or lock the whole conflict set |
 | Uniqueness ("one active X", "unique slug") | DB unique constraint (partial index if conditional) |
 
@@ -228,7 +233,7 @@ Then use a narrower tool — a row lock or a version column — for that specifi
 
 ### "The window is microseconds — it'll never happen"
 
-Concurrency bugs are determined by traffic, not by window size. At 1,000 req/s the microsecond window is hit thousands of times a day. "Never seen it" means "haven't looked at the right row under load," not "can't happen."
+Concurrency bugs are determined by traffic, not by window size. At 1,000 req/s the microsecond window is hit thousands of times a day. "Never seen it" means "haven't looked at the right row under load", not "can't happen."
 
 ### "Optimistic locking adds a retry loop — that's complexity"
 
@@ -255,7 +260,7 @@ The application check races with itself across processes. Two instances both pas
 |---|---|
 | "A transaction makes it atomic" | Atomicity ≠ isolation. The default level still permits lost updates and write skew. |
 | "The DB is ACID" | ACID gives you the dial; you still have to turn it. The default is the weak end. |
-| "FOR UPDATE fixes it" | For single rows you read, yes. For write skew across rows (or phantoms), no — that needs SERIALIZABLE or a conflict-set lock. |
+| "FOR UPDATE fixes it" | For rows that already exist, yes — lock what you read. For phantoms (conflict rows not yet inserted), no — that needs SERIALIZABLE or a conflict-set lock. |
 | "SERIALIZABLE is too slow" | Measure first; scope it to the operation. Silent corruption is the more expensive option. |
 | "We check uniqueness in code" | App checks race across processes. Only a DB constraint is atomic. |
 | "It's never corrupted in prod" | You haven't queried for the corruption, or traffic hasn't peaked. Absence of evidence isn't isolation. |

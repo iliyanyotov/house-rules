@@ -7,14 +7,15 @@ description: Use when writing a test and reaching for `mock`, `spyOn`, or module
 
 ## Overview
 
-**Test doubles replace things that cross an architectural boundary** — the network, the clock, the random source, third-party SDKs, sub-processes. They do *not* replace types your own code defines and owns. Those, you construct directly with real values.
+**Test doubles replace observable ports and nondeterministic boundaries**—network providers, clocks, random sources, subprocesses, and narrow repository ports in unit tests. They do *not* replace internal implementation details or domain values. Construct domain values directly and verify managed adapters with integration tests.
 
-A mock at the boundary is the testing analog of a port-and-adapter — it stands in for the world outside your code. A mock inside the boundary is a brittle simulation of code you could just *run*.
+A mock at a port is the testing analog of an adapter—it supplies a controlled collaborator through an explicit contract. Mocking an internal helper is a brittle simulation of code the test could simply run.
 
 ## The Iron Rule
 
 ```
-NEVER mock code you own. Mock at architectural boundaries — the network, the clock, the SDK.
+NEVER mock internal implementation details or domain values. Double explicit ports and
+nondeterministic boundaries; integration-test managed adapters against the real dependency.
 ```
 
 **No exceptions:**
@@ -27,40 +28,40 @@ NEVER mock code you own. Mock at architectural boundaries — the network, the c
 
 Mocks are useful for one job: replacing a *non-deterministic*, *slow*, or *side-effecting* dependency with a deterministic, fast stand-in. The HTTP call to a payment provider. The DB write that costs 50ms. The `Math.random()` whose value you want to control. The clock you want to freeze.
 
-Those are *real* benefits and the boundary is obvious — you don't own the payment provider; you don't want every test to spin up Postgres; you don't want a flaky test depending on system time.
+Those are *real* benefits: you do not want every unit test to call a payment provider, spin up Postgres, or depend on wall-clock time. Integration tests separately exercise the managed adapters you need confidence in.
 
-Mocks become harmful when they cross *into* code you own. Three failure modes:
+Mocks become harmful when they replace internal implementation rather than an explicit port. Three failure modes:
 
 1. **They couple tests to implementation.** A mock asserts "the function called helper X with args Y." Refactor to inline X → test breaks even though behavior didn't change.
 2. **They simulate something free to run.** Why mock `formatCurrency(100)` when you can just *call* `formatCurrency(100)`? The mock is a worse copy of the real thing.
-3. **They hide design problems.** A test that needs to mock four owned types is testing a unit that imports four owned dependencies. The smell is in the unit, not the test.
+3. **They hide design problems.** A test that needs four unrelated port doubles may be testing a unit with too many responsibilities. The smell can be in the unit, not the doubles.
 
-The Khorikov framing: mockable boundaries are *unmanaged* dependencies — out-of-process, controlled by someone else. *Managed* dependencies (your DB, your code) you exercise live. Freeman & Pryce: mock at *adapter boundaries* (ports), not at internal collaborators. Same rule, two framings.
+The useful axis is **architectural role**, not ownership. A port interface may be code you own and still be the correct unit-test seam; a private helper is code you own and is not. Managed dependencies such as your database require real integration coverage even when a unit test uses a narrow repository double.
 
 Two clarifications that often confuse:
-- **The database is a managed dependency**, even though it's "out of process." You own its schema and migrations. Tests run against a real test DB (containers, branches, ephemeral instances) — *not* mocked.
-- **The clock is an unmanaged dependency**, even though it's "in process." You don't own time. Inject a clock function and mock it in tests.
+- **The database is a managed dependency.** Adapter/integration tests run against a real test DB. Pure domain unit tests may double a narrow repository port; they do not mock a fluent query builder and call that database coverage.
+- **The clock is a nondeterministic boundary.** Freeze it via the test runner's clock control (preferred), or inject a `now` seam where global control is too broad—but never hand-monkey-patch `Date.now`.
 
-The boundary isn't strictly "in-process vs out-of-process." It's "code I own vs code I don't."
+The boundary is not strictly in-process/out-of-process or owned/unowned. Ask whether the collaborator is an explicit observable port, nondeterministic source, or internal implementation detail.
 
 ## Detection
 
 You are violating the rule if any of these are true:
 
-- A module-level mock on your own owned module.
+- A module-level mock on an internal helper/module rather than an explicit port.
 - `spyOn` on a private helper in the same module being tested.
 - A test constructs a mocked domain object (`mock<User>()`) to pass to the unit, when constructing a real `User` would work.
-- A test mocks the entire query builder instead of running against a real test DB.
+- A mocked query builder is the only coverage for database behavior.
 - A test's setup has 5+ mocks; the unit imports too much.
 - A test asserts on a function call in the same module.
-- A test mocks `Date.now()` directly via global stubbing instead of a clock seam.
+- A test hand-monkey-patches `Date.now` (e.g. `Date.now = () => ...`) instead of using the runner's clock control or a `now` seam.
 
 ## The Pattern
 
 ### Mock at the boundary; pass real values inside
 
 ```ts
-// ❌ Mocks everything — owned User type, owned formatter, owned DB.
+// ❌ Mocks domain values, pure formatting, and internal call choreography.
 test('sendInvoice formats and emails', async () => {
   const mockUser = mock<User>({ email: 'a@b' });
   const mockFormatter = mock(() => 'formatted');
@@ -73,7 +74,7 @@ test('sendInvoice formats and emails', async () => {
   expect(mockDb.insert).toHaveBeenCalled();
 });
 
-// ✅ Real owned values; only the email send is mocked (the unmanaged boundary).
+// ✅ Real domain values; the email port is doubled and the DB adapter is exercised live.
 test('sendInvoice sends a formatted email to the user', async () => {
   const user = makeUser({ email: 'a@b' });          // real User
   const invoice = makeInvoice({ totalCents: 4200 }); // real Invoice
@@ -83,8 +84,8 @@ test('sendInvoice sends a formatted email to the user', async () => {
   await sendInvoice({ user, invoice }, { db, email });  // db is a real test DB
 
   expect(sentEmails).toHaveLength(1);
-  expect(sentEmails[0].to).toBe('a@b');
-  expect(sentEmails[0].html).toContain('$42.00');
+  expect(sentEmails[0]?.to).toBe('a@b');
+  expect(sentEmails[0]?.html).toContain('$42.00');
 });
 ```
 
@@ -97,14 +98,15 @@ Where do `makeUser` / `makeInvoice` come from? A factory builds a valid entity a
 ```ts
 // generateMock: produce a valid sample value from a schema (e.g. zod's generators,
 // @anatine/zod-mock, or your own). Generically: "a valid instance of this schema."
-const userFactory = (overrides: Partial<User> = {}): User => ({
-  ...generateMock(userSchema),
-  ...overrides,
-});
+const userFactory = (overrides: Partial<User> = {}): User =>
+  userSchema.parse({
+    ...generateMock(userSchema),
+    ...overrides,
+  });
 
 // ✅ A real, fully-valid User. Every field satisfies userSchema.
 const user = userFactory({ status: 'active' });
-await suspendUser(user, { db: testDb });   // db is the real boundary, mocked/test-DB'd
+await suspendUser(user, { db: testDb });   // adapter behavior uses the real test DB
 ```
 
 Contrast with mocking the entity itself:
@@ -139,7 +141,7 @@ test('token past its expiry reads as expired', () => {
 });
 ```
 
-The clock is not an architectural boundary, so it doesn't need a mock *or* an injected seam — the test runner can pin `Date.now()` / `new Date()` directly. No global monkey-patching by hand, no flake, and production code carries no test-only parameter.
+The clock is a nondeterministic boundary, but it does not always need a constructor seam: the test runner can pin `Date.now()` / `new Date()` directly. No global monkey-patching by hand, no flake, and production code carries no test-only parameter.
 
 When you genuinely *can't* reach the runtime clock (a pure function you want frozen without touching global time, or a hot path where the global freeze is too broad), inject a `now` at the boundary instead:
 
@@ -153,7 +155,7 @@ expect(isExpired(token, () => new Date('2026-01-15T00:00:00Z'))).toBe(true);
 
 That keeps `Date` at the *boundary* — the signature names a `now` dependency the test supplies. Reach for it only when freezing the global clock won't do; for most code, freezing it will.
 
-### The DB is *not* mocked
+### The DB adapter is tested live
 
 ```ts
 // ❌ Mocking the query builder — tests pass; production breaks on column-name typos.
@@ -173,7 +175,7 @@ test('createOrder persists with status=pending', async () => {
 
 The mocked test gives false confidence — a typo in the column name, a missing index, a wrong table — the mock catches none of them. The DB test catches all of them because the boundary is exercised.
 
-A two-tier split is the common production pattern: unit tests *may* mock the DB boundary with a **typed deep mock** of the client (so column/method typos are still caught by the types), while a separate integration suite — run on its own in CI — exercises the real schema. What's forbidden is letting a mocked DB be your *only* DB coverage: if you mock the client in a unit test, there must be an integration test that runs the real query.
+A two-tier split is the common production pattern: domain unit tests double a **narrow repository port**, while a separate integration suite exercises the real adapter, query, migrations, and schema. Avoid typed deep mocks of fluent database clients: they couple tests to query-builder choreography while still missing database behavior. What's forbidden is letting a double be your only DB coverage.
 
 Setup costs are real but bounded: spin up a test DB in `beforeAll`, reset between tests, drop in `afterAll`. Modern test runners keep this snappy.
 
@@ -210,7 +212,7 @@ Each leaf tests in isolation with 1–2 mocks. The orchestrator gets a small int
 |---|---|
 | External APIs (payment, email, LLM, search) | Your domain types — construct with builders |
 | The clock (`now`, `Date.now`) | Your pure functions (formatters, validators, parsers) |
-| Randomness (`random`, `randomUUID`) | Your DB queries — use a real test DB |
+| Randomness (`random`, `randomUUID`) | DB adapters/queries — cover with a real test DB |
 | File system, sub-processes | Your schemas — use the real schema |
 | Browser globals in unit tests | Your handlers — test through the boundary with a real `Request` |
 | Logging / error tracker SDKs | Your components — render and assert on DOM |
@@ -223,7 +225,7 @@ For one test, yes. Across the whole suite, no — real DB tests catch real bugs,
 
 ### "Mocks isolate the unit-under-test"
 
-Mocks isolate from *dependencies* — fine for unmanaged deps. They also isolate from *real collaborators* — bad for owned deps. The collaborator is *also* code you wrote and want to verify works together. Don't mock the thing you want to verify.
+Mocks isolate the unit from a port so its decisions can be tested directly. Integration tests then verify that your real adapter satisfies that port. Do not mock the thing the current test claims to verify, and do not confuse a unit double with adapter coverage.
 
 ### "I have to mock the helper to test this branch"
 
@@ -243,8 +245,8 @@ Tools enable; they don't recommend. Module-level mocking is a sharp tool. The ru
 - A test mocks a function defined in the same file as the unit-under-test.
 - A test's `beforeEach` constructs 5+ mocks; the unit imports too much.
 - A test asserts on internal helper call counts.
-- A test mocks `Date.now()` via global stubbing instead of injecting a clock seam.
-- A test mocks the query builder instead of using a real test DB.
+- A test hand-monkey-patches `Date.now` (e.g. `Date.now = () => ...`) instead of using the runner's clock control or a `now` seam.
+- A mocked query builder is the only test of database behavior.
 - A refactor PR has 50+ test-fixture updates that don't correspond to behavior changes.
 - A PR author defends a test with "but it mocks correctly" instead of "but it asserts the right behavior."
 

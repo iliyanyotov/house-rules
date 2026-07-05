@@ -162,6 +162,7 @@ async function checkout(cartId: CartId): Promise<Result<Order, CheckoutError>> {
 // At the OUTERMOST edge, translate the typed error into the transport.
 // The framework wants an HTTP status or a thrown error boundary; give it one.
 export async function POST(req: Request) {
+  const { cartId } = CheckoutInput.parse(await req.json());
   const result = await checkout(cartId);
   if (result.ok) return json({ order: result.value }, { status: 201 });
 
@@ -210,15 +211,16 @@ The common halfway-house is a class hierarchy whose *only* discriminant is the c
 ```ts
 // ✅ One base every domain error extends. `type` is a STABLE, machine-readable
 // discriminant (a wire contract clients switch on) — never the human `message`.
-// `status` carries the transport mapping; `context` carries safe-to-expose detail;
-// `cause` chains the underlying failure for logs without leaking it to the client.
+// `status` carries the transport mapping; `context` is SERVER-SIDE diagnostic detail
+// (logged, never returned to clients); `cause` chains the underlying failure for logs.
 abstract class AppError extends Error {
   abstract readonly type: string;   // e.g. 'invoice/not_found' — stable, versioned
   abstract readonly status: number; // HTTP status this maps to
-  readonly context: Record<string, string | number>;
+  readonly context: Record<string, string | number>; // server-side only — logs, never a response
 
   constructor(message: string, context: Record<string, string | number> = {}, cause?: unknown) {
     super(message, { cause });       // native cause-chaining
+    this.context = context;          // strictPropertyInitialization requires this
     this.name = new.target.name;
   }
 }
@@ -243,22 +245,25 @@ class PaymentDeclinedError extends AppError {
 Interior layers throw and stay oblivious — no `try`/`catch`, no re-wrapping:
 
 ```ts
-async function loadInvoice(invoiceId: string): Promise<Invoice> {
+async function loadInvoice(invoiceId: InvoiceId): Promise<Invoice> {
   const row = await db.invoices.find(invoiceId);
   if (!row) throw new InvoiceNotFoundError(invoiceId); // propagates untouched
   return row;
 }
 ```
 
-One boundary catches the base and renders an RFC 7807 problem+json error — a structured body keyed by the stable `type`, *not* by a substring of the message:
+One boundary catches the base and renders an RFC 9457 problem+json error — a structured body keyed by the stable `type`, *not* by a substring of the message:
 
 ```ts
 // The SINGLE catch boundary. Everything below it just throws AppError subclasses.
 function toProblemResponse(e: unknown): Response {
   if (e instanceof AppError) {
-    log.warn(e.type, { context: e.context, cause: e.cause }); // cause stays server-side
+    // Never serialize an uncontrolled cause: an SDK error may retain auth headers or URLs.
+    log.warn(e.type, { context: e.context, causeKind: classifySafeCause(e.cause) });
     return json(
-      { type: e.type, title: e.message, status: e.status, ...e.context },
+      // RFC 9457 core only. NEVER spread `context` — it's server-side. Expose a client-facing
+      // detail by adding it explicitly (an allowlist), the way `secrets-handling` splits `publicDetails`.
+      { type: e.type, title: e.message, status: e.status },
       { status: e.status, headers: { 'content-type': 'application/problem+json' } },
     );
   }
@@ -284,7 +289,7 @@ A message is for a human reading a log. A `kind` is for code making a decision. 
 
 ### "I'll throw and catch it upstairs — same effect, less code"
 
-Not the same effect. A `throw` is invisible in the signature, catches your genuine bugs in the same block, and gives upstream code no compiler signal that the case exists. `if (!r.ok) return r` is one line, keeps the error named, and lets real bugs keep propagating.
+Not the same effect. A `throw` is invisible in the signature, catches your genuine bugs in the same block, and gives upstream code no compiler signal that the case exists. `if (!r.ok) return err(r.error)` is one line, keeps the error named, and lets real bugs keep propagating.
 
 ### "There's only one failure case today"
 
@@ -317,7 +322,7 @@ A wide error union is a signal, not a defect — it tells you exactly how many w
 
 | Excuse | Reality |
 |---|---|
-| "Throwing is idiomatic in JS" | The idiom is mid-shift — `safeParse`, tRPC, React Query, neverthrow, Effect all return tagged results. Lead, don't follow. |
+| "Throwing is idiomatic in JS" | The idiom is mid-shift — `safeParse`, React Query, neverthrow, Effect all return tagged results, and tRPC throws *typed* `TRPCError`s with a stable `code` (the disciplined-throw strategy above). Lead, don't follow. |
 | "A string error is simpler" | Simpler to *produce*, impossible to *branch on* safely. The caller pays for it with substring matches. |
 | "Exhaustive unions are overkill for errors" | They're the only thing that makes "did I handle every failure?" a compiler question instead of a production discovery. |
 | "Stack traces are better than values" | Put the cause in the variant (or the `cause` chain at the boundary). A stack trace is noise when the failure is "card declined." |
@@ -328,7 +333,7 @@ A wide error union is a signal, not a defect — it tells you exactly how many w
 
 **A recoverable, distinguishable failure belongs in the return type, not in a `throw`.**
 
-Make it disappear if you can. Throw it if it's a bug. Otherwise return `Result<T, E>` with `E` a discriminated union, propagate with `if (!r.ok) return r`, and convert to exceptions only at the outermost boundary.
+Make it disappear if you can. Throw it if it's a bug. Otherwise return `Result<T, E>` with `E` a discriminated union, propagate with `if (!r.ok) return err(r.error)`, and convert to exceptions only at the outermost boundary.
 
 ## Related
 

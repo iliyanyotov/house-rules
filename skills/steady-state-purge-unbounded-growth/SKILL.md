@@ -7,19 +7,19 @@ description: Use when adding a table, cache, log index, file-storage bucket, que
 
 ## Overview
 
-**Anything a long-running system *creates* must have a paired *purge*.** A row gets a TTL or a scheduled cleanup. A cache key gets an `EXPIRE`. A log index gets a retention policy. A blob bucket gets a lifecycle rule. No exceptions, even for "small" data — *especially* for "small" data, because small things accumulate silently for years before they break in a way the team didn't plan for.
+**Anything a long-running system *creates* must have a paired *retention plan*.** For most operational data that plan is a purge — a row gets a TTL or a scheduled cleanup, a cache key gets an `EXPIRE`, a log index gets a retention policy, a blob bucket gets a lifecycle rule. For durable business records that must be *kept* (ledger entries, financial/audit records, orders), the plan is instead *archival / partitioning / cold-storage* that bounds the hot store — not deletion. Either way, no create-path ships without a plan for keeping its footprint bounded. This holds even for "small" data — *especially* for "small" data, because small things accumulate silently for years before they break in a way the team didn't plan for.
 
-The system reaches *steady state* when growth equals purge — every day, the same number of rows enter and leave, and the table size oscillates around a fixed number. Until then, you have an unbounded growth problem regardless of the table's current size.
+The **hot working set** reaches steady state when expiry, purge, or partition rotation bounds the data that production queries and indexes must scan. A cold archive may still grow because the business must retain history; that archive needs a separate capacity, partition, access, and deletion/legal-hold plan. "Bound the hot path" and "plan retained growth" are both lifecycle work—neither implies deleting records the domain must keep.
 
 ## The Iron Rule
 
 ```
-NEVER ship a create-path without a purge-path. Every growing thing has a paired retention rule.
+NEVER ship a create-path without a retention plan. Every growing thing gets a paired rule: purge, or — for records that must be kept — archive/partition off the hot path.
 ```
 
 **No exceptions:**
 - Not for "the table is tiny"
-- Not for "we need the data for audit"
+- Not for "we need the data for audit" — retained data still needs an archival/partition plan; retention ≠ "leave it in the hot table forever"
 - Not for "Postgres handles big tables fine"
 - Not for "we have backups"
 
@@ -81,7 +81,9 @@ export const idempotencyKeys = pgTable('idempotency_keys', {
 
 // Daily cron: delete rows older than 7 days.
 export async function handlePurgeIdempotencyKeys(req: Request) {
-  if (req.headers.get('authorization') !== `Bearer ${env.CRON_SECRET}`) {
+  const token = req.headers.get('authorization')?.replace(/^Bearer /, '');
+  // Constant-time compare — a plain !== on a secret leaks timing; see `secrets-handling`.
+  if (!token || !secretsMatch(token)) {
     return new Response('Unauthorized', { status: 401 });
   }
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -102,7 +104,7 @@ await redis.set(`user:${userId}`, JSON.stringify(user));
 await redis.set(`user:${userId}`, JSON.stringify(user), { ex: 60 * 60 }); // 1 hour
 ```
 
-A cache entry without `EX` is a memory leak. Even if the data is "small," the keyspace can grow unbounded with old user IDs, partial migrations, and edge-case keys nobody remembered to clean.
+A cache entry without `EX` is a memory leak. Even if the data is "small", the keyspace can grow unbounded with old user IDs, partial migrations, and edge-case keys nobody remembered to clean.
 
 ### Soft-delete is not retention
 
@@ -129,9 +131,10 @@ Logs go to a system with built-in retention (datasets configured per project, er
 ```sql
 -- Partition by month; cron to DROP TABLE for partitions older than 90 days.
 CREATE TABLE events (
-  id uuid PRIMARY KEY,
+  id uuid NOT NULL,
   occurred_at timestamptz NOT NULL,
-  payload jsonb NOT NULL
+  payload jsonb NOT NULL,
+  PRIMARY KEY (id, occurred_at)  -- a PK on a partitioned table must include the partition key
 ) PARTITION BY RANGE (occurred_at);
 
 CREATE TABLE events_2026_01 PARTITION OF events
@@ -248,6 +251,6 @@ Then your queries scan an ever-growing set of soft-deleted rows. The optimizer s
 
 ## Reference
 
-- Michael Nygard, *Release It!* 2e (2018), ch. 5 — names "Steady State" as a stability pattern alongside Timeouts, Circuit Breaker, and Bulkheads. *"Every system should be able to run for a long time without operator intervention."*
+- Michael Nygard, *Release It!* 2e (2018), ch. 5 — names "Steady State" as a stability pattern alongside Timeouts, Circuit Breaker, and Bulkheads. His framing, paraphrased: for every mechanism that accumulates a resource, some other mechanism must recycle it.
 - Postgres docs on [partitioning](https://www.postgresql.org/docs/current/ddl-partitioning.html), [`pg_cron`](https://github.com/citusdata/pg_cron), and autovacuum — the operational toolkit for actually achieving steady state on a Postgres table.
-- Marc Brooker, ["Constant Work"](https://brooker.co.za/blog/2023/01/27/constant-work.html) — the broader case for designing systems whose cost per unit time is bounded regardless of accumulated state.
+- Colm MacCárthaigh, [*Reliability, constant work, and a good cup of coffee*](https://aws.amazon.com/builders-library/reliability-and-constant-work/) (AWS Builders' Library) — the constant-work pattern: systems that do the same uniform work regardless of conditions. Adjacent to, not identical with, bounded footprint — but the same instinct: cost per unit time shouldn't scale with accumulated state.

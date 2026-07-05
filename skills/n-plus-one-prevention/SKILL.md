@@ -7,17 +7,18 @@ description: Use when fetching related data in loops. Use when seeing multiple q
 
 ## Overview
 
-**Never query in a loop. Fetch related data in a single query.**
+**Never let query count grow once per returned item.** Fetch related data with joins or bounded batch queries for one paginated result set.
 
 N+1 is the pattern where you fetch N items, then make N more queries to get related data — 1 + N queries total. It's the most common database performance failure in apps, and it's almost always invisible until traffic grows enough to surface it.
 
 ## The Iron Rule
 
 ```
-NEVER put a database query inside a loop. One query for the list; one query for each relation.
+NEVER make query count proportional to result count. Join or batch each relation for a
+bounded page, and chunk ID lists only to respect documented database parameter limits.
 ```
 
-**No exceptions** — including but not limited to:
+**These are not exceptions:**
 - Not for "it's only a few items"
 - Not for "the query is fast"
 - Not for "we'll cache it"
@@ -35,7 +36,7 @@ The bug ships silently and surfaces in production when:
 - Connection-pool exhaustion: the DB rejects new queries while N+1 endpoints hold connections open.
 - The DB's CPU saturates because every page load hits it 100×.
 
-The fix is structural: **fetch all the data you need in one query** (via JOIN, `include`, relation-loading, or a typed batch fetch). The query count becomes O(1) instead of O(N).
+The fix is structural: **fetch all the data you need in one query** (via JOIN, `include`, relation-loading, or a typed batch fetch; for GraphQL resolvers, per-request batching — the dataloader pattern — is the standard fix). The query count becomes O(1) instead of O(N).
 
 ## Detection
 
@@ -60,7 +61,7 @@ const ordersWithCustomers = await Promise.all(
   orderRows.map(async (order) => {
     const customer = await db.select().from(customersTable)
       .where(eq(customersTable.id, order.customerId));
-    return { ...order, customerName: customer[0].name };
+    return { ...order, customerName: customer[0]!.name };
   })
 );
 // Total queries: 1 + N. For 1,000 orders → 1,001 queries.
@@ -89,7 +90,7 @@ const usersWithCounts = await Promise.all(
     const count = await db.select({ count: sql<number>`count(*)` })
       .from(ordersTable)
       .where(eq(ordersTable.userId, user.id));
-    return { ...user, orderCount: count[0].count };
+    return { ...user, orderCount: count[0]!.count };
   })
 );
 ```
@@ -108,7 +109,7 @@ const usersWithCounts = await db.select({
   .groupBy(usersTable.id);
 ```
 
-### Multiple relations — fetch them all in one shot
+### Multiple relations — fetch them in bounded batches
 
 ```ts
 // ❌ N+1 squared: one query per order × two relations per order.
@@ -122,19 +123,21 @@ for (const order of orderRows) {
 
 ```ts
 // ✅ Three queries total: orders, customers in one batch, items in one batch.
-const orderList = await db.select().from(ordersTable);
+const orderList = await db.select().from(ordersTable).limit(PAGE_SIZE); // cursor omitted
 const customerIds = orderList.map((o) => o.customerId);
 const orderIds = orderList.map((o) => o.id);
 
-const [customerList, itemList] = await Promise.all([
-  db.select().from(customersTable).where(inArray(customersTable.id, customerIds)),
-  db.select().from(orderItemsTable).where(inArray(orderItemsTable.orderId, orderIds)),
-]);
+const [customerList, itemList] = orderList.length === 0
+  ? [[], []]
+  : await Promise.all([
+      db.select().from(customersTable).where(inArray(customersTable.id, customerIds)),
+      db.select().from(orderItemsTable).where(inArray(orderItemsTable.orderId, orderIds)),
+    ]);
 
 // Then stitch in memory — O(N) work, but bounded by query count.
 ```
 
-The pattern is **fetch by ID list, stitch in memory**. Three queries scale the same as one; one query per relation per item does not.
+The pattern is **page, fetch each relation by ID list, stitch in memory**. This example uses three fixed round trips for one bounded page. It does not claim three queries have the same latency or data cost as one join—only that query count no longer grows once per item. If a page can exceed the database's bind-parameter limit, reduce the page size or chunk against a documented maximum; never send an unbounded `IN (...)` list.
 
 A bonus: the batch rewrite also fixes an ordering bug the loop version often hides. `Promise.all(items.map(async ...))` that `push`es results resolves in *completion* order, not input order — so the output is non-deterministically shuffled. Stitching in memory by mapping over the *original* list (looking each relation up by ID) preserves order for free.
 
@@ -148,6 +151,7 @@ const enriched = await Promise.all(users.map((u) => enrichUser(u)));
 
 // ✅ Write a batch version: one query for the whole set, stitch by id.
 async function enrichUsers(users: User[]): Promise<EnrichedUser[]> {
+  if (users.length === 0) return []; // inArray with [] throws — and there's nothing to fetch
   const profiles = await db.select().from(profilesTable)
     .where(inArray(profilesTable.userId, users.map((u) => u.id)));
   const byId = new Map(profiles.map((p) => [p.userId, p]));
@@ -196,7 +200,7 @@ The loop is simpler to *write*. The query is simpler to *execute*. The user pays
 
 ### "The ORM handles it"
 
-Most ORMs default to lazy loading — they make N+1 *easier* to write, not harder. The fix is to use the eager-loading API (`include`, `with`, `joinRelated`, or whatever your tooling calls it) explicitly. Don't trust defaults.
+Classic ORMs (Hibernate, ActiveRecord, Sequelize) default to lazy loading — they make N+1 *easier* to write, not harder. Modern TS clients (Prisma, Drizzle) have no lazy loading at all; there the N+1 is the explicit `await`-in-loop you wrote yourself. Either way the fix is the same: use the relation-fetching API (`include`, `with`, `joinRelated`, or whatever your tooling calls it) explicitly. Don't trust defaults — or loops.
 
 ### "It's an internal endpoint, doesn't matter"
 
@@ -221,8 +225,8 @@ Internal endpoints get hit by cron, by background jobs, by data exports, by retr
 | "The query is fast" | N×fast > 1×medium. The round-trip dominates. |
 | "We'll cache it" | Cache doesn't fix bad queries; it postpones them. |
 | "Looping is simpler" | Simpler to type, 100× slower to run. |
-| "The ORM defaults are fine" | ORMs default to lazy loading. Eager-load explicitly. |
-| "Premature optimization" | N+1 is not optimization — it's correctness. |
+| "The ORM defaults are fine" | Lazy-loading ORMs make N+1 the default; Prisma/Drizzle make you write it yourself. Batch or eager-load explicitly. |
+| "Premature optimization" | N+1 is a scaling defect — it breaks the query-count bound and only worsens as data grows. |
 
 ## Related
 

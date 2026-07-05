@@ -1,6 +1,6 @@
 ---
 name: principle-of-least-astonishment
-description: Use when naming a function, type, or module. Use when a function does more than its name suggests — sends an email, writes to the DB, or modifies global state behind a tame-sounding name. Use when a "getter" mutates state. Use when a "validator" returns a different type from the value it validated. Use when a developer reading your code has to read the body to know what it does. Use when a function's behavior surprised a reviewer.
+description: Use when a function does more than its name suggests — sends an email, writes to the DB, or modifies global state behind a tame-sounding name. Use when a "getter" mutates state. Use when a "validator" returns a different type from the value it validated. Use when a developer reading your code has to read the body to know what it does. Use when a function's behavior surprised a reviewer.
 ---
 
 # Principle of Least Astonishment
@@ -46,7 +46,7 @@ function getUserById(id: UserId, users: Map<UserId, User>): User | undefined {
 }
 ```
 
-`get` = pure retrieval. `fetch` = network. `load` = bootstrap. Reserve each verb for one kind of work.
+`get` = pure *or memoized* retrieval (a cached/amortized lookup may be async — e.g. `getCurrentUser`, `getSession`; see `naming-ahclc`). `fetch` = per-call network. `load` = bootstrap. Reserve each verb for one kind of work — what makes the ❌ above a surprise is the *per-call* network hit, not the `Promise`.
 
 ### A "validator" returns a verdict, not the transformed value
 
@@ -135,7 +135,7 @@ function formatPrice(price: Money): string {
 }
 ```
 
-The rule is "no *needless* async," not "never async on a fast path." A function that awaits on *some* branches should stay `async` so callers always `await` one consistent shape — the surprise would be a union of `T | Promise<T>` that callers must inspect. Keep it `async` when any path is genuinely async; drop `async` only when *every* path is synchronous.
+The rule is "no *needless* async", not "never async on a fast path." A function that awaits on *some* branches should stay `async` so callers always `await` one consistent shape — the surprise would be a union of `T | Promise<T>` that callers must inspect. Keep it `async` when any path is genuinely async; drop `async` only when *every* path is synchronous.
 
 The `async` keyword tells callers "this awaits something." When it doesn't, the keyword is a lie. Callers who `await` it pay a microtask hop; callers who don't `await` it forget to handle the Promise.
 
@@ -203,4 +203,4 @@ If the reader has to open the body to know what the function does, the name is w
 
 - Steve McConnell, *Code Complete* 2e (2004), ch. 7 ("High-Quality Routines") and ch. 11 ("The Power of Variable Names") — the canonical treatment of "names should match behavior."
 - Robert C. Martin, *Clean Code* (2008), ch. 2 ("Meaningful Names") and ch. 3 ("Functions") — same rule, different angle.
-- Joshua Bloch, *Effective Java* 3e (2018), Item 56 ("Design APIs to be hard to misuse") — the absence of surprise = the absence of misuse.
+- Joshua Bloch, "How to Design a Good API and Why It Matters" (2006 talk/paper) — the "easy to use, hard to misuse" maxim: the absence of surprise = the absence of misuse.

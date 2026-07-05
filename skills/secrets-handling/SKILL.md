@@ -14,7 +14,8 @@ A leaked secret is not a bug you fix — it's a secret you rotate. The work to p
 ## The Iron Rule
 
 ```
-NEVER include a secret in any payload that crosses a boundary — log, response, URL, bundle, commit.
+A credential goes to exactly ONE place — the authenticated request to the system that owns it.
+NEVER let it reach any other boundary: a log, a response body, a URL, a client bundle, a commit.
 ```
 
 **No exceptions:**
@@ -55,7 +56,7 @@ import { z } from 'zod';
 
 const Env = z.object({
   PAYMENT_SECRET_KEY: z.string().startsWith('sk_'),
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
   ERROR_TRACKER_TOKEN: z.string().min(1),
 });
 
@@ -109,16 +110,17 @@ async function callApi() {
 }
 
 // ✅ Secret in the Authorization header (not the URL); error names the
-//    operation, not the credential. The `cause` chain preserves the
-//    underlying error for operators without copying secrets into the
-//    user-visible message.
+//    operation, not the credential. Do not attach the uncontrolled SDK error
+//    as `cause`: many clients retain request config, including Authorization.
 async function callApi() {
   try {
     return await fetch('https://api.example.com/data', {
       headers: { Authorization: `Bearer ${env.API_KEY}` },
     });
   } catch (err) {
-    throw new Error('example.com call failed', { cause: err });
+    // Record an allowlisted classification, never the raw error/config.
+    metrics.increment('example_api.failed', { kind: classifyApiFailure(err) });
+    throw new Error('example.com call failed');
   }
 }
 ```
@@ -208,16 +210,18 @@ charge(1000, 'sk_live_oops');      // ❌ compile error: string is not PaymentAp
 charge(1000, user.displayName);    // ❌ compile error: a plain string can't slip into the key slot
 ```
 
-**Layer 3 — at egress: a structured error that strips sensitive context out of client-facing 5xx responses.** Operators get the full error; clients get a context-free view, so a secret placed in `context` for debugging never rides out in a response body.
+**Layer 3 — at egress: separate operator-only diagnostics from what a client may see, and keep secrets out of both.** `context` is private — operators only, and it *never* holds a credential. `publicDetails` is an explicit allowlist of client-safe fields. The client body is built by explicit construction, never by spreading `context` — so nothing rides out by accident, on *any* status code.
 
 ```ts
-type ErrorContext = Record<string, unknown>;
+type ErrorContext = Record<string, unknown>;          // operator-only; MUST NOT hold a secret
+type PublicDetails = Record<string, string | number>; // explicit allowlist, safe for clients
 
 class AppError extends Error {
   constructor(
-    message: string,
+    message: string,                                    // author-written — keep it secret-free
     readonly status: number,
-    private readonly context: ErrorContext = {},
+    private readonly context: ErrorContext = {},        // logs / error tracker only
+    private readonly publicDetails: PublicDetails = {},  // returned to clients, by allowlist
     options?: { cause?: unknown },
   ) {
     super(message, options);
@@ -228,23 +232,22 @@ class AppError extends Error {
     return { message: this.message, status: this.status, context: this.context };
   }
 
-  // Context-stripped — safe to return to clients on a 5xx.
-  asJsonWithoutContext() {
-    return { message: this.message, status: this.status };
+  // Client-facing — built by explicit allowlist, never by spreading `context`.
+  toClient() {
+    return { status: this.status, message: this.message, ...this.publicDetails };
   }
 }
 
-// At the boundary: log the full error internally, return the stripped view outward.
+// At the boundary: log the full error internally; return only the allowlisted view — for every status.
 function toResponse(err: AppError): Response {
-  logger.error(err.asJson()); // context (may hold a key) stays internal
-  const body = err.status >= 500 ? err.asJsonWithoutContext() : err.asJson();
-  return Response.json(body, { status: err.status });
+  logger.error(err.asJson());       // safe: `context` never holds a secret (the Layer-3 invariant)
+  return Response.json(err.toClient(), { status: err.status });
 }
 ```
 
-Stripping `context` isn't enough — some error *messages* carry secrets too: a DB driver may embed the connection string or the failing query in `err.message`. At the boundary, also redact the message of error classes you don't control — replace a database-driver error's message with a generic "a database error occurred" before it becomes a response body or an error-tracker title.
+Stripping `context` isn't enough — some error *messages and causes* carry secrets too: an HTTP client may retain request headers in its config, and a DB driver may embed the connection string or failing query. At the observability boundary, replace uncontrolled errors with an allowlisted classification and an author-written message. Do not serialize an unknown `cause`; preserve one only when it is your own secret-free error type.
 
-No layer is sufficient alone: a branded type doesn't stop a committed secret; a vault ref doesn't stop `context` leaking in a 5xx; a context-stripped error doesn't stop the wrong `string` reaching the key slot. Together they make a single slip survivable.
+No layer is sufficient alone: a branded type doesn't stop a committed secret; a vault ref doesn't stop a value being logged into the wrong field; an allowlisted egress doesn't stop the wrong `string` reaching the key slot. Together they make a single slip survivable.
 
 ## Pressure Resistance
 
@@ -300,5 +303,5 @@ It's a smaller hassle than the breach. Secret managers make rotation a 5-minute 
 
 ## Reference
 
-- [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html) — canonical reference. Broader category: OWASP Top 10 A02:2021 (Cryptographic Failures).
+- [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html) — canonical reference. Broader categories: hard-coded credentials (CWE-798) map to OWASP Top 10 A07:2025 (Authentication Failures; "Identification and Authentication Failures" in the 2021 edition), and secrets leaked into logs sit under A09:2025 (Security Logging and Alerting Failures).
 - [Node.js `crypto.timingSafeEqual`](https://nodejs.org/api/crypto.html#cryptotimingsafeequala-b) — the constant-time comparison primitive used above.

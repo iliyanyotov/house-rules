@@ -1,6 +1,6 @@
 ---
 name: fail-fast
-description: Use when designing a function that operates on inputs from another module. Use when tempted to write defensive `if (x == null) return` early-returns that silently substitute defaults. Use when an invariant is violated and the choice is between throwing now or "hoping it works out." Use when reviewing code that catches an error and falls through with no log, no re-throw, and a default value.
+description: Use when tempted to write defensive `if (x == null) return` early-returns that silently substitute defaults. Use when an invariant is violated and the choice is between throwing now or "hoping it works out." Use when reviewing code that catches an error and falls through with no log, no re-throw, and a default value.
 ---
 
 # Fail Fast
@@ -62,7 +62,7 @@ import { z } from 'zod';
 
 const env = z.object({
   PAYMENT_SECRET_KEY: z.string().startsWith('sk_'),
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
 }).parse(process.env);
 
 export async function chargeCustomer(amountCents: number) {
@@ -133,7 +133,8 @@ A sneakier variant reassigns to a degraded-but-working alternate instead of retu
 
 ```ts
 // ❌ Worse than `return []` — there's no empty value to betray the failure.
-let key = await loadSigningKey();
+const legacyKey = await loadSigningKey();
+let key: SigningKey;
 try { key = await loadRotatedKey(); } catch { key = legacyKey; }  // silently runs on the wrong key
 ```
 
@@ -161,7 +162,7 @@ Retry it. Explicitly. With backoff and a max attempt count. Not by `try/catch { 
 
 ### "I'll catch and log so we know about it"
 
-Catch and re-throw with context is fine: `throw new Error('loadOrders failed', { cause: err })`. Catch-and-log-and-continue is the smell — the continuation hides the bug from the caller, who now operates on bogus state.
+Catch and re-throw with author-written context is fine, but attach `cause` only when it is a controlled, secret-free error type. Unknown SDK/HTTP causes may retain credentials or request config; classify or sanitize them at the boundary instead. Catch-and-log-and-continue is the smell — the continuation hides the bug from the caller, who now operates on bogus state.
 
 ### "Throwing in async functions creates ugly stack traces"
 
@@ -175,7 +176,7 @@ Use `cause`. The chain is preserved across the await. Node and most error tracke
 - A catch that logs *and* returns a sentinel (`[]`, `null`, `''`) with a comment claiming "graceful degradation" — the log and comment make it *look* deliberate, but the caller still proceeds on missing data. A real graceful-degradation fallback is a designed boundary (see Pressure Resistance), not a leaf return.
 - An env-var fallback to a hardcoded placeholder (`'localhost'`, `'sk_test_dummy'`).
 - A test that asserts a function "doesn't throw" for clearly invalid input — that test enshrines the bug.
-- The phrases "just in case," "for safety," or "defensive" without a documented failure mode.
+- The phrases "just in case", "for safety", or "defensive" without a documented failure mode.
 - A `default: return ...` in a switch over a closed discriminant — should be `assertNever`.
 
 **All of these mean: the throw is missing, and the bug is now silent.**

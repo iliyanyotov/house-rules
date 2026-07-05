@@ -27,7 +27,7 @@ NEVER annotate what inference already gives you. ALWAYS annotate the boundary th
 
 Inference is one of TypeScript's strongest features. The compiler reads `const user = await fetchUser(id)` and knows `user`'s exact type — sharper than most humans would write by hand. When the source function's return type changes, the local variable's inferred type changes with it. No update needed. The refactor flows downstream.
 
-Manually annotating an interior local — `const user: User = await fetchUser(id)` — *freezes* the local type at the moment you wrote it. If `fetchUser` later returns `User | null`, your annotation is now stale, and the compiler accepts it because of subtyping rules.
+Manually annotating an interior local — `const user: User = await fetchUser(id)` — *freezes* the local type at the moment you wrote it. If `fetchUser` later returns a richer subtype (say `AdminUser extends User`), your annotation silently flattens it back to `User` — the compiler accepts it, because a subtype is assignable to its supertype, and the extra precision is lost with no error. (A *widening* change like `User | null` the compiler would at least reject; the silent-narrowing case is the one that bites.)
 
 But inference is also dangerous *at boundaries*. An exported function without a return-type annotation has its public contract determined by *whatever the last line of the body inferred to*. Refactor the body, and you've silently changed the public type. Every caller is now compiling against a new contract without anyone noticing.
 
@@ -126,21 +126,26 @@ const [user, setUser] = useState(null);
 const [user, setUser] = useState<User | null>(null);
 ```
 
-Rule of thumb: if inference produces the right type, don't annotate. If it produces something narrower than you intend (typical with `null`, empty arrays `[]`, empty objects `{}`), annotate.
+Rule of thumb: if inference produces the right type, don't annotate. If it produces something degenerate — `null`, `[]`, and `{}` collapse to `null`/`never[]`/`{}` — annotate to state the real intent. If inference is already correct but you want a compile-time validity check, reach for `satisfies`.
 
-### Exported `const` — annotate when intent is wider than initializer
+### Exported `const` — annotate to fix degenerate inference, `satisfies` to check
 
 ```ts
-// ❌ Inferred type is too narrow — `readonly ['active', 'paused']` instead of `OrderStatus[]`.
-export const FILTERABLE_STATUSES = ['active', 'paused'];
+// ❌ Inference is degenerate — `{ attempts: number; lastError: null }`.
+//    `lastError` is now pinned to `null` and can never hold an error.
+export const RETRY_CONFIG = { attempts: 3, lastError: null };
 
-// ✅ Annotation pins the broader intent.
-export const FILTERABLE_STATUSES: readonly OrderStatus[] = ['active', 'paused'];
+// ✅ Annotation states the real intent.
+export const RETRY_CONFIG: { attempts: number; lastError: Error | null } = {
+  attempts: 3,
+  lastError: null,
+};
 
-// ❌ Inferred type is too wide — `string`, but you wanted the literal union.
+// ❌ Inference already gives the literal `'en-US'` — correct, but unchecked.
+//    A typo like 'en_US' compiles clean.
 export const DEFAULT_LOCALE = 'en-US';
 
-// ✅ `satisfies` gives both — narrow type, plus check.
+// ✅ `satisfies` keeps the literal type AND proves it's a valid `Locale`.
 export const DEFAULT_LOCALE = 'en-US' satisfies Locale;
 ```
 
@@ -150,7 +155,7 @@ export const DEFAULT_LOCALE = 'en-US' satisfies Locale;
 // Parse step gives the type; export both schema and type.
 export const User = z.object({
   id: UserId,
-  email: z.string().email(),
+  email: z.email(),
   createdAt: z.date(),
 });
 
@@ -158,7 +163,7 @@ export const User = z.object({
 export type User = z.infer<typeof User>;
 ```
 
-This is the *one* case where you write `type User = ...` despite a function-like shape — because the schema and the type are the same fact, and `z.infer` enforces it.
+This is the *one* case where you write an explicit `type User = ...` alias — because the schema and the type are the same fact, and `z.infer` enforces it.
 
 ### Discriminated unions in state — annotate at the call site
 
@@ -229,6 +234,7 @@ Sometimes. When inference produces the wrong shape (too wide, too narrow, missin
 
 ## Reference
 
-- Google TypeScript Style Guide, [§Type System / Type Inference](https://google.github.io/styleguide/tsguide.html#type-inference) — *"Rely on the type inference of the compiler as much as possible. Omit type annotations for trivially inferred types."*
-- Dan Vanderkam, *Effective TypeScript* 2e (2024) — item 18 (*Use `typeof` to Infer Types*), item 19 (*Avoid Cluttering Your Code with Inferable Types*), item 9 (*Prefer Type Annotations to Type Assertions*).
+- Google TypeScript Style Guide, [§Type System / Type Inference](https://google.github.io/styleguide/tsguide.html#type-inference) — advises relying on the compiler's inference and omitting annotations on trivially inferred types.
+- Dan Vanderkam, *Effective TypeScript* 2e (2024) — item 18 (*Avoid Cluttering Your Code with Inferable Types*), item 9 (*Prefer Type Annotations to Type Assertions*).
+- TypeScript 5.5's [`isolatedDeclarations`](https://www.typescriptlang.org/tsconfig/#isolatedDeclarations) flag requires explicit types on exported declarations — the compiler itself now enforces the annotate-the-boundary half.
 - TypeScript Handbook, ["Type Inference"](https://www.typescriptlang.org/docs/handbook/type-inference.html) — the official position is that inference is preferred where it gives the right answer.

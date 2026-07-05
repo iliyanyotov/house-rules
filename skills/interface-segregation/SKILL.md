@@ -7,23 +7,20 @@ description: Use when typing a function parameter as a full SDK / framework / li
 
 ## Overview
 
-**A function's parameter type should describe *only* the methods or properties the function actually uses** — not the full upstream interface. In TypeScript, this almost always means accepting `Pick<FullType, 'thingIUse'>` or a hand-written narrow interface, never the full SDK / framework / library object.
+**A business-facing function's parameter type should describe the capability it uses**—not an entire upstream SDK. Prefer a hand-written port for stable domain contracts; use `Pick` when the selected upstream method has a simple, useful type.
 
 A function that takes `db: Database` when it only calls `db.select` accepts more than it needs. The cost: tests must provide a full `Database` mock; refactors that change *any* method on `Database` ripple to this function's tests; the contract is unclear ("which methods does this function depend on?").
 
 A function that takes `db: Pick<Database, 'select'>` accepts exactly what it needs. Tests provide `{ select: () => ... }` and nothing else; the contract is self-documenting; the rest of `Database` is free to evolve.
 
-## The Iron Rule
+## The Default
 
 ```
-NEVER type a parameter as a full SDK object. Type it to what the function actually uses.
+PREFER a narrow capability at business boundaries. Accept the full client only inside the
+adapter/composition layer whose job is to own that client's lifecycle or coordinated surface.
 ```
 
-**No exceptions:**
-- Not for "Pick is verbose"
-- Not for "tests already work with the full type"
-- Not for "hand-written interfaces are a maintenance burden"
-- Not for "it's the same `db` instance — what's the point?"
+Do not narrow mechanically. Fluent, generic, and overloaded SDK methods often make `Pick<Client, 'method'>` harder to fake and more coupled to vendor types than a small hand-written port.
 
 ## Why
 
@@ -51,51 +48,38 @@ You are violating the rule if any of these are true:
 
 ## The Pattern
 
-### `Pick<T, ...>` — the canonical TS form
+### `Pick<T, ...>` — for simple upstream method types
 
 ```ts
-// ❌ Takes the full Database. Tests must fake every method.
-import type { db as realDb } from './db';
-type Database = typeof realDb;
+type DirectoryUser = { id: string; email: string };
+type DirectoryClient = {
+  getUser(id: string): Promise<DirectoryUser | null>;
+  searchUsers(query: string): Promise<DirectoryUser[]>;
+  disconnect(): Promise<void>;
+};
 
-export async function listInvoices(database: Database, orgId: OrgId) {
-  return database.select().from(invoices).where(eq(invoices.orgId, orgId));
+// ❌ Business function takes lifecycle/search capabilities it never uses.
+export async function findOwnerEmailWide(client: DirectoryClient, id: string) {
+  return (await client.getUser(id))?.email;
 }
 
-// Test must provide a full Database — painful.
-test('lists invoices', async () => {
-  const db = {
-    select: () => ({ from: () => ({ where: () => Promise.resolve([/* ... */]) }) }),
-    insert: () => { /* unused but type demands it */ },
-    update: () => { /* unused but type demands it */ },
-    delete: () => { /* unused but type demands it */ },
-    transaction: () => { /* unused but type demands it */ },
-    query: { /* unused but type demands it */ },
-    // ... 25 more
-  } as Database;
-});
-```
-
-```ts
-// ✅ Pick only what's used.
-export async function listInvoices(
-  database: Pick<typeof realDb, 'select'>,
-  orgId: OrgId,
+// ✅ The upstream method is simple, so Pick is an honest small contract.
+export async function findOwnerEmail(
+  client: Pick<DirectoryClient, 'getUser'>,
+  id: string,
 ) {
-  return database.select().from(invoices).where(eq(invoices.orgId, orgId));
+  return (await client.getUser(id))?.email;
 }
 
-// Test: just provide `select`.
-test('lists invoices', async () => {
-  const database = {
-    select: () => ({ from: () => ({ where: () => Promise.resolve([/* ... */]) }) }),
+test('returns the owner email', async () => {
+  const client = {
+    getUser: async () => ({ id: 'u1', email: 'owner@example.com' }),
   };
-  const result = await listInvoices(database, 'o1' as OrgId);
-  expect(result).toHaveLength(2);
+  expect(await findOwnerEmail(client, 'u1')).toBe('owner@example.com');
 });
 ```
 
-`Pick<typeof realDb, 'select'>` extracts just the `select` method's full type (overloads and all), so the fake's `select` must return the right shape — but the rest of `Database` doesn't matter.
+`Pick` preserves the selected method's full type, overloads and generics included. Use it only when that extracted contract remains practical. Fluent query builders often do not; prefer a port such as `InvoiceReader.listByOrg` that returns the domain shape and test the adapter against the real database separately.
 
 ### Hand-written narrow interface
 
@@ -118,7 +102,7 @@ Production wires it:
 
 ```ts
 const invoiceReader: InvoiceReader = {
-  findById: (id) => db.query.invoices.findFirst({ where: eq(invoices.id, id) }),
+  findById: async (id) => (await db.query.invoices.findFirst({ where: eq(invoices.id, id) })) ?? null,
   listByOrg: (orgId) => db.query.invoices.findMany({ where: eq(invoices.orgId, orgId) }),
 };
 ```
@@ -147,7 +131,7 @@ Now `getAuthHeader` is testable with any object that has `headers.get` — a pla
 
 ### Namespaced clients (Prisma-style)
 
-For `client.model.operation()` APIs, segregating to a model still drags in that model's full CRUD: `Pick<PrismaClient, 'creditBalance'>` narrows away the *other* models but keeps every `creditBalance` method. For true segregation, hand-write the narrow shape:
+For `client.model.operation()` APIs, segregating to a model still drags in that model's full CRUD: `Pick<PrismaClient, 'creditBalance'>` narrows away the *other* models but keeps every `creditBalance` method. At a business boundary, hand-write the narrow shape:
 
 ```ts
 type CreditBalanceReader = { creditBalance: Pick<PrismaClient['creditBalance'], 'findUnique'> };
@@ -160,6 +144,10 @@ Note that `Omit<PrismaClient, '$connect' | '$transaction' | …>` (the common `P
 The rule is **type to what you use**, not **type to a single method per parameter**. If a function uses 4 methods of `Database`, the parameter type lists those 4. The cost of being too granular is too many narrow interfaces (each used by one function), which dilutes the benefit.
 
 A useful heuristic: if your `Pick<>` lists 3+ method names and you have multiple functions doing similar work, extract a named interface (`InvoiceReader`, `Logger`, etc.). For 1-2 methods, inline `Pick` is fine.
+
+### When the full client is the correct parameter
+
+An adapter factory, transaction runner, migration tool, or composition root may intentionally coordinate the client's full lifecycle or several surfaces. Its contract *is* the client, so narrowing it invents a false abstraction. Keep the full type there; expose narrow domain ports from that layer to business code.
 
 ### Read-only vs read-write segregation
 
@@ -191,7 +179,7 @@ This makes intent visible at the call site: "this function only reads" vs "this 
 
 ### "Pick is verbose"
 
-`Pick<typeof db, 'select'>` is 25 characters. The expanded full-type alternative bloats *every test* that touches the function — the savings on the test side dominate.
+For a simple method, an inline `Pick` is cheap. For a fluent or overloaded client, a named domain port is usually clearer and cheaper to fake. Judge the resulting contract, not its character count.
 
 ### "Tests already work fine with the full type"
 
@@ -211,7 +199,7 @@ For `Pick`, you import nothing new — it's built in. For hand-written interface
 
 ### "It's bad form to type to implementation details"
 
-The point of segregation is the opposite — you're typing to the *minimum contract*, which is more abstract than the full library type. Less "implementation detail," not more.
+The point of segregation is the opposite — you're typing to the *minimum contract*, which is more abstract than the full library type. Less "implementation detail", not more.
 
 ## Red Flags
 
@@ -222,14 +210,14 @@ The point of segregation is the opposite — you're typing to the *minimum contr
 - A mock fixture file with 100s of lines of unused method stubs.
 - A function comment "only uses the X method" — the type should say that, not the comment.
 
-**All of these mean: the parameter type is too wide — narrow it with `Pick<>` or a hand-written interface.**
+**All of these mean: inspect the boundary. Business code usually needs a narrow port; an adapter that intentionally owns the full client may not.**
 
 ## Common Rationalizations
 
 | Excuse | Reality |
 |---|---|
 | "It's the same object at runtime" | Sure — but the parameter type is what tests and readers see. They're the audience. |
-| "`Pick<...>` looks ugly" | 25 chars vs. dozens of lines of mock setup. Net beauty is positive. |
+| "`Pick<...>` looks ugly" | Use it when the extracted method type is simple; otherwise name the domain capability with a hand-written port. |
 | "I'd have to think about which methods to include" | That thinking *is* the design. It's the work. |
 | "Tests just `as` the type" | `as` is the smell. Segregating avoids the smell altogether. |
 | "We share types for consistency" | Share *narrow* types for genuine sharing. The full type is a category error. |
@@ -242,5 +230,5 @@ The point of segregation is the opposite — you're typing to the *minimum contr
 
 ## Reference
 
-- Robert C. Martin, *Agile Software Development: Principles, Patterns, and Practices* (2002) — the "I" in SOLID. Original framing: "Many client-specific interfaces are better than one general-purpose interface."
+- Robert C. Martin, *Agile Software Development: Principles, Patterns, and Practices* (2002) — the "I" in SOLID: "Clients should not be forced to depend on methods they do not use." (The oft-quoted "many client-specific interfaces are better than one general-purpose interface" is the common paraphrase.)
 - Steve Freeman & Nat Pryce, *Growing Object-Oriented Software, Guided by Tests* (2009) — the "ports" pattern is interface-segregation applied at the *module* boundary: the domain code declares an interface for what it needs; adapters in the outer layer implement it.

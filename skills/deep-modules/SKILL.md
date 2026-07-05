@@ -1,6 +1,6 @@
 ---
 name: deep-modules
-description: Use when designing a new module, package, or function. Use when tempted to expose every internal helper, write thin pass-through wrappers, or add another configuration option "for flexibility." Use when reviewing a class with 30 public methods or a function with 12 parameters. Use when a feature requires touching seven files to make a small change.
+description: Use when tempted to expose every internal helper, write thin pass-through wrappers, or add another configuration option "for flexibility." Use when reviewing a class with 30 public methods or a function with 12 parameters. Use when a feature requires touching seven files to make a small change.
 ---
 
 # Deep Modules
@@ -75,7 +75,7 @@ export const usersRepo = {
 
   /** Update the user's email after parsing the new value. */
   async changeEmail(id: UserId, email: string): Promise<void> {
-    const valid = z.string().email().parse(email);
+    const valid = z.email().parse(email);
     await db.updateUser(id, { email: valid });
   },
 };
@@ -137,7 +137,7 @@ The first version is `mailer.send` with extra typing — a tax with no benefit. 
 
 ### Ousterhout's example — file I/O
 
-The classic shallow design is C's `read`, `write`, `lseek`, `open`, `close` — five primitives, the caller assembles. The deep design is Python's `open(path).read()` — two methods, one returns the entire file. The Python interface hides the seek/buffer/state machine. The C interface exposes it. Same problem, two depths.
+Ousterhout's flagship deep module is the Unix file I/O interface: five calls — `open`, `read`, `write`, `lseek`, `close` — hiding an enormous implementation (device drivers, buffering, filesystems, caching), with good defaults (sequential access; `lseek` exists only for the rare random-access case). His shallow counter-example is the layered Java I/O class library — to read serialized objects with buffering, every caller assembles `FileInputStream` + `BufferedInputStream` + `ObjectInputStream` themselves ("classitis"). Same problem, two depths.
 
 ## Pressure Resistance
 
@@ -163,7 +163,7 @@ Single-responsibility says **one reason to change**, not **small surface**. A de
 
 ### "It's just a quick utility, no need to design it"
 
-Utilities are the worst offenders. They grow public-by-accident: someone exposes a helper "just for this test," then it's in the API forever. Start utilities private; promote to public only when justified.
+Utilities are the worst offenders. They grow public-by-accident: someone exposes a helper "just for this test", then it's in the API forever. Start utilities private; promote to public only when justified.
 
 ## Red Flags
 
@@ -196,5 +196,5 @@ Utilities are the worst offenders. They grow public-by-accident: someone exposes
 
 ## Reference
 
-- John Ousterhout, *A Philosophy of Software Design* (2018), ch. 4 ("Modules Should Be Deep") — the original framing of *information hiding* and *interface vs. implementation cost*. The substring and file-I/O examples are his.
+- John Ousterhout, *A Philosophy of Software Design* (2018), ch. 4 ("Modules Should Be Deep") — the original framing of *information hiding* and *interface vs. implementation cost*. The Unix-vs-Java file I/O contrast above is his.
 - David Parnas, ["On the Criteria to Be Used in Decomposing Systems into Modules"](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf) (1972) — the 50-year-old foundation: hide design decisions inside modules so they can change without breaking callers.

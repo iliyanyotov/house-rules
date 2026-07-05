@@ -1,6 +1,6 @@
 ---
 name: comments-as-why-not-what
-description: Use when writing a comment. Use when reviewing a PR where every block has a one-line preamble describing what the next lines do. Use when an existing comment "explains" what well-named code already expresses. Use when a comment references "the task" or "the ticket" — context that doesn't survive into the future. Use when a `// TODO` has been in the codebase >6 months. Use when JSDoc on a function repeats the types the signature already declares.
+description: Use when writing a comment that restates what the code already says. Use when reviewing a PR where every block has a one-line preamble describing what the next lines do. Use when an existing comment "explains" what well-named code already expresses. Use when a comment references "the task" or "the ticket" — context that doesn't survive into the future. Use when a `// TODO` has been in the codebase >6 months. Use when JSDoc on a function repeats the types the signature already declares.
 ---
 
 # Comments Explain Why, Not What
@@ -109,7 +109,7 @@ A TODO without an owner and an issue is going to live forever. If you can't writ
 
 ```ts
 // ✅ Names the underlying issue and the condition for removal.
-// HACK: the runtime's `cacheTag` type doesn't include the readonly variant
+// HACK: the runtime's `revalidateTag` type doesn't accept the readonly variant
 // we get from `as const`. Spreading into a mutable array fixes the type.
 // Remove when upstream ships #nnnn (tracked, open as of 2026-05).
 revalidateTag([...readonlyTags]);
@@ -184,7 +184,7 @@ If removing the comment loses information, keep it. If it doesn't, delete it.
 
 **"The linter requires JSDoc."** Configure the linter to require *meaningful* JSDoc only on *exported* APIs, not on every internal function. Most lint configs support this granularity.
 
-**"I'm documenting for my future self."** Future-you reads code the same way present-you does. If present-you wouldn't need the comment, future-you won't either.
+**"I'm documenting for my future self."** Good — that's exactly what why-comments are for. Present-you holds context future-you will have lost: the constraint, the rejected alternative, the external quirk. Write down exactly the context that will evaporate — and nothing the code already says.
 
 **"Comments narrate the change for the reviewer."** That's the PR description's job. The PR description is read once, by the reviewer. A comment in the code is read forever, by every future reader.
 
@@ -216,5 +216,5 @@ The deletion test is the single most useful filter: if removing the comment woul
 ## Reference
 
 - Robert C. Martin, *Clean Code* (2008), ch. 4 — the canonical chapter on "Good Comments and Bad Comments." The good-comment list maps almost exactly onto "why."
-- Steve McConnell, *Code Complete* 2e (2004), ch. 32 ("Self-Documenting Code") — *"The best documentation is the code itself."*
-- John Ousterhout, *A Philosophy of Software Design* (2018), chs. 12–16 — the contrary positive case: writes *more* comments, but only ones that capture *intent* the code can't. Same rule, framed positively.
+- Steve McConnell, *Code Complete* 2e (2004), ch. 32 ("Self-Documenting Code") — the case that the best documentation is the code itself.
+- John Ousterhout, *A Philosophy of Software Design* (2018), chs. 12–13 and 15 — the contrary positive case: writes *more* comments, but only ones that capture *intent* the code can't. Same rule, framed positively.

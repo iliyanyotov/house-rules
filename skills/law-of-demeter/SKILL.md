@@ -14,7 +14,7 @@ The point isn't dot-counting. The point is that `a.b.c.d` *encodes knowledge* ab
 ## The Iron Rule
 
 ```
-NEVER drill more than one level into a parameter. Take the value you need, or ask the immediate neighbor.
+NEVER drill more than one level into a domain type whose shape you control. Take the value you need, or ask the immediate neighbor. (External APIs, built-in types, and fluent transforms are out of scope — see below.)
 ```
 
 **No exceptions:**
@@ -150,7 +150,7 @@ Each module handles its own structure. Renaming `events` to `eventLog` requires 
 
 ### One-dot-per-line as a soft heuristic
 
-The folk version of Demeter: *"only one dot per line of code."* It's a heuristic, not a rule — `array.map(...)` is two dots and obviously fine. But when you see 3+ dots between *named entities* (not method-chained calls), that's the signal.
+The folk version of Demeter: *"only one dot per line of code."* It's a heuristic, not a rule — `items.filter(...).map(...)` is two dots and obviously fine. But when you see 3+ dots between *named entities* (not method-chained calls), that's the signal.
 
 ```ts
 // ✅ Fine — method chaining on the same entity (array operations).
@@ -162,7 +162,7 @@ result.user.account.permissions.flags.includes('admin');
 
 The distinction: the first chain operates on a *single value* through transformations; the second drills through *multiple entities*. Drilling is the Demeter violation.
 
-### When to ignore the rule
+### Outside the rule's scope
 
 Some chains are unavoidable and fine:
 
@@ -227,5 +227,5 @@ Apply incrementally — when you'd write `a.b.c.d`, write `getXFromA(a)` instead
 
 ## Reference
 
-- Karl Lieberherr and Ian Holland, ["Assuring good style for object-oriented programs"](https://www2.ccs.neu.edu/research/demeter/papers/law-of-demeter/oopsla88-law-of-demeter.pdf) (1989) — the original formulation. Named after the Demeter Project at Northeastern University.
-- Andy Hunt & Dave Thomas, *The Pragmatic Programmer* (1999), §10 ("It's Just a View") — the modern programmer-facing restatement: *"reduce coupling by writing 'shy' code."*
+- Karl Lieberherr, Ian Holland, and Arthur Riel, ["Object-Oriented Programming: An Objective Sense of Style"](https://www2.ccs.neu.edu/research/demeter/papers/law-of-demeter/oopsla88-law-of-demeter.pdf) (OOPSLA '88) — the original formulation. Named after the Demeter Project at Northeastern University.
+- Andy Hunt & Dave Thomas, *The Pragmatic Programmer* (1999), "Decoupling and the Law of Demeter" (Topic 28, "Decoupling", in the 2019 20th-anniversary ed.) — the modern programmer-facing restatement: *"reduce coupling by writing 'shy' code."*

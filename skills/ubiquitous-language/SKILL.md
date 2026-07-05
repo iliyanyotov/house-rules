@@ -1,6 +1,6 @@
 ---
 name: ubiquitous-language
-description: Use when naming a function, type, schema column, route, or any user-facing identifier in a project that has a domain. Use when stakeholders use words for things that the code uses different words for. Use when "what should we call this?" comes up in code review. Use when reading code in a project area you're unfamiliar with and need to map between domain terms and code terms.
+description: Use when stakeholders use words for a concept that the code names differently (e.g. domain says "invoice", code says `bill_record`). Use when naming a schema column, route, or type for a domain concept and choosing between the domain's word and a code-only word. Use when "what should we call this?" comes up in code review. Use when reading code in a project area you're unfamiliar with and need to map between domain terms and code terms.
 ---
 
 # Ubiquitous Language

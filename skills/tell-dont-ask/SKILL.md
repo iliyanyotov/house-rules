@@ -21,7 +21,7 @@ NEVER read another module's state to make a decision about that module's data. T
 - Not for "it's just one if-check"
 - Not for "the module would have too many methods"
 - Not for "it's not OO — we don't have objects"
-- Not for "sometimes I really do need to read the state"
+- Not for "sometimes I really do need to read the state" *to make a decision* (reading purely for display/logging is fine — see below)
 
 ## Why
 
@@ -112,6 +112,7 @@ The "free tier exceeds limit" rule lives once, in `shouldPromptUpgrade`. Adding 
 // ❌ A pipeline that reads, decides, reads, decides…
 async function processOrder(orderId: OrderId) {
   const order = await orderRepo.findById(orderId);
+  if (!order) return; // not found — nothing to process
   if (order.status === 'pending') {
     if (order.paymentMethod === 'card') {
       const result = await chargeCard(order.amount);
@@ -134,6 +135,7 @@ async function processOrder(orderId: OrderId) {
 // ✅ A pipeline that tells each step what to do.
 async function processOrder(orderId: OrderId) {
   const order = await orderRepo.findById(orderId);
+  if (!order) return; // not found — nothing to process
   const result = await attemptConfirmation(order, paymentProcessor);
   await orderRepo.save(result.order);
   if (result.kind === 'failed') {
@@ -198,9 +200,9 @@ user.email = email;
 
 The boundary is sharp: outside the email module, you have `unknown`; inside, you have `EmailAddress`. The transition (the parse) *is* the validation; there's no separate "validator" abstraction.
 
-### When to ask (the exceptions)
+### Informational reads are outside the rule's scope
 
-Tell-Don't-Ask isn't absolute. **Ask is fine when**:
+The rule governs decisions about another module's data. **Reading is fine when**:
 
 - The query is purely informational (rendering UI, logging, debugging).
 - The caller's *only* purpose is to display the data (a view layer reads model fields freely).
@@ -318,6 +320,7 @@ Apply incrementally. Next time you'd write `if (entity.x === ...)` outside the e
 
 ## Reference
 
-- Andy Hunt and Dave Thomas, *The Pragmatic Programmer* (1999, 20th-anniversary ed. 2019) — named the principle "Tell, Don't Ask." The underlying cohesion argument carries across functional and OO codebases.
-- Martin Fowler, *Refactoring* (2nd ed., 2018) — the related code smells **Feature Envy** and **Inappropriate Intimacy** name the violations of this principle.
+- Andy Hunt and Dave Thomas — the phrase "Tell, Don't Ask" is theirs, via their pragprog article of that name and "The Art of Enbugging" (IEEE Software, Jan/Feb 2003); the material appears in *The Pragmatic Programmer*, 20th-anniversary ed. (2019), Topic 28 ("Decoupling"). The underlying cohesion argument carries across functional and OO codebases.
+- Martin Fowler, *Refactoring* (2nd ed., 2018) — the related code smells **Feature Envy** and **Insider Trading** (called *Inappropriate Intimacy* in the 1st ed.) name the violations of this principle.
+- Martin Fowler, ["TellDontAsk"](https://martinfowler.com/bliki/TellDontAsk.html) (bliki, 2013) — a lukewarm, dissenting take worth knowing: he favors co-locating behavior with data but tolerates queries rather than banning them.
 - Steve Freeman & Nat Pryce, *Growing Object-Oriented Software, Guided by Tests* (2009) — frames the same idea from a TDD perspective: design with messaging in mind, not with state-then-conditional in mind.

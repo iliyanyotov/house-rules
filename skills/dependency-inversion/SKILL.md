@@ -14,13 +14,13 @@ Imports flow in one direction: **outer → inner, never the reverse.**
 ## The Iron Rule
 
 ```
-NEVER let domain code import infrastructure. The domain declares the port; the adapter implements it.
+NEVER let domain code import infrastructure at runtime. The domain declares the port; the adapter implements it. (Type-only imports of shared shapes are fine — see the import-direction check.)
 ```
 
 **No exceptions:**
 - Not for "it's so simple to just call the DB directly"
 - Not for "we're not going to swap databases"
-- Not for "ports are overengineered"
+- Not for "ports are overengineered" — a function parameter *is* the port (the tiny-project note is in "When this is overkill", not a reason to skip it)
 - Not for "I'd have to refactor everything"
 
 ## Why
@@ -64,7 +64,8 @@ import { db, products } from '../infrastructure/db';
 export async function calculateTotalPrice(orderItems: OrderItem[]): Promise<Money> {
   let total = Money.zero('USD');
   for (const item of orderItems) {
-    const product = await db.select().from(products).where(eq(products.id, item.productId));
+    const [product] = await db.select().from(products).where(eq(products.id, item.productId));
+    if (!product) throw new ProductNotFoundError(item.productId);
     total = total.add(product.price.scaleBy(item.quantity));
   }
   return total;
@@ -75,16 +76,18 @@ export async function calculateTotalPrice(orderItems: OrderItem[]): Promise<Mone
 // ✅ Domain declares the port; doesn't know about the DB library.
 // src/domain/pricing.ts
 export type ProductReader = {
-  findById: (id: ProductId) => Promise<Product | null>;
+  findManyByIds: (ids: ProductId[]) => Promise<Map<ProductId, Product>>;
 };
 
 export async function calculateTotalPrice(
   reader: ProductReader,
   orderItems: OrderItem[],
 ): Promise<Money> {
+  // One batched read, not a query per item — see `n-plus-one-prevention`.
+  const products = await reader.findManyByIds(orderItems.map((item) => item.productId));
   let total = Money.zero('USD');
   for (const item of orderItems) {
-    const product = await reader.findById(item.productId);
+    const product = products.get(item.productId);
     if (!product) throw new ProductNotFoundError(item.productId);
     total = total.add(product.price.scaleBy(item.quantity));
   }
@@ -98,9 +101,9 @@ import { db, products } from '../infrastructure/db';
 import type { ProductReader } from '../domain/pricing';
 
 export const dbProductReader: ProductReader = {
-  async findById(id) {
-    const [row] = await db.select().from(products).where(eq(products.id, id));
-    return row ?? null;
+  async findManyByIds(ids) {
+    const rows = await db.select().from(products).where(inArray(products.id, ids));
+    return new Map(rows.map((row) => [row.id, row]));
   },
 };
 ```
@@ -111,7 +114,7 @@ import { calculateTotalPrice } from '../domain/pricing';
 import { dbProductReader } from '../adapters/dbProductReader';
 
 export async function handlePostOrder(req: Request) {
-  const items = await req.json();
+  const items = OrderItems.parse(await req.json());
   const total = await calculateTotalPrice(dbProductReader, items);
   return Response.json({ total: total.toJSON() });
 }
@@ -152,7 +155,7 @@ Once a port has several methods, or a service composes several ports, the idioma
 ```ts
 class DbProductReader implements ProductReader {
   constructor(private readonly db: Db) {}            // infra injected in
-  findProduct(id: ProductId) { return this.db.products.find(id); }
+  findManyByIds(ids: ProductId[]) { return this.db.products.findMany(ids); } // → Map<ProductId, Product>
 }
 class PricingService {
   constructor(private readonly products: ProductReader) {}   // port injected in

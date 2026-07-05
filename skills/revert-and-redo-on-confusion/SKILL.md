@@ -139,27 +139,27 @@ Suppose you're refactoring a stateful component from useState sprawl to a discri
 ```
 00:00 — Commit green state.
 00:00 — Begin refactor. Replace 3 useState with 1.
-00:10 — Tests fail; a timer cleanup is misbehaving.
-00:15 — Try one fix. Tests still failing differently now.
-00:25 — Realize the onExpire callback was reading stale state. Try a ref.
-00:32 — Tests passing, but a downstream consumer is broken.
-00:45 — Fixing the consumer. Add a prop. Then remove it. Then add a different one.
-01:00 — TIMER. Run `git diff`. The diff is 200 lines of half-finished changes.
+00:06 — Tests fail; a timer cleanup is misbehaving.
+00:10 — Try one fix. Tests still failing differently now.
+00:16 — Realize the onExpire callback was reading stale state. Try a ref.
+00:20 — Tests passing, but a downstream consumer is broken.
+00:24 — Fixing the consumer. Add a prop. Then remove it. Then add a different one.
+00:30 — TIMER. Run `git diff`. The diff is 200 lines of half-finished changes.
        Some are unrelated (you renamed a file you didn't mean to).
 ```
 
-At 01:00 you have two options:
+At 00:30 you have two options:
 
-- **Bad:** keep going. Your `git diff` doesn't compose any coherent story. You'll spend the next hour untangling.
+- **Bad:** keep going. Your `git diff` doesn't compose any coherent story. You'll spend another 30 minutes untangling.
 - **Good:** save the diff, abandon the muddled attempt, and note: "I learned the timer's onExpire reads stale state because the useEffect captured the closure. The fix is to use a ref for the latest value. The downstream consumer needs its own concern split — that's a separate PR."
 
-Then redo. The second pass takes 25 minutes because you skip:
+Then redo. The second pass takes 15 minutes because you skip:
 
-- The wrong fix at 00:15 (which fought stale-closure with a useEffect change).
+- The wrong fix at 00:10 (which fought stale-closure with a useEffect change).
 - The accidental file rename.
 - The downstream half-fix.
 
-**Net time:** 60 min muddled + 60 min untangle = 120 min. Or: 60 min muddled + 25 min clean redo = 85 min. The revert paid back instantly.
+**Net time:** 30 min muddled + 30 min untangle = 60 min. Or: 30 min muddled + 15 min clean redo = 45 min. The revert paid back instantly.
 
 The same spiral happens server-side: stuck in a confusing fan-out delete handler, unsure which failures to surface, you patch the symptom (`// FIXME: error handling`, a stray `setTimeout`, a swallowed `catch`) and ship the marker instead of reverting to pick one coherent error strategy. The `// FIXME` *is* the muddle, made permanent.
 
@@ -216,11 +216,11 @@ Flow built on a wrong model produces wrong work. The "flow" of the last 30 minut
 
 ## Related
 
-- `small-changesets` — a spiraling PR -> redo in smaller steps
+- `small-changesets` — a spiraling PR → redo in smaller steps
 - `tidy-first-separate-commits` — disentangle muddled tidy+behavior diffs
 
 ## Reference
 
-- Kent Beck, *Test-Driven Development by Example* (2002) — when the test goes from red to *more* red (worse failures), the move is to revert the last change. Beck's framing: *"When in doubt, throw it away. It only took 10 minutes to write."*
+- Kent Beck, *Test-Driven Development by Example* (2002) — when the test goes from red to *more* red (worse failures), the move is to revert the last change. The spirit of Beck's advice: code you just wrote is cheap to throw away and rewrite; when in doubt, back up to green.
 - Michael Feathers, *Working Effectively with Legacy Code* (2004) — implicit in the "scratch refactor" pattern: try a refactor, learn from how it fails, throw the work away, plan the real refactor with the learning.
 - Andy Hunt & Dave Thomas, *The Pragmatic Programmer* (1999) — *"Tracer bullets"*: try a thin slice end-to-end, learn from where it fails, then aim properly. The revert is the act of *not aiming a second time without re-zeroing*.

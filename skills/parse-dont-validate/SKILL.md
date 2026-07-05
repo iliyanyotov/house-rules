@@ -23,6 +23,8 @@ NEVER re-validate a value the type system already considers proven.
 - Not for "just to be safe"
 - Not for "what if someone breaks the boundary later"
 
+**Carve-out — a *new* boundary is not a re-validation.** When a value leaves the type system's guarantee and re-enters as `unknown` — a row read back from the DB or cache, a message deserialized off a queue, a payload from a *new* schema version — you're at a *fresh* boundary, not re-proving a proven value. Parse once *there* too. The rule forbids re-proving what the type already guarantees *within one process*; it does not forbid parsing at each real boundary ("if you need to parse again, you've found a new boundary; name it", below).
+
 ## Why
 
 Validation throws away information. After `if (!isValidEmail(input)) throw` you still hold a `string`, indistinguishable at the type level from any other string. Three layers down, someone re-checks. Or doesn't.
@@ -77,8 +79,8 @@ type UserId = string & { readonly __brand: 'UserId' };
 
 const userSchema = z
   .object({
-    id: z.string().uuid(),
-    email: z.string().email(),
+    id: z.uuid(),
+    email: z.email(),
     displayName: z.string().min(1).max(120),
   })
   .transform((row) => ({
@@ -148,9 +150,9 @@ One parse at the top; the type system carries the proof inward. The fix for a do
 
 ```ts
 const Env = z.object({
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
   STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
-  REDIS_URL: z.string().url(),
+  REDIS_URL: z.url(),
 });
 
 export const env = Env.parse(process.env);

@@ -9,7 +9,7 @@ description: Use when reaching for `as` to convince the TypeScript compiler. Use
 
 **Use `satisfies` to check a value against a type without widening or coercing.** `as` is reserved for two cases: branding a parsed value at a boundary, and narrowing a verified `unknown`. Anywhere else, `as` is a lie to the compiler.
 
-`as` widens (and lies if needed). `satisfies` narrows (and refuses to lie).
+`as` asserts without checking (and lies if needed). `satisfies` checks without widening (and refuses to lie).
 
 ## The Iron Rule
 
@@ -20,7 +20,7 @@ NEVER use `as` to silence the compiler. Use `satisfies` to check, or fix the typ
 **No exceptions:**
 - Not for "I know the type is correct, the compiler is just being annoying"
 - Not for "it's a one-liner test, who cares"
-- Not for "external library types are wrong, I have to `as`"
+- Not for scattering `as` because "external library types are wrong" — isolate it to one wrapping seam instead (see Pressure Resistance)
 - Not for "I want to pass `Partial<Foo>` as `Foo`"
 
 ## Why
@@ -54,7 +54,8 @@ const ROLES: Record<string, { label: string; rank: number }> = {
   member: { label: 'Member', rank: 10 },
   guest:  { label: 'Guest', rank: 0 },
 };
-// `ROLES.admin` is `{ label: string; rank: number } | undefined` — worse.
+// `ROLES.admin` is `{ label: string; rank: number } | undefined` — worse
+// (the `| undefined` under `noUncheckedIndexedAccess`, which this library assumes).
 // You lose autocomplete on `ROLES.foo`.
 
 // ❌ Asserted: lies about the type, drops checks.
@@ -65,13 +66,14 @@ const ROLES = {
 } as Record<'admin' | 'member' | 'guest', RoleDef>;
 // `ROLES.admin.label` is `string`, not `'Administrator'`.
 
-// ✅ Satisfies: checks against the type, keeps the literal precision.
+// ✅ `as const satisfies`: checks against the type AND keeps the literal precision.
+//    (`satisfies` alone still widens nested `label` values to `string`; `as const` pins them.)
 type RoleDef = { label: string; rank: number };
 const ROLES = {
   admin:  { label: 'Administrator', rank: 100 },
   member: { label: 'Member', rank: 10 },
   guest:  { label: 'Guest', rank: 0 },
-} satisfies Record<string, RoleDef>;
+} as const satisfies Record<string, RoleDef>;
 
 // `ROLES.admin.label` is `'Administrator'` (literal).
 // `ROLES.foo` is a compile error.
@@ -134,8 +136,12 @@ const routes = [
   { method: 'POST', path: '/users', handler: createUser },
 ] satisfies RouteConfig[];
 
-// Each entry is narrowed to its variant — `routes[0].handler` is `GetHandler`.
-// `routes[1].handler` is `PostHandler`. With `as RouteConfig[]`, both widen.
+// Each entry is CHECKED against a variant — a GET row carrying a PostHandler is a compile error.
+// (`as RouteConfig[]` would suppress that check and let the mismatch through.)
+// Iteration narrows each element by `method`. Under `noUncheckedIndexedAccess`, a plain
+// `routes[0]` is also possibly `undefined`; guard it, or use `as const satisfies readonly
+// RouteConfig[]` to make this a fixed tuple when you genuinely need positional access
+// and a specific handler type.
 ```
 
 ### The legitimate uses of `as`
@@ -210,7 +216,7 @@ That's the bug, not the fix. If a function expects `Foo` and the caller has `Par
 
 | Excuse | Reality |
 |---|---|
-| "It's faster to write" | `satisfies T` and `as T` are the same number of characters. |
+| "It's faster to write" | `as T` is a few keystrokes shorter — and buys a silent lie the first time the value stops matching `T`. `satisfies` spends those keystrokes catching it. |
 | "It only matters for libraries" | Argument-swap and shape-mismatch bugs are equal in app code. |
 | "The runtime is correct, the type is just decoration" | Then why have types at all? Either commit or remove. |
 | "I'll come back and fix it later" | "Later" is the bug report. |
@@ -225,4 +231,4 @@ That's the bug, not the fix. If a function expects `Foo` and the caller has `Par
 ## Reference
 
 - `satisfies` shipped in TypeScript 4.9 (November 2022). [TypeScript 4.9 release notes](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html) — the operator's introduction and rationale.
-- Matt Pocock, [Total TypeScript](https://www.totaltypescript.com/) — the clearest community framing: *"`satisfies` checks without widening, `as` widens without checking."*
+- Matt Pocock, [Total TypeScript](https://www.totaltypescript.com/) — the clearest community treatment of the distinction: `satisfies` checks without changing the inferred type; `as` asserts without checking.

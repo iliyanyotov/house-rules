@@ -1,6 +1,6 @@
 ---
 name: shed-load-under-overload
-description: Use when designing an API endpoint that could receive traffic spikes (signup form during a launch, contact form during a campaign, cron-triggered fan-out, viral page going to HN). Use when reviewing a route that queues work without bound during a downstream slowdown. Use when an incident postmortem says "the database got overloaded and the function instances kept piling up." Use when a queue or in-memory buffer holds more than a few seconds of work. Use when "we should rate-limit this" comes up but no concrete saturation signal is defined.
+description: Use when a route queues work without bound during downstream slowdown, instances pile up during overload, a buffer holds more work than workers can drain, or load-shedding is proposed without a concrete saturation signal.
 ---
 
 # Shed Load Under Overload
@@ -66,10 +66,13 @@ export async function handleCheckout(req: Request) {
     return json({ order });
   } catch (err) {
     if (err instanceof BulkheadSaturatedError) {
+      const retryAfter = Math.min(60, Math.max(1,
+        Math.ceil(estimatedRecoverySeconds() + Math.random() * 3),
+      ));
       return new Response(JSON.stringify({ error: 'overloaded' }), {
         status: 503,
         headers: {
-          'Retry-After': '10',
+          'Retry-After': String(retryAfter),
           'Content-Type': 'application/json',
         },
       });
@@ -79,7 +82,7 @@ export async function handleCheckout(req: Request) {
 }
 ```
 
-The 503 returns *immediately* — no DB call, no third-party hit, no logging that itself costs latency. The `Retry-After: 10` tells the client "back off for 10 seconds." A polite client will. An impolite one is going to hammer you regardless — the 503 still costs ~zero to send, so you survive either way.
+The 503 returns *immediately*—no DB call, no third-party hit, no logging that itself costs latency. The recovery estimate is bounded and jittered per response, so polite clients back off without all waking on the same second. An impolite client may still hammer you; the fast 503 keeps that cost bounded.
 
 ### Define the saturation signal explicitly
 
@@ -113,7 +116,9 @@ The thresholds aren't aspirational; they're observed from your own data. Pick th
 
 ```ts
 // ✅ Honest Retry-After
-const retryAfter = Math.min(60, Math.ceil(estimatedRecoverySeconds()));
+const retryAfter = Math.min(60, Math.max(1,
+  Math.ceil(estimatedRecoverySeconds() + Math.random() * 3),
+));
 return new Response('overloaded', {
   status: 503,
   headers: { 'Retry-After': String(retryAfter) },
@@ -127,7 +132,7 @@ return new Response('overloaded', {
 // Sending Retry-After: 1 to 10k clients means 10k retries one second later — re-spike.
 ```
 
-`Retry-After` is *added jitter* if the caller respects it. Underestimate and you re-spike; overestimate and you delay healthy traffic. Calibrate from real recovery time. When in doubt, prefer the larger value.
+`Retry-After` is a *deliberate backoff* the caller respects — but a single fixed value re-synchronizes every client (the re-spike above), so jitter it per response. Underestimate and you re-spike; overestimate and you delay healthy traffic. Calibrate from real recovery time. When in doubt, prefer the larger value.
 
 `Retry-After` is the most direct carrier, but it's not the only honest one. The `RateLimit-*` header family (IETF `RateLimit-Limit` / `RateLimit-Remaining` / `RateLimit-Reset`, or the older `X-RateLimit-*`) carries the same recovery-time information and is what many rate limiters emit instead. Either is honest as long as the value reflects *real* recovery time; a 429/503 whose retry timing is buried only in the JSON body (with no header at all) is the form to avoid — a machine can't read it.
 
@@ -158,7 +163,7 @@ function enqueue(item: WorkItem) {
   pending.push(item);
 }
 
-// ✅ Bounded queue with drop-oldest policy.
+// ✅ Bounded queue that sheds incoming work when full.
 const MAX_QUEUE = 1000;
 const pending: WorkItem[] = [];
 function enqueue(item: WorkItem): 'queued' | 'shed' {
@@ -184,20 +189,28 @@ export async function handlePost(req: Request) {
 }
 ```
 
-### When *not* to shed — internal/admin endpoints
+### Reserve capacity for internal/admin endpoints—do not exempt them
 
 ```ts
-// ✅ Internal admin endpoint — fail loud, don't shed; it's a single operator request.
+// ✅ A separate tiny bulkhead gives operators priority without unbounded capacity.
+const adminMaintenance = makeBulkhead('admin-maintenance', {
+  timeoutMs: 30_000,
+  maxInFlight: 2,
+});
+
 export async function handleAdminMaintenance(req: Request) {
   await authorizeAdmin(req);
-  // No shed check; if the system is overloaded, the operator needs to know,
-  // not get a 503 they'll just retry.
-  await runMaintenanceTask();
-  return json({ ok: true });
+  try {
+    await adminMaintenance.run((signal) => runMaintenanceTask({ signal }));
+    return json({ ok: true });
+  } catch (err) {
+    if (err instanceof BulkheadSaturatedError) return overloadedResponse();
+    throw err;
+  }
 }
 ```
 
-Shedding is a *public-traffic* discipline. Admin paths, health checks, and internal probes should not shed — they're how the operator sees the overload.
+Priority is not exemption. A maintenance action can be more expensive than public traffic and worsen an incident, so give it reserved, bounded capacity. Keep health/readiness probes cheap and independent of scarce downstream pools; they may bypass the public admission gate only because their own cost is tightly bounded.
 
 ## Pressure Resistance
 
@@ -262,5 +275,5 @@ Modern clients (most SDKs, AWS SDK, browser `fetch` retry libraries) honor `Retr
 ## Reference
 
 - Michael Nygard, *Release It!* 2e (2018), ch. 5 — names "Shed Load" and "Back Pressure" as paired stability patterns.
-- Google SRE Book, ch. 21 ("Handling Overload") — *"It is essential that overload behavior be a first-class concern in service design."*
+- Google SRE Book, ch. 21 ("Handling Overload") — its core position, paraphrased: overload behavior is a first-class concern in service design, not an afterthought.
 - AWS Builders' Library, [*Using load shedding to avoid overload*](https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/) — production case study covering `Retry-After`, priority-based shedding, and saturation signals.

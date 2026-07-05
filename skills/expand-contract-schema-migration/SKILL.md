@@ -7,9 +7,9 @@ description: Use when writing a Drizzle migration that drops a column, renames a
 
 ## Overview
 
-**A schema change that is not purely additive happens in at least two deploys.** First the **expand** deploy (add the new shape; write both; read either) lands and stabilizes. Only then does the **contract** deploy (stop writing the old shape; drop it) land. Never combine expand and contract in one PR.
+**A schema change that is not purely additive happens across several deploys.** First the **expand** deploy (add the new shape; write both; read either) lands and stabilizes. Then reads move to the new shape. Then — critically — **stopping writes to the old shape and dropping it are two separate deploys**: stop writing the old column while it still exists, let old instances drain, and only *then* drop it. Never combine expand and contract in one PR, and never drop a column in the same deploy that stops writing it.
 
-The "two deploys" framing assumes any modern deploy model where old and new instances overlap for seconds-to-minutes during rollout. Even if you don't believe in rollback, you can't avoid the overlap window — old code and new code run side-by-side, against the same database, while traffic shifts. That overlap is what the rule protects.
+The multi-deploy framing assumes any modern deploy model where old and new instances overlap for seconds-to-minutes during rollout. Even if you don't believe in rollback, you can't avoid the overlap window — old code and new code run side-by-side, against the same database, while traffic shifts. That overlap is what the rule protects.
 
 ## The Iron Rule
 
@@ -46,13 +46,15 @@ deploy N+1  → ALTER TABLE users ADD COLUMN full_name text;
               reads display_name OR full_name (tolerant);
               writes BOTH display_name AND full_name;
               [STABILIZE — backfill old rows, monitor, wait]
-deploy N+2  → reads/writes full_name only;
-              ALTER TABLE users DROP COLUMN display_name;
+deploy N+2  → reads full_name; still writes BOTH (display_name retained)
+deploy N+3  → writes full_name ONLY; display_name column kept but now unused
+              [STABILIZE — wait for every old instance and cron to drain]
+deploy N+4  → ALTER TABLE users DROP COLUMN display_name;   -- nothing running touches it
 ```
 
-Now any rollover window is safe: old code reads `display_name` (still there), new code reads `full_name` (already populated), both writes converge. Rollbacks work because no shape was destroyed without first replacing it.
+Now any rollover window is safe: old code reads `display_name` (still there), new code reads `full_name` (already populated), both writes converge. The drop in the final deploy is safe because the deploy *before* it already stopped every read and write of `display_name` and drained. Rollbacks work because no shape was destroyed without first replacing it.
 
-This pattern is named "expand/contract" in *Refactoring Databases* (Ambler & Sadalage) and "parallel change" in Fowler's bliki. Both names describe the same discipline.
+This pattern is known as "expand/contract" and as "parallel change" — names popularized by Danilo Sato's "Parallel Change" bliki on martinfowler.com; *Refactoring Databases* (Ambler & Sadalage) describes the same transition-period discipline.
 
 ## Detection
 
@@ -91,9 +93,17 @@ export const users = pgTable('users', {
 **Deploy E1 — Expand.** One PR.
 
 ```sql
--- migrations/0042_add_full_name.sql
+-- migrations/0042_add_full_name.sql — DDL only
 ALTER TABLE users ADD COLUMN full_name text;
-UPDATE users SET full_name = display_name WHERE full_name IS NULL; -- backfill
+```
+
+```sql
+-- Backfill: a separate BATCHED step outside the DDL transaction (a script, or a
+-- migration marked non-transactional). Drizzle runs a migration's DDL + DML in one
+-- transaction; an unbatched full-table UPDATE inside it holds row locks on every row
+-- for the whole run. Loop until 0 rows:
+UPDATE users SET full_name = display_name
+WHERE id IN (SELECT id FROM users WHERE full_name IS NULL LIMIT 1000);
 ```
 
 ```ts
@@ -121,8 +131,10 @@ function userName(u: typeof users.$inferSelect): string {
 **Deploy E2 — Tighten.** One PR.
 
 ```sql
--- migrations/0043_full_name_required.sql
-UPDATE users SET full_name = display_name WHERE full_name IS NULL; -- final sweep
+-- Final sweep first — same batched loop as E1, outside the DDL transaction
+-- (dual writes since E1 mean few or no rows remain).
+
+-- migrations/0043_full_name_required.sql — DDL only
 ALTER TABLE users ALTER COLUMN full_name SET NOT NULL;
 ```
 
@@ -130,13 +142,24 @@ ALTER TABLE users ALTER COLUMN full_name SET NOT NULL;
 // schema.ts
 full_name: text('full_name').notNull(), // now required
 
-// Code: read full_name directly; keep dual-write for one more deploy.
+// Code: read full_name directly; keep dual-writing display_name (reads switched, writes not yet).
 function userName(u: typeof users.$inferSelect): string {
   return u.full_name;
 }
 ```
 
-**Deploy E3 — Contract.** One PR.
+**Deploy E3 — Stop writing the old column.** One PR, *no migration*. The column stays; only the write path changes — so a rollback still has `display_name` to fall back to.
+
+```ts
+// Code: write full_name only. No new instance touches display_name after this rolls out.
+async function updateUser(userId: UserId, name: string) {
+  await db.update(users).set({ full_name: name }).where(eq(users.id, userId));
+}
+```
+
+[STABILIZE — wait for every old (E2) instance and in-flight cron to drain. Dropping the column is safe *only* once nothing running reads or writes it.]
+
+**Deploy E4 — Contract.** One PR. Now that no code touches `display_name`, drop it. (The write path is unchanged from E3.)
 
 ```sql
 -- migrations/0044_drop_display_name.sql
@@ -144,22 +167,17 @@ ALTER TABLE users DROP COLUMN display_name;
 ```
 
 ```ts
-// schema.ts
+// schema.ts — display_name removed
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull(),
   full_name: text('full_name').notNull(),
 });
-
-// Code: write to full_name only.
-async function updateUser(userId: UserId, name: string) {
-  await db.update(users).set({ full_name: name }).where(eq(users.id, userId));
-}
 ```
 
-A tempting one-migration shortcut is the *shadow rename* — `RENAME COLUMN display_name TO full_name` in a single step. It still breaks: old code reading `display_name` mid-deploy finds the name gone the instant the migration lands. A rename is a `DROP` of the old name plus an `ADD` of the new one — exactly the destructive change expand/contract exists to stage. There's no atomic shortcut; the three deploys above *are* the safe path.
+A tempting one-migration shortcut is the *shadow rename* — `RENAME COLUMN display_name TO full_name` in a single step. It still breaks: old code reading `display_name` mid-deploy finds the name gone the instant the migration lands. For rollout purposes, treat a rename as a `DROP` of the old name plus an `ADD` of the new one — exactly the destructive change expand/contract exists to stage. (Postgres's `RENAME COLUMN` is actually a catalog-metadata update, but old code looking for `display_name` breaks all the same.) There's no atomic shortcut; the four deploys above *are* the safe path.
 
-Three PRs, three deploys, no rollover window where any traffic hits a missing column.
+Four PRs, four deploys, no rollover window where any traffic hits a missing column.
 
 ### NOT NULL on an existing column — backfill pattern
 
@@ -224,7 +242,7 @@ Atomic deploys mean a *given request* sees a consistent function bundle. They do
 
 ### "One PR is faster"
 
-It's faster to write and slower to debug. The first time you ship a one-shot destructive migration in production, the recovery time wipes out years of "saved" PR overhead. Three PRs is the cheap option.
+It's faster to write and slower to debug. The first time you ship a one-shot destructive migration in production, the recovery time wipes out years of "saved" PR overhead. The three-or-four-PR split is the cheap option.
 
 ### "Migration tooling generates the destructive SQL anyway"
 
@@ -256,7 +274,7 @@ That's expand/contract with a JSON column as the "new shape." Same rule; just me
 | "Atomic deploys handle this" | Atomic ≠ instant. Old instances drain for tens of seconds. |
 | "It's not a real schema change" | If `DROP COLUMN`, `RENAME`, narrowing, or `NOT NULL`-tightening appears, it's a destructive change. |
 | "We have backups" | Backups recover *data*; they don't unbreak *traffic during the rollover window*. |
-| "One PR is cleaner" | One PR is cleaner *to write*. Three PRs are cleaner *to operate*. |
+| "One PR is cleaner" | One PR is cleaner *to write*. The split PRs are cleaner *to operate*. |
 | "We can pause traffic" | On any modern serverless or multi-region stack, you can't reliably pause traffic. |
 | "I'll do the migration manually after deploy" | Manual ad-hoc DDL is the version of expand/contract with no review and no test — strictly worse. |
 
@@ -267,7 +285,7 @@ That's expand/contract with a JSON column as the "new shape." Same rule; just me
 
 ## Reference
 
-- Pramod Sadalage & Scott Ambler, *Refactoring Databases* (2006) — names the "expand/contract" pattern and catalogs the destructive schema changes that need it.
-- Martin Fowler, ["Parallel Change"](https://martinfowler.com/bliki/ParallelChange.html) (2014) — the broader rename for the same pattern, applied to any breaking interface change.
-- Jez Humble & David Farley, *Continuous Delivery* (2010), ch. 12 — the operational discipline this pattern enables (deploys decoupled from releases).
+- Pramod Sadalage & Scott Ambler, *Refactoring Databases* (2006) — describes the transition-period discipline and catalogs the destructive schema changes that need it.
+- Danilo Sato, ["Parallel Change"](https://martinfowler.com/bliki/ParallelChange.html) (2014, on martinfowler.com) — the broader name for the same pattern, applied to any breaking interface change.
+- Jez Humble & David Farley, *Continuous Delivery* (2010), ch. 12 ("Managing Data") — the data-migration discipline this pattern belongs to: decouple database change from application deploy, migrate incrementally.
 - Postgres docs on [`ALTER TABLE`](https://www.postgresql.org/docs/current/sql-altertable.html) and [`ALTER TYPE`](https://www.postgresql.org/docs/current/sql-altertype.html) — note that enum `DROP VALUE` is unsupported, and that `SET NOT NULL` takes an `ACCESS EXCLUSIVE` lock and full-scans the table to verify no existing NULLs (it does *not* rewrite rows; on PG 12+ a pre-validated `CHECK (col IS NOT NULL)` lets it skip even the scan) — on a large table that scan blocks writes for its duration. Both facts inform the patterns above.

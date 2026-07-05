@@ -1,13 +1,13 @@
 ---
 name: yagni
-description: Use when designing a new feature, API, or abstraction. Use when tempted to add a config option "for flexibility," extract an abstraction "in case we have more," or build production-grade infrastructure for a prototype. Use when reviewing a PR that adds capabilities the requirement didn't ask for. Use when the words "might," "probably," "eventually," or "in case" appear in your justification.
+description: Use when explicitly deciding whether an abstraction, option, or capability is needed yet. Use when tempted to add a config option "for flexibility", extract an abstraction "in case we have more", or build production-grade infrastructure for a prototype. Use when reviewing a PR that adds capabilities the requirement didn't ask for. Use when the words "might", "probably", "eventually", or "in case" appear in your justification.
 ---
 
 # YAGNI (You Aren't Gonna Need It)
 
 ## Overview
 
-**Build exactly what's required now.** No options for hypothetical future callers, no abstractions for the second use case that doesn't exist, no production hardening for a prototype.
+**Build exactly what's required now.** No options for hypothetical future callers and no abstractions for a second use case that does not exist. Match operational safeguards to the prototype's reach and stakes; do not call an externally reachable write a prototype to waive correctness or security.
 
 The cheapest code is the code you don't write.
 
@@ -16,7 +16,7 @@ The cheapest code is the code you don't write.
 - Tempted to add a config option no caller currently sets
 - Extracting an abstraction on the first occurrence
 - Adding a feature flag "to be safe" for a change with no rollout risk
-- Pre-building cache / retry / queue infrastructure before measuring need
+- Pre-building cache, queue, or duplicate retry layers before measuring need or identifying the owning layer
 - Adding schema fields the product doesn't use yet
 
 ## The Iron Rule
@@ -35,7 +35,7 @@ Count *real, exercised* implementations toward the "second occurrence." A `Noop`
 
 ## Detection: The Speculation Smell
 
-If your justification contains "might," "probably," "in case," or "eventually" — STOP:
+If your justification contains "might", "probably", "in case", or "eventually" — STOP:
 
 ```typescript
 // ❌ VIOLATION: premature plugin shape. One consumer, but already an
@@ -47,7 +47,7 @@ const notifiers: Record<string, Notifier> = {
   email: new EmailNotifier(),
 };
 export function notify(channel: string, userId: UserId, body: string) {
-  return notifiers[channel].send(userId, body);
+  return notifiers[channel]!.send(userId, body);
 }
 
 // ✅ CORRECT: one consumer, one concrete function. Add the abstraction
@@ -69,7 +69,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 | Wrong-shape abstractions block real ones | Concrete code refactors cleanly |
 | "Generic" tests must cover every branch | Tests only behavior that exists |
 
-**Scope:** YAGNI applies to **capabilities**, **abstractions**, **configurability**, and **infrastructure beyond current stakes**. It does *not* apply to type safety, input validation at edges, error handling at boundaries, or tests for behavior that exists — those are baseline requirements, not speculative features.
+**Scope:** YAGNI applies to **capabilities**, **abstractions**, **configurability**, and **infrastructure beyond current stakes** — unmeasured **caching**, **queues**, and **capacity/scale** work. It does *not* apply to type safety, input validation at edges, error handling at boundaries, tests for behavior that exists, or correctness/safety baselines that bound failure regardless of scale: a per-call **timeout** on every external call (`timeouts-everywhere`), **bounded** retries with jitter and a budget (`retry-with-jitter-and-budget`), and **idempotency** on writes (`idempotency-keys-on-writes`). Those are baseline requirements, not speculative features.
 
 ## Pressure Resistance
 
@@ -91,9 +91,9 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 
 ### 3. "Best practices say to include this"
 
-**Pressure:** "The textbook says production systems need pagination / rate-limit / audit log."
+**Pressure:** "The textbook says every internal tool needs the same pagination, rate-limit, and audit architecture as a public API."
 
-**Response:** Best practices are answers to *problems*. Don't apply the answer if you don't have the problem.
+**Response:** Best practices answer specific risks. Apply bounded work when result size can grow, rate limits when abuse or capacity is in scope, and audit records when the product, security model, or regulation requires them. Skip only safeguards whose triggering risk is genuinely absent.
 
 **Action:** Match infrastructure to actual stakes. The right practice for 1M req/s is different from 100 req/day.
 
@@ -123,7 +123,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 
 ## Red Flags
 
-- The words "might," "probably," "eventually," "just in case," "to be safe" in a comment or PR description
+- The words "might", "probably", "eventually", "just in case", "to be safe" in a comment or PR description
 - An interface with one implementation
 - A `Factory`, `Strategy`, `Manager`, `Provider`, `Adapter`, `Wrapper` with one concrete behavior
 - A configuration option with one value used in production
@@ -145,7 +145,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 | Commented-out / disabled speculative branch | Delete it; git history is the "in case" backup |
 | `Strategy` / `Factory` / `Manager` with one mode | Inline as a function |
 | "Just-in-case" schema column | Drop the column; add it when needed |
-| Pre-built cache / retry without measurement | Remove; add when profiling shows the need |
+| Pre-built cache or duplicate retry layer without an owner/measurement | Remove it; keep one bounded retry owner where transient failure is real |
 | Feature flag with no rollout plan | Remove; ship the change directly |
 
 ## Common Rationalizations (All Invalid)
@@ -172,6 +172,6 @@ Speculative code is a bet on the future. The base rate of those bets paying off 
 
 ## Reference
 
-- Ron Jeffries & Kent Beck, *Extreme Programming Explained* (1999) — *"Always implement things when you actually need them, never when you just foresee that you need them."*
+- Ron Jeffries, "You're NOT gonna need it!" (xprogramming.com; quoted on the c2 wiki YAGNI page) — *"Always implement things when you actually need them, never when you just foresee that you need them."*
 - Donald Knuth — *"Premature optimization is the root of all evil."* (Same principle, performance flavor.)
 - Martin Fowler, "Yagni" (2015) — the canonical modern essay on the rule.

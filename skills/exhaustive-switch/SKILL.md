@@ -202,5 +202,5 @@ That's a different problem. Either the union is over-faceted (split into nested 
 
 ## Reference
 
-- Dan Vanderkam, *Effective TypeScript* 2e (2024), items 28–29 — union exhaustiveness as the canonical use of `never`.
+- Dan Vanderkam, *Effective TypeScript* 2e (2024), item 59 ("Use `never` Types to Perform Exhaustiveness Checking") — union exhaustiveness as the canonical use of `never`.
 - The TypeScript Handbook, ["Exhaustiveness checking"](https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking) — official documentation of the pattern.

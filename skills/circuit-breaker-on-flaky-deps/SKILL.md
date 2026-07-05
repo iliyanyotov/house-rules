@@ -78,12 +78,14 @@ type BreakerOptions = {
   windowMs: number;                  // sliding window for failure counting
   cooldownMs: number;                // time in OPEN before probing
   successThresholdHalfOpen: number;  // successes needed to close
+  isFailure: (err: unknown) => boolean; // count only dependency-health failures (timeout/5xx), not 4xx/validation
 };
 
 export class Breaker {
   private state: BreakerState = 'CLOSED';
   private failures: number[] = [];
   private halfOpenSuccesses = 0;
+  private halfOpenInFlight = false;
   private openedAt = 0;
 
   constructor(private name: string, private opts: BreakerOptions) {}
@@ -91,18 +93,24 @@ export class Breaker {
   async run<T>(op: () => Promise<T>, fallback: () => Promise<T> | T): Promise<T> {
     this.transitionIfDue();
 
-    if (this.state === 'OPEN') {
-      return fallback();
-    }
+    if (this.state === 'OPEN') return fallback();
+    // Admit ONE probe while HALF_OPEN; concurrent callers get the fallback, not a stampede.
+    if (this.state === 'HALF_OPEN' && this.halfOpenInFlight) return fallback();
 
+    const probing = this.state === 'HALF_OPEN';
+    if (probing) this.halfOpenInFlight = true;
     try {
       const result = await op();
       this.onSuccess();
       return result;
     } catch (err) {
-      this.onFailure();
-      if (this.state === 'OPEN') return fallback();
-      throw err;
+      if (this.opts.isFailure(err)) {   // only dependency-health errors count toward tripping
+        this.onFailure();
+        if (this.state === 'OPEN') return fallback();
+      }
+      throw err;                        // propagate: 4xx/validation never count; health failures below threshold still surface
+    } finally {
+      if (probing) this.halfOpenInFlight = false;
     }
   }
 
@@ -142,7 +150,7 @@ export class Breaker {
 }
 ```
 
-Production libraries add observability, half-open concurrency limits, and per-error-type filtering — but the state machine above is the minimum.
+Two safety details are *not* optional even in a minimal breaker, and both are above: the single-probe half-open guard (`halfOpenInFlight`) and the failure classifier (`isFailure` — don't trip on 4xx/validation). Observability and tuning knobs are what production libraries add on top.
 
 ### Using it
 
@@ -152,12 +160,23 @@ const breaker = new Breaker('payment-provider', {
   windowMs: 30_000,
   cooldownMs: 30_000,          // stay OPEN for 30s
   successThresholdHalfOpen: 2, // 2 consecutive successes to close
+  // Positive allowlist: only errors that say something about dependency health trip it.
+  // Validation errors, auth/config errors, and programming bugs propagate without counting.
+  isFailure: (err) =>
+    err instanceof PaymentTimeoutError ||
+    err instanceof PaymentTransportError ||
+    err instanceof PaymentServerError,
 });
+
+// Typed, so callers match on the class — never on a message string (see `errors-as-values`).
+class PaymentUnavailableError extends Error {
+  readonly type = 'payment_unavailable';
+}
 
 export async function chargeWithBreaker(amountCents: number, source: string) {
   return breaker.run(
     () => payments.charge({ amountCents, source }),
-    () => { throw new Error('payment_unavailable'); }, // fallback — fail fast
+    () => { throw new PaymentUnavailableError(); }, // fallback — fail fast
   );
 }
 ```
@@ -177,7 +196,7 @@ The breaker is *shared* across all calls to that dependency. One breaker per pro
 
 "One breaker per provider" assumes a *bounded, named* set of dependencies. It breaks when the "dependency" is an arbitrary, caller-supplied endpoint — webhook delivery to thousands of tenant URLs, per-tenant API hosts. Two failures of the naive approach: keying one breaker for "webhooks" trips *all* delivery because one customer's URL is down; keying one breaker per URL leaks breaker objects forever (an unbounded map).
 
-Key the breaker **by destination**, but **bound the registry** with LRU or TTL eviction so it can't grow without limit. One dead endpoint must not trip healthy ones, and stale breakers must age out. (This is `bound-cardinality-in-keys` applied to breaker state — the destination is exactly the unbounded key that family of keys warns about.)
+Key the breaker **by destination**, but **bound the registry** with LRU or TTL eviction so it can't grow without limit. One dead endpoint must not trip healthy ones, and stale breakers must age out. (This is `bound-cardinality-in-keys` applied to breaker state — the destination is exactly the unbounded key that skill warns about.)
 
 ### What "non-trivial failure rate" means
 
@@ -259,7 +278,7 @@ Then the fallback is "fail fast with a typed error." The breaker still helps —
 
 - `retry-with-jitter-and-budget` — transient (retry) vs. sustained (break)
 - `bulkhead-isolated-failure-domains` — the breaker sits inside each per-dependency bulkhead
-- `graceful-degradation-defaults` — open breaker -> degrade to a fallback
+- `graceful-degradation-defaults` — open breaker → degrade to a fallback
 
 ## Reference
 

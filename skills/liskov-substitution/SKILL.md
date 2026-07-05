@@ -101,6 +101,7 @@ class Step { getPayload(): Payload { return {}; } }
 
 // ❌ Subclass throws when a precondition is missing — breaks every caller holding `Step`.
 class ChargeStep extends Step {
+  amount?: number;
   getPayload(): Payload {
     if (!this.amount) throw new Error('no amount');  // base never threw
     return { amount: this.amount };
@@ -170,7 +171,7 @@ class FileStorage {
 
 class ReadOnlyStorage extends FileStorage {
   write(path: string, content: string): void {
-    // Silently does nothing. Caller writes, "succeeds," nothing is saved.
+    // Silently does nothing. Caller writes, "succeeds", nothing is saved.
   }
   delete(path: string): void {
     // Same problem.

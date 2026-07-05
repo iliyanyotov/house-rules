@@ -1,6 +1,6 @@
 ---
 name: graceful-degradation-defaults
-description: Use when designing a feature that depends on a non-critical external system (recommendations, search, social feed, analytics widget, third-party embed, AI generation). Use when a leaf-feature failure should never propagate as a 5xx to the user. Use when an incident report shows a full-page outage caused by one slow dependency. Use when adding a new optional capability to an existing page.
+description: Use when a non-critical dependency such as recommendations, search, analytics, embeds, or AI causes a full-page failure; when a leaf failure propagates as a 5xx; or when an optional dependency needs an explicit fallback.
 ---
 
 # Graceful Degradation Defaults
@@ -9,7 +9,7 @@ description: Use when designing a feature that depends on a non-critical externa
 
 **Non-critical features fail to a *named*, *documented* fallback** — never to a 500 or a blank page. The user-visible default for a dependency outage is defined at design time, not improvised at incident time.
 
-If a feature is "non-critical," its failure produces a smaller-but-working page. If a feature is "critical," it's subject to higher availability requirements — not to this rule.
+If a feature is "non-critical", its failure produces a smaller-but-working page. If a feature is "critical", it's subject to higher availability requirements — not to this rule.
 
 ## The Iron Rule
 
@@ -52,9 +52,9 @@ The rule lives in how you fan out to dependencies. Critical paths must succeed; 
 ```ts
 async function fanOut(userId: UserId) {
   const [userR, ordersR, recsR] = await Promise.allSettled([
-    fetchUser(userId),             // critical
-    fetchOrders(userId),           // critical
-    fetchRecommendations(userId),  // garnish
+    fetchUser(userId, { signal: AbortSignal.timeout(5_000) }),           // critical
+    fetchOrders(userId, { signal: AbortSignal.timeout(5_000) }),         // critical
+    fetchRecommendations(userId, { signal: AbortSignal.timeout(2_000) }), // garnish — shortest leash
   ]);
 
   // Critical paths — if either failed, the page can't render.
@@ -77,11 +77,15 @@ async function fanOut(userId: UserId) {
 
 `Promise.allSettled` replaces `Promise.all` whenever the leaves have **different criticality**. The split is explicit. Critical results throw; garnish results return `null`. Consumers can tell the difference from the return type alone.
 
+One catch: `allSettled` waits for *every* leaf to settle — a garnish call with no deadline holds the whole page hostage until it finally fails. Give each leaf its own timeout (`AbortSignal.timeout`, garnish on the shortest leash), so a hung dependency settles quickly as a rejection instead of blocking the fan-out.
+
 ### Partial success over a collection
 
 When the leaves are *homogeneous* and partial success is acceptable (sending N notifications, syncing N rows), keep the fulfilled results and log the rejected count — the operation degrades to "most of it worked" instead of all-or-nothing:
 
 ```ts
+// allSettled fixes failure semantics, not concurrency — for input-sized
+// collections, bound the fan-out with a limiter as well.
 const results = await Promise.allSettled(items.map(updateOne));
 const ok = results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
 const failed = results.filter((r) => r.status === 'rejected');
@@ -91,7 +95,7 @@ return ok;
 
 ### The fallback is a named, honest state — not silence
 
-When `recommendations` is `null`, the renderer shows a *named* fallback. Three rules:
+When `recommendations` is `null`, the renderer shows a *named* fallback. Four rules:
 
 - **Name** the missing thing.
 - **Reassure** about what's still working.
@@ -119,9 +123,12 @@ Three distinct states (broken, empty, loaded), three distinct visuals. The type 
 When the dependency is sometimes available, falling back to recently-fresh data beats falling back to nothing:
 
 ```ts
-async function fetchRecommendations(userId: UserId): Promise<Recommendation[]> {
+async function fetchRecommendations(
+  userId: UserId,
+  opts?: { signal?: AbortSignal },
+): Promise<Recommendation[]> {
   try {
-    const fresh = await api.recommendations(userId, { signal: AbortSignal.timeout(2_000) });
+    const fresh = await api.recommendations(userId, { signal: opts?.signal });
     await cache.set(`recs:${userId}`, fresh, { ttlSeconds: 86_400 });
     return fresh;
   } catch (err) {
@@ -193,7 +200,7 @@ A bare `try { ... } catch { return null; }` collapses three states (loading, bro
 - A blank section with no fallback when its data is missing.
 - A loading skeleton that's also the failure state.
 - A `try { ... } catch { return null; }` with no log, no metric, no named state.
-- A code review where "what do users see during incident" hasn't been answered.
+- A code review where "what do users see during an incident" hasn't been answered.
 - A retrospective: "the X outage took down the Y."
 - The phrase "this should never fail" applied to anything external.
 
@@ -206,7 +213,7 @@ A bare `try { ... } catch { return null; }` collapses three states (loading, bro
 | "It's a small feature, not worth a fallback" | Small features cause big page outages without fallbacks. |
 | "Failing loudly forces us to fix it" | It forces *users* to deal with it. Use observability for force, not user pain. |
 | "We don't know what the right fallback is" | "Section unavailable; the rest of the page works" is always a valid fallback. |
-| "Caching adds staleness bugs" | Bounded TTL (minutes to hours) for non-critical garnish is universally safe. |
+| "Caching adds staleness bugs" | Bounded TTL (minutes to hours) for non-critical garnish is almost always safe when keyed per user — wrong keying leaks data across users. |
 | "The framework should handle this" | Frameworks give you the primitives. Wiring them is your job. |
 | "We have a global 500 page, that's the fallback" | A global 500 turns a leaf failure into a full-page failure. The opposite of graceful. |
 

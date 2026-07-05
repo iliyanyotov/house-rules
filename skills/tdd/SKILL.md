@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: Use when implementing any new feature or function. Use when asked to "add tests later". Use when writing code before tests. Use when "this is hard to test" comes up — that's a design smell, not a testing smell.
+description: Use when explicitly following test-driven development. Use when asked to "add tests later". Use when writing code before tests. Use when "this is hard to test" comes up — that's a design smell, not a testing smell.
 ---
 
 # Test-Driven Development (TDD)
@@ -13,7 +13,7 @@ TDD is not about testing — it's about design. Writing tests first forces you t
 
 ## When to Use
 
-- Implementing any new function, method, or feature
+- Explicitly choosing TDD for a new behavior
 - Asked to "write code now, add tests later"
 - Fixing a bug (write the test that reproduces it first)
 - Refactoring existing code
@@ -21,7 +21,8 @@ TDD is not about testing — it's about design. Writing tests first forces you t
 ## The Iron Rule
 
 ```
-NEVER write production code without a failing test first.
+WHEN following TDD for new behavior, observe a relevant test fail before writing that behavior.
+Behavior-preserving refactoring starts green and stays green.
 ```
 
 **No exceptions:**
@@ -102,7 +103,7 @@ function calculateShipping(weight: number, distance: number): number {
 
 **Pressure:** "Writing tests takes extra time."
 
-**Response:** Debugging takes 10× longer than testing. TDD is faster overall.
+**Response:** A failing test localizes the defect to the lines you just wrote; debugging later means re-deriving that context from scratch. Industrial studies (Nagappan et al. 2008; Fucci et al. 2017) find lower defect density for moderately more upfront time.
 
 **Action:** The test you write now saves hours of debugging later.
 
@@ -110,7 +111,7 @@ function calculateShipping(weight: number, distance: number): number {
 
 **Pressure:** "This function can't be tested without mocking five modules."
 
-**Response:** That's not a testing problem — it's a design problem. The fix is "decompose the function," not "better mocking."
+**Response:** That's not a testing problem — it's a design problem. The fix is "decompose the function", not "better mocking."
 
 **Action:** Pull the pure logic out. Inject dependencies. Test the core, integration-test the shell.
 
@@ -124,8 +125,8 @@ function calculateShipping(weight: number, distance: number): number {
 - Committing code without corresponding tests
 - Tests that pass immediately (you never saw them fail)
 - A test of *pure business logic* mocks more than one module — that core should be extracted and tested without mocks. (An orchestration/handler shell whose whole job is coordinating several collaborators legitimately stubs each one; the smell is mocks where pure logic should be.)
-- A unit test talks to a real DB, network, or filesystem
-- A function reads `Date.now()` inline and the test mocks the clock
+- A *unit* test of pure logic reaches for a real DB, network, or filesystem — extract the logic and test it directly. (Exercising the real DB is correct in an *integration* test: the DB is a managed dependency, run live — see `mock-only-across-architectural-boundaries`.)
+- A test hand-monkey-patches `Date.now`; use runner-controlled time or an explicit clock seam
 
 **All of these mean: stop. Write the test first.**
 
@@ -135,7 +136,7 @@ function calculateShipping(weight: number, distance: number): number {
 |---|---|
 | New feature | Write failing test → implement |
 | Bug fix | Write test reproducing the bug → fix |
-| Refactor | Ensure tests exist → refactor → tests pass |
+| Refactor (no behavior change) | Green tests must already exist → refactor → they stay green. Any *new* behavior is a feature, not a refactor: start red. |
 | "Tests later" | Tests now. Always now. |
 | "Hard to test" | Decompose first — pure logic out, deps in. |
 
@@ -143,16 +144,16 @@ function calculateShipping(weight: number, distance: number): number {
 
 | Excuse | Reality |
 |---|---|
-| "Tests slow me down" | Debugging slows you down more. |
+| "Tests slow me down" | Modestly more time upfront; far less time re-deriving context in the debugger later. |
 | "It's too simple" | Simple tests are fast to write — and "too simple" is what ships the regex that accepts `foo@bar..com`. Anything with a branch or a regex isn't too simple. |
 | "I'll test later" | You won't. Test now. |
 | "I know it works" | Prove it with a test. |
-| "Just a prototype" | Prototypes become production. Test them. |
+| "Just a prototype" | Prototypes become production. Test them. (A true throwaway spike may skip tests; code that survives into production gets them — rewrite with tests, don't keep as-is.) |
 | "TypeScript catches enough" | Types catch shape, not logic. Off-by-one passes the compiler. |
 
 ## The Bottom Line
 
-**Test first. Code second. No exceptions.**
+**New behavior starts red. Behavior-preserving refactoring stays green.**
 
 The test is the specification. The test is the documentation. The test is the safety net. Write it first, every time.
 
@@ -164,6 +165,6 @@ The test is the specification. The test is the documentation. The test is the sa
 ## Reference
 
 - Kent Beck, *Test-Driven Development by Example* (2002) — the canonical work; red-green-refactor.
-- Kent C. Dodds, "The Testing Trophy" — *"The more your tests resemble the way the software is used, the more confidence they give you."*
-- Steve Freeman & Nat Pryce, *Growing Object-Oriented Software, Guided by Tests* (2009) — "hard-to-test code is a design smell."
+- Kent C. Dodds, "The Testing Trophy" — on test *distribution* (integration-heavy), not test-first discipline: *"The more your tests resemble the way the software is used, the more confidence they give you."*
+- Steve Freeman & Nat Pryce, *Growing Object-Oriented Software, Guided by Tests* (2009) — the recurring theme that hard-to-test code is a design smell.
 - Gary Bernhardt, "Functional Core, Imperative Shell" — the testable shape.

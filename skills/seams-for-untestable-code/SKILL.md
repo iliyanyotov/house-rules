@@ -114,7 +114,7 @@ Two seams (the `now` parameter and the `database` parameter). The function body 
 
 Note the clock here is shown as an injected `now` parameter, but the later "Three cheap seams" section says *don't* inject the clock — freeze it with fake timers. Both are valid; the decision rule: **inject `now` when the function is otherwise pure, or a test needs several distinct times in one run; freeze the system clock with fake timers when the clock is just one of several dependencies (so you're not threading `now` through every call) or when it's the function's *only* hard dependency.** Here `findStaleSessions` already needs a `database` seam, so a fake-timer approach would work too — `now` is injected mainly because it makes the cutoff math obvious in the test.
 
-`Pick<typeof db, 'select'>` is the trick that makes this cheap: TS lets you describe the *shape* of the dependency as "just the methods I call," so the test fake doesn't have to mock the entire database surface.
+`Pick<typeof db, 'select'>` is the trick that makes this cheap: TS lets you describe the *shape* of the dependency as "just the methods I call", so the test fake doesn't have to mock the entire database surface.
 
 ### Constructor / closure seam
 
@@ -157,7 +157,7 @@ test('sends with the expected from address', async () => {
     emails: { send: async (msg) => { calls.push(msg); return { id: '1' }; } },
   });
   await service.send({ fullName: 'A', email: 'a@b.c', message: 'hi' });
-  expect(calls[0].from).toBe('noreply@example.com');
+  expect(calls[0]?.from).toBe('noreply@example.com');
 });
 ```
 
@@ -191,27 +191,29 @@ type OrderRepo = Pick<OrderRepository, 'findById' | 'save'>;
 
 export class OrderConfirmationService {
   constructor(
-    private readonly orders: OrderRepo = new OrderRepository(),
-    private readonly fetchAPI: typeof fetch = fetch,
+    private readonly orders: OrderRepo,               // a constructed collaborator — injected at the root
+    private readonly fetchAPI: typeof fetch = fetch,  // ambient I/O — fine to default; the test overrides it
   ) {}
 
   async confirm(orderId: OrderId): Promise<void> {
     const order = await this.orders.findById(orderId);
     const res = await this.fetchAPI(`${env.PAYMENTS_URL}/charge`, {
       method: 'POST',
+      headers: { 'Idempotency-Key': orderId }, // retry-safe: a failed save below won't re-charge
       body: JSON.stringify({ orderId, amount: order.total }),
+      signal: AbortSignal.timeout(5_000),
     });
     if (!res.ok) throw new Error('charge failed');
-    order.confirmedAt = new Date(); // frozen by the test runner, not injected
-    await this.orders.save(order);
+    const confirmedOrder = { ...order, confirmedAt: new Date() }; // frozen by the test runner
+    await this.orders.save(confirmedOrder);
   }
 }
 ```
 
-Production is unchanged — every argument defaults, so `new OrderConfirmationService()` still wires the real repository, real `fetch`, and real clock:
+Default *ambient I/O* — `fetch`, the clock, `env` — since the test stubs those without a constructor seam. But don't default a *constructed collaborator* like a repository to `new`: that mixes composition into the unit (see `composition-root-discipline`). Inject it; the composition root wires the real one:
 
 ```ts
-const service = new OrderConfirmationService();
+const service = new OrderConfirmationService(new OrderRepository());
 ```
 
 Test — fully deterministic, no module-level mocking anywhere:
@@ -229,7 +231,7 @@ test('stamps confirmedAt and charges the order total', async () => {
   const saved: Order[] = [];
   const service = new OrderConfirmationService(
     {
-      findById: async () => ({ id: 'o1', total: 4200 } as Order),
+      findById: async () => makeOrder({ id: 'o1', total: 4200 }), // schema-parse factory, not an `as` cast — see mock-only-across-architectural-boundaries
       save: async (o) => { saved.push(o); },
     },
     async () => new Response(null, { status: 200 }), // fake fetch
@@ -237,7 +239,7 @@ test('stamps confirmedAt and charges the order total', async () => {
 
   await service.confirm('o1' as OrderId);
 
-  expect(saved[0].confirmedAt).toEqual(frozen);
+  expect(saved[0]?.confirmedAt).toEqual(frozen);
 });
 ```
 
@@ -286,7 +288,7 @@ Sometimes the function is 200 lines and you only need to change line 137. You do
 // ❌ A 200-line function where you need to test the discount logic.
 async function processOrder(order: Order) {
   // ... 100 lines ...
-  const discount = order.code.startsWith('SAVE') ? order.total * 0.9 : order.total;
+  const discountedTotal = order.code.startsWith('SAVE') ? order.total * 0.9 : order.total;
   // ... 100 more lines ...
 }
 ```
@@ -299,7 +301,7 @@ export function applyCodeDiscount(total: number, code: string): number {
 
 async function processOrder(order: Order) {
   // ... 100 lines ...
-  const discount = applyCodeDiscount(order.total, order.code);
+  const discountedTotal = applyCodeDiscount(order.total, order.code);
   // ... 100 more lines ...
 }
 ```
@@ -363,5 +365,5 @@ If your seam-extraction produced a 10-parameter function, that's a *signal* the 
 
 ## Reference
 
-- Michael Feathers, *Working Effectively with Legacy Code* (2004) — the canonical book on this discipline. The chapter on Seams is the source. Feathers names four seam types; in modern JS/TS the practical taxonomy collapses to the three above (parameter, constructor, module-import).
+- Michael Feathers, *Working Effectively with Legacy Code* (2004) — the canonical book on this discipline. The chapter on Seams is the source. Feathers names three seam types (preprocessing, link, object); in modern JS/TS the practical taxonomy maps to the three above (parameter, constructor, module-import).
 - Steve Freeman & Nat Pryce, *Growing Object-Oriented Software, Guided by Tests* (2009) — frames the same idea from the *forward* direction: when writing new code, design it with seams from the start. Their term is "ports" — interfaces that the domain depends on, with adapters that implement them.

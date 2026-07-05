@@ -1,6 +1,6 @@
 ---
 name: kiss
-description: Use when tempted to write clever code. Use when the solution feels complex for what it accomplishes. Use when reaching for a type-level construct, a deep method chain, or a "smart" one-liner. Use when a junior engineer would have to study the code to read it.
+description: Use when explicitly reviewing code for unnecessary complexity. Use when reaching for a type-level construct, a deep method chain, or a "smart" one-liner where a plain approach would do. Use when a reviewer asks "why is this so complex?" and a straightforward version would make the intent obvious.
 ---
 
 # KISS (Keep It Simple, Stupid)
@@ -36,7 +36,7 @@ NEVER choose clever over clear. Simple wins.
 If you're proud of how clever your code is, simplify it:
 
 ```typescript
-// ❌ VIOLATION: clever one-liner. Three transformations, opaque comparator.
+// ❌ VIOLATION: clever one-liner. Two chained transformations, destructured parameters, an inline clock read.
 const overdueIds = invoices
   .filter(({ dueAt, paidAt }) => paidAt == null && dueAt.getTime() < Date.now())
   .map(({ id }) => id);
@@ -115,7 +115,7 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 - A regex longer than ~30 characters without a comment
 - Type-level wizardry (`infer`, conditional types, deep mapped types) where a plain type would do
 - A function whose generic signature is more code than its body
-- The PR description contains "elegant," "clever," "neat trick," or "one-liner"
+- The PR description contains "elegant", "clever", "neat trick", or "one-liner"
 
 **All of these mean: rewrite simply.**
 
@@ -156,6 +156,6 @@ Find the simplest implementation that works. If a tired engineer can't read it a
 ## Reference
 
 - Kelly Johnson, Lockheed Skunk Works (1960) — *"Keep it simple, stupid."* The original engineering version: simple systems are repairable in the field.
-- John Ousterhout, *A Philosophy of Software Design*, ch. 21 — "Different ≠ Better." Avoid complexity for novelty's sake.
+- John Ousterhout, *A Philosophy of Software Design*, ch. 17 ("Consistency") — a "better idea" is not sufficient excuse to deviate; avoid complexity for novelty's sake.
 - Antoine de Saint-Exupéry — *"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away."*
 - Donald Knuth — *"Premature optimization is the root of all evil."*

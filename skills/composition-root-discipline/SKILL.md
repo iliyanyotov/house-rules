@@ -27,7 +27,7 @@ NEVER instantiate a service, repository, or client outside a composition root (o
 
 ## The Pattern: each root dependency-ordered, layer-grouped
 
-The composition root is a factory (often `createContext()` or `Context.fromEnv(env)`): it reads validated config, instantiates every dependency in topological order, and returns one container object. Each node is constructed **once and shared** (a singleton) — resolution may be eager at boot or lazy on first request, but never per-call inside business logic. The crash to prevent is re-instantiating the graph on every request, not the timing of the first build.
+The composition root is a factory (often `createContext()` or `Context.fromEnv(env)`): it reads validated config, instantiates every dependency in topological order, and returns one container object. Most nodes are constructed **once and shared** (a singleton) — resolution may be eager at boot or lazy on first request, but never per-call inside business logic. The mistake to prevent is re-instantiating the graph on every request, not the timing of the first build. (Some nodes are legitimately *scoped* — per request, transaction, or tenant — see Sub-rule 3.5.)
 
 ```ts
 export class Context {
@@ -94,6 +94,28 @@ Order top-to-bottom: **config → infrastructure (db, cache, queue) → clients 
 
 The root's single job is `new` + connect. No branching on request data, no computation, no business rules. The only conditionals allowed are *construction-time* choices (pick a real vs. fake client by env). If you're computing a domain value in the root, a concern has leaked out of a service.
 
+### Sub-rule 3.5 — Singleton is the default lifetime, not the only one
+
+Most nodes are singletons: stateless services, clients, and repositories built once and shared. But some collaborators are inherently *scoped* and must **not** be process singletons:
+
+- **request-scoped** — a per-request `UnitOfWork`, correlation/trace context, the authenticated user.
+- **transaction-scoped** — a repository bound to one open DB transaction.
+- **tenant-scoped** — a client keyed to the current tenant's credentials.
+- **job-scoped** — state tied to a single queue message or cron run.
+
+The discipline still holds: these are built by a **scoped factory the root exposes**, not `new`-ed inline in a handler. The root owns a `createRequestScope(req)` that constructs the short-lived nodes, injecting the singletons they depend on.
+
+```ts
+class Context {
+  createRequestScope(req: Request) {
+    const uow = new UnitOfWork(this.db);                          // transaction-scoped
+    return { uow, orderService: new OrderCreateService(uow, this.paymentClient) };
+  }
+}
+```
+
+Making a transaction- or tenant-scoped node a singleton leaks state across requests — a correctness bug, not a style one.
+
 ### Sub-rule 4 — Adding a dependency touches exactly the root
 
 A new service is wired in one file, in (typically) two-to-three spots: the factory `new`, the constructor parameter, and the constructor call. Make that a checklist so it's never half-wired. If adding a dependency makes you edit five files, the graph isn't centralized.
@@ -120,6 +142,8 @@ export function reportWrongAssignment(req: Request) {
 }
 
 // ✅ A per-feature root supplies the built graph; the handler just asks for it.
+//    (`access` is no longer passed per call — it became a constructor dependency
+//    of the service, wired once in the root.)
 const getWrongAssignmentService = () => getContainer().get(WrongAssignmentReportService);
 export function reportWrongAssignment(req: Request) {
   return getWrongAssignmentService().run(parse(req));
@@ -193,5 +217,5 @@ A root builds the graph; everything else receives it. One root in a small app, a
 
 ## Reference
 
-- Mark Seemann, *Dependency Injection Principles, Practices, and Patterns* (2019) — defines the Composition Root pattern: *"A Composition Root is a single, logical location in an application where modules are composed together,"* placed as close as possible to the application's entry point.
+- Steven van Deursen & Mark Seemann, *Dependency Injection Principles, Practices, and Patterns* (2019) — defines the Composition Root pattern: *"A Composition Root is a single, logical location in an application where modules are composed together"*, placed as close as possible to the application's entry point. (The book itself leans toward convention-based auto-registration; this skill's explicit-token preference is a TypeScript-specific divergence.)
 - Mark Seemann, ["Pure DI"](https://blog.ploeh.dk/2014/06/10/pure-di/) — the case for hand-wired (container-free) composition as the sound default before reaching for a framework.

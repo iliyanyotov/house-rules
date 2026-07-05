@@ -26,7 +26,7 @@ NEVER couple a risky behavior change to its deploy. Ship the code dark; release 
 - Not for "we can just revert if it breaks"
 - Not for "rollback is fast enough"
 - Not for "small team, no need"
-- Not for "we don't need shadow / canary; just turn it on"
+- Not for "we don't need shadow / canary" as a reason to skip the flag (compress the stages to off/full — but keep the flip)
 
 ## Why
 
@@ -83,16 +83,17 @@ Most flags are booleans, and that's correct. **Stage a rollout by widening the e
 Reach for a string-literal union *only when the consumer must run materially different code per stage* — most commonly a **shadow** stage that runs both paths and compares them. Then the value carries the branch:
 
 ```ts
-// ✅ Multi-state value — justified because 'v2-shadow' is a distinct code path, not just a wider cohort.
-type CheckoutMode = 'classic' | 'v2-shadow' | 'v2-canary' | 'v2-full';
+// ✅ Multi-state value — each state is a distinct *code path*, not a wider cohort:
+//    'classic' serves v1, 'v2-shadow' runs both and compares, 'v2' serves v2.
+//    The canary → full *ramp* is cohort width (below), never extra states here.
+type CheckoutMode = 'classic' | 'v2-shadow' | 'v2';
 
 const checkoutMode: CheckoutMode = (() => {
   const raw = process.env.CHECKOUT_MODE;
   switch (raw) {
     case 'classic':
     case 'v2-shadow':
-    case 'v2-canary':
-    case 'v2-full':
+    case 'v2':
       return raw;
     default:
       return 'classic'; // safe default
@@ -107,15 +108,15 @@ The typed union forces the consumer to handle every state via exhaustive switch.
 A risky feature passes through these stages:
 
 ```
-classic        — old code path is the only path. New code is deployed but unused.
-v2-shadow      — both paths run; new path's output is logged & compared, not user-visible.
-v2-canary      — small % of traffic uses the new path (e.g., internal users, 1% of customers).
-v2-canary-50   — 50% of traffic.
-v2-full        — 100% of traffic. Old code path remains for ~one deploy as a safety net.
-[cleanup]      — old code deleted; flag removed; type narrows to just 'v2-full'.
+classic        — mode=classic. New code is deployed but unused.
+v2-shadow      — mode=v2-shadow. Both paths run; new path's output is logged & compared, not user-visible.
+v2 @ ~1%       — mode=v2, cohort widened to internal users / ~1% of customers.
+v2 @ 50%       — mode=v2, cohort widened to 50%.
+v2 @ 100%      — mode=v2, cohort = everyone. Old code path remains for ~one deploy as a safety net.
+[cleanup]      — old code deleted; flag removed; mode collapses to just 'v2'.
 ```
 
-Each stage is a flag flip — seconds, no deploy. If a stage misbehaves, flip back. The deploy that introduced the new code path stays out — only the flag changes.
+Each stage is a flag flip or a cohort widening — seconds, no deploy. Note the mode changes only twice (classic → v2-shadow → v2); the 1% → 50% → 100% ramp is all one mode (`v2`) with a widening cohort. If a stage misbehaves, flip back. The deploy that introduced the new code path stays out — only the flag changes.
 
 ### Consuming the flag — discriminated branch with shared parsing
 
@@ -129,22 +130,26 @@ if (useNewCheckout) {
 }
 
 // ✅ When the stages are distinct code paths, branch exhaustively over the flag's union.
-async function placeOrder(input: CheckoutInput): Promise<Order> {
+//    The rollout % is a separate concern: cohort targeting, not another flag value.
+async function placeOrder(input: CheckoutInput, ctx: RequestCtx): Promise<Order> {
   switch (checkoutMode) {
     case 'classic':
       return placeOrderV1(input);
     case 'v2-shadow': {
       const real = await placeOrderV1(input);
-      // fire-and-forget compare; never fails the user
-      placeOrderV2Shadow(input)
-        .then((shadow) => logShadowDiff(real, shadow))
-        .catch((err) => log.warn('shadow_v2_failed', err));
+      // Enqueue bounded, durable observational work. The shadow worker is READ-ONLY:
+      // it may compute and compare, but must never charge, send, or mutate domain state.
+      // Losing a sample is acceptable; creating a second real order is not.
+      await shadowQueue.enqueue(
+        { kind: 'checkout-v2-compare', input, baseline: snapshot(real) },
+        { signal: AbortSignal.timeout(250) },
+      ).catch(() => metrics.increment('checkout.shadow_enqueue_failed'));
       return real;
     }
-    case 'v2-canary':
-    case 'v2-canary-50':
-    case 'v2-full':
-      return placeOrderV2(input);
+    case 'v2':
+      // Who gets v2 during the ramp is cohort width, resolved per-request —
+      // not a 'v2-canary' / 'v2-full' state bolted onto the mode.
+      return isEnabled('checkout-v2', ctx) ? placeOrderV2(input) : placeOrderV1(input);
     default: {
       const _exhaustive: never = checkoutMode;
       throw new Error(`unhandled checkout mode: ${String(_exhaustive)}`);
@@ -173,15 +178,14 @@ Every flag has a short doc — in code or in a flag-platform UI:
 /**
  * CHECKOUT_MODE — controls the checkout pipeline.
  *
- * States:
+ * States (code paths):
  *   - classic    → original code path
  *   - v2-shadow  → both paths run; v2 output compared/logged
- *   - v2-canary  → 1% of traffic uses v2 (set in config rule)
- *   - v2-full    → 100% of traffic
+ *   - v2         → serve v2; rollout % is cohort width, not a state (1% → 50% → 100%)
  *
  * Owner: payments team (@alice)
  * Created: 2026-04-12
- * Target removal: 2026-06-01 (after 1 month at v2-full)
+ * Target removal: 2026-06-01 (after 1 month at v2, 100% cohort)
  * Tracking issue: #1842
  */
 ```
@@ -207,7 +211,7 @@ The metadata isn't busywork — it's the *only* thing that prevents a release fl
 
 ### Not every flag is transient — classify by kind
 
-The removal discipline below applies to flags that exist to *ship a change*. But Fowler's taxonomy (cited in the Reference) names kinds with different lifespans, and conflating them makes the ">6 months = bug" rule fire on flags that are permanent **by design**:
+The removal discipline below applies to flags that exist to *ship a change*. But Hodgson's taxonomy (cited in the Reference) names kinds with different lifespans, and conflating them makes the ">6 months = bug" rule fire on flags that are permanent **by design**:
 
 | Kind | Purpose | Lifespan |
 |---|---|---|
@@ -227,14 +231,12 @@ The flag-removal PR:
 
 ```ts
 // Before
-async function placeOrder(input: CheckoutInput): Promise<Order> {
+async function placeOrder(input: CheckoutInput, ctx: RequestCtx): Promise<Order> {
   switch (checkoutMode) {
-    case 'classic':       return placeOrderV1(input);   // delete
-    case 'v2-shadow':     /* ... */                       // delete
-    case 'v2-canary':
-    case 'v2-canary-50':
-    case 'v2-full':
-      return placeOrderV2(input);
+    case 'classic':    return placeOrderV1(input);   // delete
+    case 'v2-shadow':  /* ... */                     // delete
+    case 'v2':
+      return placeOrderV2(input);                    // cohort now everyone; drop the check
     /* ... */
   }
 }
@@ -252,10 +254,12 @@ Plus: delete `placeOrderV1`, delete the `CheckoutMode` type, delete the env var.
 ```
 Deploy 1 — expand schema; new code path behind flag, default off
 Deploy 2 — flag rollout: off → shadow → canary → full
-Deploy 3 — contract schema; remove old code path; remove flag
+Deploy 3 — stop old-column reads/writes; remove old code path and release flag; keep old column
+[wait for every Deploy-2 instance and job to drain]
+Deploy 4 — contract schema; drop old column
 ```
 
-The flag turns three deploys' worth of risk into three *small* deploys, each individually reversible. The schema migration is gated by the same flag that controls the code path — no race between "schema is ready" and "code uses it."
+The flag turns the rollout into small, reversible stages, but it does not collapse expand/contract safety. The old column survives one full deployment after old reads/writes stop; only then is contraction safe. This obeys the same expand-then-contract discipline as `expand-contract-schema-migration` — the flag replaces that skill's intermediate *migration* deploys (its read-switch and stop-old-writes steps) with runtime flips, but the outer bookend deploys (expand first, drain, contract last) are identical.
 
 ## Pressure Resistance
 
@@ -321,5 +325,5 @@ Then the flag's stages compress — shadow for one day, canary for one day, full
 
 - Forsgren, Humble, Kim, *Accelerate* (2018) — the DORA finding that *deployment frequency* and *change failure rate* both improve when deploys and releases are decoupled.
 - Jez Humble & David Farley, *Continuous Delivery* (2010), ch. 10 — "deployment pipeline" architecture explicitly separates *deploy* from *release*. Feature flags are the operational mechanism.
-- Martin Fowler, ["Feature Toggles"](https://martinfowler.com/articles/feature-toggles.html) — the canonical write-up. Distinguishes release toggles, experiment toggles, ops toggles, and permission toggles.
-- Pete Hodgson, ["Feature toggles are one of the worst kinds of technical debt"](https://www.startuprocket.com/articles/feature-toggles-are-one-of-the-worst-kinds-of-technical-debt) — the cautionary version. Flags are a *tool*; without removal discipline, they're debt.
+- Pete Hodgson, ["Feature Toggles"](https://martinfowler.com/articles/feature-toggles.html) (2017, on martinfowler.com) — the canonical write-up. Distinguishes release toggles, experiment toggles, ops toggles, and permission toggles.
+- Jim Bird, ["Feature toggles are one of the worst kinds of technical debt"](https://swreflections.blogspot.com/2014/08/feature-toggles-are-one-of-worst-kinds.html) (Building Real Software, 2014) — the cautionary version. Flags are a *tool*; without removal discipline, they're debt.

@@ -1,27 +1,24 @@
 ---
 name: functional-core-imperative-shell
-description: Use when designing a feature that involves both calculation and I/O — a request handler that validates, computes, then writes; a webhook receiver; a job processor. Use when a function under test requires mocking the DB, the clock, or a third-party API. Use when business logic and side effects are tangled together in one place.
+description: Use when a function under test requires mocking the DB, the clock, or a third-party API just to exercise its logic. Use when business logic and side effects are tangled together in one place. Use when a request handler that validates, computes, then writes can't have its computation tested without the surrounding I/O.
 ---
 
 # Functional Core, Imperative Shell
 
 ## Overview
 
-**Pure functions take data and return data** — no I/O, no time, no randomness, no network. Side effects live at the edge in a thin imperative shell that calls the pure core.
+**Prefer pure functions for business decisions**—data in, data out, with no I/O, clock, randomness, or network. Keep orchestration and effects in an imperative shell.
 
-The split is not optional. If a logic function does I/O, that's a bug; refactor the I/O outward.
+The split is a design default, not a demand to extract every trivial transformation. Extract the decision-making core when logic and effects are tangled, independently useful, or hard to test through the public boundary.
 
-## The Iron Rule
+## The Default
 
 ```
-NEVER mix calculation with I/O. The core takes data and returns data; the shell does everything else.
+PREFER a pure decision core and an effectful orchestration shell. Keep trivial glue together
+when extraction would only add indirection; never hide I/O inside a function presented as pure.
 ```
 
-**No exceptions:**
-- Not for "it's faster to write inline"
-- Not for "passing `now` everywhere is silly"
-- Not for "mocks let me test the same thing"
-- Not for "splitting feels artificial"
+Extract a core when business branches, calculations, time, or randomness need direct testing. Keep a thin pass-through in the shell when it contains no independent decision and an integration test exercises the behavior more clearly than another named function would.
 
 ## Why
 
@@ -59,7 +56,7 @@ async function applyDiscountAndCharge(orderId: OrderId, code: string) {
   if (!discount || discount.expiresAt < new Date()) {
     throw new Error('expired');
   }
-  const total = order.totalCents * (1 - discount.percent / 100);
+  const total = Math.round(order.totalCents * (1 - discount.percent / 100));
   await payments.charge({ amountCents: total, customerId: order.customerId });
   await orders.markPaid(orderId, new Date());
 }
@@ -85,6 +82,7 @@ export function computeDiscountedCharge(input: DiscountInput): DiscountResult {
 async function applyDiscountAndCharge(orderId: OrderId, code: string) {
   const order = await orders.findById(orderId);
   const discount = await discounts.findByCode(code);
+  if (!discount) throw new Error('expired');
 
   const result = computeDiscountedCharge({
     orderTotalCents: order.totalCents,
@@ -206,4 +204,5 @@ The feature grows by adding logic. The longer it stays tangled, the more logic a
 ## Reference
 
 - Gary Bernhardt, ["Boundaries"](https://www.destroyallsoftware.com/talks/boundaries) — Destroy All Software (2012). The original talk introducing *Functional Core, Imperative Shell* as a design pattern.
-- Sandi Metz & Katrina Owen, *99 Bottles of OOP* (2016) — extended worked example of the same split applied to OO refactoring.
+- Mark Seemann, ["Impureim sandwich"](https://blog.ploeh.dk/2020/03/02/impureim-sandwich/) (2020) — the same shape named from the FP side: impure–pure–impure.
+- Scott Wlaschin, *Domain Modeling Made Functional* (2018) — a pure decision core with I/O pushed to the edges, worked through a full domain.

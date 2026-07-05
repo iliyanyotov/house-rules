@@ -120,27 +120,39 @@ Rule of thumb: **fire-and-forget → report-and-drop; owed → report-and-defer*
 ## Pressure Resistance
 
 **Pressure: "Re-throwing here would fail the whole request over a non-critical email."**
+
 Response: Correct — which is exactly why you swallow *this* call. But only after the order committed, and only with a `reportError`. The rule isn't "never swallow"; it's "never swallow silently, and never swallow the critical path."
+
 Action: Confirm the critical write is above the `try`; add the error report; comment the why.
 
 **Pressure: "Adding error reporting to every best-effort call is noise."**
+
 Response: The report is the entire justification for the swallow. Without it you haven't degraded gracefully — you've gone blind. A swallow without observation is denial, not resilience.
+
 Action: Always `reportError`/log in the catch. If that feels like too much per site, extract a `bestEffort(fn, context)` helper that does it for you.
 
 **Pressure: "`fail-fast` says never swallow — so this skill contradicts it."**
+
 Response: It doesn't. `fail-fast` governs invariants and the critical path; it explicitly permits designed, logged degradation at a boundary. This skill *is* that permitted seam, made rigorous. They compose: fail-fast for the operation, deliberate-swallow for its optional follow-ons.
+
 Action: Ask "is this work part of the contract, or a courtesy after it?" Contract → fail-fast. Courtesy → swallow deliberately.
 
 **Pressure: "I reported the failure, so swallowing the confirmation email is handled."**
+
 Response: Reporting makes the failure *visible*; it doesn't make the user *whole*. If the work is owed (a receipt, a confirmation, a sync), a report-and-drop means the user simply never gets it — you just have a log proving you knew. Owed work goes to a retry path (job/outbox), which retries and, on exhaustion, dead-letters.
+
 Action: Classify the optional work — fire-and-forget (drop) or owed (defer). For owed, enqueue it; don't let a `reportError` be the end of the story.
 
 **Pressure: "The email failure might mean something is actually broken."**
+
 Response: Then route it to your error tracker (which you're doing) and alert/monitor on it — that's how you find systemic problems. But don't punish the user whose order succeeded by failing their request. Observation and propagation are different responses; pick observation here.
+
 Action: Report with enough context to investigate later; keep the user-facing result successful.
 
 **Pressure: "It runs before the main write, but I'll swallow it anyway to be safe."**
+
 Response: Then a failure of the *real* operation can hide behind the swallow, or the optional step's failure leaves the main step acting on bad assumptions. Order matters: optional, swallowed work goes *after* the commit.
+
 Action: Reorder so the critical write is first and fully committed before any best-effort step.
 
 ## Red Flags

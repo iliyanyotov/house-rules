@@ -1,6 +1,6 @@
 ---
 name: single-responsibility
-description: Use when designing a module, file, function, or component. Use when a description of what something does requires the word "and." Use when reviewing code that mixes transport (HTTP/DB), domain logic, and presentation in one place. Use when a component renders, fetches, validates, and persists. Use when a route handler does parsing, business logic, DB writes, email sends, and response shaping inline.
+description: Use when explicitly checking whether a module has more than one reason to change. Use when a description of what something does requires the word "and." Use when reviewing code that mixes transport (HTTP/DB), domain logic, and presentation in one place. Use when a component renders, fetches, validates, and persists. Use when a route handler does parsing, business logic, DB writes, email sends, and response shaping inline.
 ---
 
 # Single Responsibility
@@ -59,11 +59,12 @@ export async function handleRegister(rawBody: unknown) {
 // ✅ Each layer has one job.
 
 // 1. Parse — schema only.
-const RegisterInput = z.object({ email: z.string().email() });
+const RegisterInput = z.object({ email: z.email() });
 
 // 2. Domain operation — persistence.
 async function registerUser(input: z.infer<typeof RegisterInput>): Promise<User> {
   const [user] = await users.insert(input).returning();
+  if (!user) throw new Error('insert returned no row');
   return user;
 }
 
@@ -212,5 +213,5 @@ Transactions are a separate concern: an *orchestrator* that calls two operations
 
 ## Reference
 
-- Robert C. Martin, *Agile Software Development, Principles, Patterns, and Practices* (2003) — the "S" in SOLID: *"A module should have one and only one reason to change."*
+- Robert C. Martin, *Agile Software Development, Principles, Patterns, and Practices* (2002) — the "S" in SOLID: *"A module should have one and only one reason to change."*
 - David Parnas, ["On the Criteria to Be Used in Decomposing Systems into Modules"](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf) (1972) — the original "information hiding" / one-reason-to-change argument, decades older than SOLID.

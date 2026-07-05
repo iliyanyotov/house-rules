@@ -1,6 +1,6 @@
 ---
 name: retry-with-jitter-and-budget
-description: Use when designing client code that calls an external dependency (HTTP, DB, third-party SDK, LLM). Use when adding `retry: 3` to a library. Use when seeing thundering-herd patterns in dashboards (sync retries causing correlated traffic spikes). Use when reviewing code that retries non-idempotent writes without an idempotency key.
+description: Use when adding or reviewing retries for HTTP, DB, SDK, or LLM calls; when dashboards show synchronized retry spikes; or when code retries a non-idempotent write without a stable idempotency key.
 ---
 
 # Retry With Jitter and Budget
@@ -20,7 +20,7 @@ NEVER retry without jitter, a deadline, and idempotency safety. Naked retries ca
 **No exceptions:**
 - Not for "I'll just retry 3 times with a 1-second delay"
 - Not for "the dependency rarely fails"
-- Not for "the library has retries built-in"
+- Not for "the library retries, so I don't have to think about it" — library/runner retries are fine *only* when that layer is the single owner and itself provides jitter + budget + bounded attempts (see "Disable library-level retries")
 - Not for "infinite retries are fine for jobs that must succeed"
 
 ## Why
@@ -60,48 +60,81 @@ type RetryOptions = {
 };
 
 export async function withRetry<T>(
-  op: (attempt: number) => Promise<T>,
+  op: (attempt: number, signal: AbortSignal) => Promise<T>,
   opts: RetryOptions,
 ): Promise<T> {
+  if (opts.maxAttempts < 1 || opts.deadlineMs <= 0) {
+    throw new Error('withRetry: maxAttempts must be >= 1 and deadlineMs > 0');
+  }
   const deadline = Date.now() + opts.deadlineMs;
-  let lastErr: unknown;
+  const budget = AbortSignal.timeout(opts.deadlineMs);       // fires when the total budget is spent
+  let lastErr: unknown = new Error('withRetry: no attempt ran');
 
   for (let attempt = 1; attempt <= opts.maxAttempts; attempt++) {
-    if (opts.signal?.aborted) throw new Error('aborted');
+    if (opts.signal?.aborted) throw opts.signal.reason ?? new Error('aborted');
     if (Date.now() >= deadline) break;
 
+    // Bound the attempt by the remaining budget AND the caller's signal, so an in-flight
+    // op is cut off at the deadline — not merely checked between attempts.
+    const attemptSignal = opts.signal ? AbortSignal.any([budget, opts.signal]) : budget;
     try {
-      return await op(attempt);
+      // The race returns control at the deadline even if a buggy adapter ignores its signal.
+      // Well-behaved adapters must still honor the signal so their underlying work also stops.
+      return await raceWithAbort(op(attempt, attemptSignal), attemptSignal);
     } catch (err) {
       lastErr = err;
       if (!opts.isRetryable(err)) throw err;
       if (attempt === opts.maxAttempts) break;
 
-      // Exponential backoff with full jitter.
+      // Exponential backoff with full jitter, capped to the budget left.
       const expBackoff = Math.min(opts.maxDelayMs, opts.baseDelayMs * 2 ** (attempt - 1));
-      const delay = Math.random() * expBackoff; // uniform over [0, expBackoff]
-      const remaining = deadline - Date.now();
-      if (delay >= remaining) break;
-      await new Promise(r => setTimeout(r, delay));
+      const delay = Math.min(Math.random() * expBackoff, deadline - Date.now());
+      if (delay <= 0) break;
+      await abortableDelay(delay, attemptSignal);           // wakes early if budget/caller aborts
     }
   }
-
   throw lastErr;
+}
+
+function raceWithAbort<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(signal.reason ?? new Error('aborted'));
+  return new Promise<T>((resolve, reject) => {
+    const aborted = () => reject(signal.reason ?? new Error('aborted'));
+    signal.addEventListener('abort', aborted, { once: true });
+    work.then(resolve, reject).finally(() => signal.removeEventListener('abort', aborted));
+  });
+}
+
+// Sleep rejects immediately or on later abort; it never misses an already-fired signal.
+function abortableDelay(ms: number, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.reject(signal.reason ?? new Error('aborted'));
+  return new Promise((resolve, reject) => {
+    const aborted = () => {
+      clearTimeout(timer);
+      reject(signal.reason ?? new Error('aborted'));
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', aborted);
+      resolve();
+    }, ms);
+    signal.addEventListener('abort', aborted, { once: true });
+  });
 }
 ```
 
 The three properties on display:
 
 1. **Jitter:** `Math.random() * expBackoff` — *full jitter*. Don't use "decorrelated jitter" or "equal jitter" — full is simplest and works for almost every workload.
-2. **Budget:** `deadlineMs` caps total time across all attempts. The function bails when the budget is exhausted, even if attempts remain. (A budget can also be *bounded attempts × a capped per-attempt delay* — `maxAttempts` + a `maxTimeoutInMs` ceiling on backoff — which is the common shape in queue/task-runner config where there's no single request to deadline. Both bound total work; the anti-pattern is having *neither*.)
+2. **Budget:** `deadlineMs` caps how long the caller waits across all attempts. Signal-aware adapters also stop their underlying work; a non-cooperative adapter may continue after the race returns. (A budget can also be *bounded attempts × a capped per-attempt delay*—`maxAttempts` plus a `maxTimeoutInMs` ceiling on backoff—which is common in queue/task-runner config. Both bound caller-visible retry behavior; the anti-pattern is having neither.)
 3. **Classification:** `isRetryable(err)` — only certain errors retry. Programming bugs (4xx, validation errors) should never retry.
 
 ### Using it — read with timeout
 
 ```ts
 const data = await withRetry(
-  () => fetch('https://api.example.com/data', {
-    signal: AbortSignal.timeout(5_000),
+  (_attempt, signal) => fetch('https://api.example.com/data', {
+    // per-attempt timeout, combined with the budget so it never outlives the deadline:
+    signal: AbortSignal.any([signal, AbortSignal.timeout(5_000)]),
   }).then(r => {
     if (r.status >= 500) throw new RetryableError(`upstream ${r.status}`);
     if (!r.ok) throw new Error(`bad request ${r.status}`); // not retryable
@@ -112,12 +145,17 @@ const data = await withRetry(
     baseDelayMs: 200,
     maxDelayMs: 2_000,
     deadlineMs: 10_000,
-    isRetryable: (err) => err instanceof RetryableError,
+    // Match the classification table: 5xx (mapped above), network failures, and
+    // your own per-attempt timeout all retry; plain `Error` (4xx) does not.
+    isRetryable: (err) =>
+      err instanceof RetryableError ||
+      err instanceof TypeError ||
+      (err instanceof DOMException && err.name === 'TimeoutError'),
   }
 );
 ```
 
-The outer `withRetry` has a 10s budget. Each attempt has a 5s timeout. The two compose: any one attempt can take up to 5s; the total never exceeds 10s.
+The outer `withRetry` has a 10s caller budget; each attempt adds its own 5s timeout via `AbortSignal.any`. The race guarantees the caller regains control when either deadline fires. Cancellation of the *underlying work* is cooperative: `fetch` honors the signal, but an arbitrary SDK may ignore it and continue in the background. Wrap or replace non-cooperative adapters—especially for writes—and keep the downstream idempotency key stable even after the caller has timed out.
 
 ### Write with idempotency key — same key across retries
 
@@ -125,11 +163,11 @@ The outer `withRetry` has a 10s budget. Each attempt has a 5s timeout. The two c
 const idempotencyKey = crypto.randomUUID();
 
 await withRetry(
-  () => fetch('/api/orders', {
+  (_attempt, signal) => fetch('/api/orders', {
     method: 'POST',
     headers: { 'idempotency-key': idempotencyKey, 'content-type': 'application/json' },
     body: JSON.stringify(input),
-    signal: AbortSignal.timeout(5_000),
+    signal: AbortSignal.any([signal, AbortSignal.timeout(5_000)]),
   }),
   {
     maxAttempts: 3,
@@ -166,14 +204,21 @@ The table says to honor `Retry-After` on 429 — but the canonical loop above ca
 const retryAfterMs = (err: unknown): number | undefined => {
   const h = (err as { response?: { headers?: { get?: (k: string) => string | null } } })
     .response?.headers?.get?.('retry-after');
-  return h ? Number(h) * 1000 : undefined;   // seconds → ms
+  if (!h) return undefined;
+  const seconds = Number(h);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000); // delta-seconds form
+  const date = Date.parse(h);                                // HTTP-date form
+  return Number.isNaN(date) ? undefined : Math.max(0, date - Date.now());
 };
 
-// In the loop: server value wins, still capped by `remaining` (the budget left, from the canonical loop above).
-const delay = Math.min(retryAfterMs(err) ?? Math.random() * expBackoff, remaining);
+// In the loop: honor the server's value but add jitter (so 10k clients don't wake at the same
+// instant), fall back to full jitter, and stay capped by `remaining` (the budget left).
+const server = retryAfterMs(err);
+const wanted = server !== undefined ? server + Math.random() * 1_000 : Math.random() * expBackoff;
+const delay = Math.min(wanted, remaining);
 ```
 
-On a 429/503 carrying `Retry-After` (or `RateLimit-Reset`), the server is telling you exactly when it'll be ready — that value beats client backoff. Without a hook for it, "honor `Retry-After`" is advice the loop can't follow.
+On a 429/503 carrying `Retry-After` (or `RateLimit-Reset`), the server is telling you when it'll be ready — that value beats client backoff. Parse **both** forms of the header (delta-seconds and HTTP-date), and add a little jitter on top: honoring an exact instant would resynchronize every client onto the same millisecond and re-spike the server. Without a hook for it, "honor `Retry-After`" is advice the loop can't follow.
 
 ### Disable library-level retries
 
@@ -198,7 +243,7 @@ The data (Marc Brooker, AWS Builders' Library) compares four:
 - **No jitter** — thundering herd, worst.
 - **Equal jitter** — `(exp/2) + random(0, exp/2)` — good.
 - **Full jitter** — `random(0, exp)` — best in most workloads; lowest server load.
-- **Decorrelated jitter** — `random(base, prev*3)` — best when retries are highly correlated.
+- **Decorrelated jitter** — `random(base, prev*3)` — completes slightly faster in Brooker's measurements; full jitter still produces the fewest total calls.
 
 Default to **full jitter** unless you have measurement saying otherwise.
 

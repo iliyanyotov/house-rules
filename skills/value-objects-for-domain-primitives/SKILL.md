@@ -88,7 +88,9 @@ export class Money {
     if (this.currency !== other.currency) {
       throw new Error(`Cannot add ${this.currency} to ${other.currency}`);
     }
-    return new Money(this.minorUnits + other.minorUnits, this.currency);
+    // Route through `of`, never `new Money` — so the sum is re-checked for overflow
+    // past MAX_SAFE_INTEGER and any other invariant, instead of silently bypassing them.
+    return Money.of(this.minorUnits + other.minorUnits, this.currency);
   }
 
   toString(): string {
@@ -107,17 +109,19 @@ function chargeCustomer(customerId: CustomerId, amount: Money) {
 }
 ```
 
+Whether money may be **negative** is a per-domain decision, not a universal law: a charge amount is non-negative, but a refund, a ledger delta, or an account balance is legitimately signed. The example above enforces non-negative as *one* domain's rule — model a signed `LedgerAmount` separately rather than forcing every money type through the same non-negativity check.
+
 The class form is one of two valid shapes. The other is a branded type — pick based on whether you need methods:
 
 ```ts
 // Alternative: branded type for value-only cases.
 import type { Brand } from './brand';
-export type PositiveMinorUnits = Brand<number, 'PositiveMinorUnits'>;
+export type NonNegativeMinorUnits = Brand<number, 'NonNegativeMinorUnits'>;
 
-export const PositiveMinorUnits = {
-  of(n: number): PositiveMinorUnits {
+export const NonNegativeMinorUnits = {
+  of(n: number): NonNegativeMinorUnits {
     if (!Number.isInteger(n) || n < 0) throw new RangeError(`invalid: ${n}`);
-    return n as PositiveMinorUnits;
+    return n as NonNegativeMinorUnits;
   },
 };
 ```
@@ -141,11 +145,12 @@ export type Percentage = Brand<number, 'Percentage'>; // stored as 0..1 fraction
 
 export const Percentage = {
   fromFraction(f: number): Percentage {
-    if (f < 0 || f > 1) throw new RangeError(`Percentage out of range: ${f}`);
+    // `!Number.isFinite` first: `NaN < 0 || NaN > 1` is `false`, so NaN would slip past a bare range check.
+    if (!Number.isFinite(f) || f < 0 || f > 1) throw new RangeError(`Percentage out of range: ${f}`);
     return f as Percentage;
   },
   fromPercent(p: number): Percentage {
-    if (p < 0 || p > 100) throw new RangeError(`Percent out of range: ${p}`);
+    if (!Number.isFinite(p) || p < 0 || p > 100) throw new RangeError(`Percent out of range: ${p}`);
     return (p / 100) as Percentage;
   },
 };
@@ -172,7 +177,7 @@ function sendEmail(to: string, subject: string) {
 // ✅ Parse once at the boundary.
 export type EmailAddress = Brand<string, 'EmailAddress'>;
 
-const emailSchema = z.string().email();
+const emailSchema = z.email();
 
 export const EmailAddress = {
   parse(raw: unknown): EmailAddress {
@@ -202,6 +207,8 @@ function logEvent(at: string, name: string) {
 }
 
 // ✅ Date format encoded in the type.
+import { Temporal } from '@js-temporal/polyfill'; // use native Temporal where available
+
 export type IsoDate = Brand<string, 'IsoDate'>;
 
 export const IsoDate = {
@@ -209,8 +216,16 @@ export const IsoDate = {
     return d.toISOString() as IsoDate;
   },
   parse(s: string): IsoDate {
+    // Shape check…
     if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(s)) {
       throw new Error(`Not an ISO date: ${s}`);
+    }
+    // …then strict calendar validity. `Date.parse` is NOT enough: it normalizes
+    // `2024-02-30T00:00:00Z` to March 1 instead of rejecting it.
+    try {
+      Temporal.Instant.from(s);
+    } catch {
+      throw new Error(`Impossible date: ${s}`);
     }
     return s as IsoDate;
   },
@@ -231,7 +246,8 @@ export type Coordinates = { lat: Latitude; lon: Longitude };
 
 export const Latitude = {
   of(n: number): Latitude {
-    if (n < -90 || n > 90) throw new RangeError(`lat out of range: ${n}`);
+    // `!Number.isFinite` first — otherwise NaN passes the range check (both comparisons are false).
+    if (!Number.isFinite(n) || n < -90 || n > 90) throw new RangeError(`lat out of range: ${n}`);
     return n as Latitude;
   },
 };
@@ -276,7 +292,7 @@ Branded types are zero-runtime: the brand is a phantom. Classes do allocate, but
 
 ### "We use schema parsing at the boundary, that's enough"
 
-Schemas parse at the boundary — good. But the *output* of `z.string().email().parse(input)` is still typed as `string`. Internal functions accepting that value re-receive an unbranded `string` and can be called with any other string. The value object goes one step further: the parsed result has its own type that propagates.
+Schemas parse at the boundary — good. But the *output* of `z.email().parse(input)` is still typed as `string`. Internal functions accepting that value re-receive an unbranded `string` and can be called with any other string. The value object goes one step further: the parsed result has its own type that propagates.
 
 ### "Different code style — we're functional"
 
@@ -289,7 +305,7 @@ Branded types are functional. You don't need classes; you need types and a parsi
 - A regex literal or range-check that appears in more than one file for the same domain concept.
 - A `Math.round` / `parseFloat` / `Number(...)` in three different places for the same domain value.
 - A function takes `price` and `taxRate` and silently produces wrong results when the caller passes them in the wrong unit or scale.
-- The bug post-mortem mentions "wrong unit," "wrong currency," "swapped arguments," "off by 100x."
+- The bug post-mortem mentions "wrong unit", "wrong currency", "swapped arguments", "off by 100x."
 - A test exercises a function with values that violate the function's documented preconditions but typecheck.
 
 **All of these mean: the value-object is missing — wrap the constraint into a type.**
@@ -312,6 +328,6 @@ Branded types are functional. You don't need classes; you need types and a parsi
 
 ## Reference
 
-- Eric Evans, *Domain-Driven Design* (2003) — coined the term **value object** as a first-class building block of domain models: "an object with no conceptual identity, defined entirely by its attributes."
+- Eric Evans, *Domain-Driven Design* (2003) — coined the term **value object** as a first-class building block of domain models: "An object that represents a descriptive aspect of the domain with no conceptual identity is called a VALUE OBJECT."
 - Martin Fowler, *Refactoring* 2e (2018) — names the smell as **primitive obsession** and lists refactorings that target it (Replace Primitive with Object, Extract Class).
 - Vaughn Vernon, *Implementing Domain-Driven Design* (2013) — extends Evans' framing with concrete patterns that translate cleanly into TS.

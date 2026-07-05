@@ -30,7 +30,7 @@ The original DRY principle (Hunt & Thomas, 1999) is *"Every piece of knowledge m
 The common misreading is "any two identical lines must be extracted." That misreading creates a worse problem than duplication: **wrong coupling**. Two code paths that look alike now but represent different concerns will sooner or later need to diverge. If they were prematurely unified:
 
 1. The "shared" function grows parameters and branches until it serves both concerns awkwardly — coupled, slower to change, harder to read.
-2. Someone changes the shared function "for case A," accidentally breaks case B — silent, painful, hard to detect.
+2. Someone changes the shared function "for case A", accidentally breaks case B — silent, painful, hard to detect.
 
 Sandi Metz's operative phrase: **"Duplication is far cheaper than the wrong abstraction."**
 
@@ -175,7 +175,7 @@ This is real DRY. One schema, multiple consumers, one authoritative definition.
 
 ### Configuration — extract on first occurrence
 
-Constants, magic numbers, env-derived values are *always* knowledge:
+Constants, magic numbers, env-derived values are *usually* knowledge — the same-knowledge test still applies:
 
 ```ts
 // ❌ Sprinkled.

@@ -14,10 +14,12 @@ description: Use when about to type a variable, parameter, or return as `any`. U
 ## The Iron Rule
 
 ```
-NEVER use `any`. Use `unknown` and narrow, or `never` for unreachable branches.
+NEVER let `any` cross into application code or escape a boundary adapter. Use `unknown`
+and narrow, or `never` for unreachable branches. A documented adapter-local `any` is the
+last resort for a typeless library or write-only telemetry blob; its public surface is typed.
 ```
 
-**No exceptions:**
+**No *unjustified* `any`** — these rationalizations don't count. (The only justified `any` lives in a single boundary adapter for a typeless library, or a free-form telemetry `Record<string, any>` you never read back typed — each is documented below.)
 - Not for "it's just temporary"
 - Not for "the shape is too complex to type"
 - Not for "TypeScript can't infer this"
@@ -36,7 +38,7 @@ A field typed as `unknown`:
 - Returns a value the type system makes you *narrow* before using (good).
 - Forces a parse step at the boundary where the value enters typed code.
 
-`never` is the other escape: it represents *unreachable* state. Where `unknown` is "I don't know what this is yet," `never` is "this can't exist." A switch over a discriminated union whose `default` branch is reached because someone added a new variant should fail at compile time — that's what `never` is for.
+`never` is the other escape: it represents *unreachable* state. Where `unknown` is "I don't know what this is yet", `never` is "this can't exist." A switch over a discriminated union whose `default` branch is reached because someone added a new variant should fail at compile time — that's what `never` is for.
 
 ## Detection
 
@@ -294,5 +296,5 @@ A type variable (`<T>`) is a feature of every modern language. If `<T>` is confu
 ## Reference
 
 - The TypeScript team's [Do's and Don'ts](https://www.typescriptlang.org/docs/handbook/declaration-files/do-s-and-don-ts.html) — official: prefer `unknown` over `any` when the type is genuinely unknown.
-- Dan Vanderkam, *Effective TypeScript* 2e (2024), item 62 ("Avoid `any`"), item 49 ("Prefer `unknown` to `any`").
+- Dan Vanderkam, *Effective TypeScript* 2e (2024), item 5 ("Limit Use of the `any` Type"), item 46 ("Use `unknown` Instead of `any` for Values with an Unknown Type").
 - TypeScript 3.0 release notes (2018) — Anders Hejlsberg's original `unknown` proposal: `unknown` is the type-safe counterpart of `any`. Same accept-anything semantics, opposite use semantics.

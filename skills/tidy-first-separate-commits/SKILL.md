@@ -166,7 +166,7 @@ One trap for this test: **type-only changes are erased at runtime**, so the old 
 
 **Pressure:** "Why ceremony for a rename?"
 
-**Response:** Triviality is exactly why it's a clean tidy commit. The reviewer scans, sees "rename," moves on in seconds.
+**Response:** Triviality is exactly why it's a clean tidy commit. The reviewer scans, sees "rename", moves on in seconds.
 
 **Action:** Commit it separately. The triviality is the win, not the excuse.
 

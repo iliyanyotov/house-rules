@@ -34,7 +34,7 @@ Inheritance binds the child to the parent's *implementation* and *contract*, for
 
 When the parent grows, the child grows with it — including methods the child doesn't want. When the parent's contract narrows, every child must comply.
 
-Composition is the opposite: the consumer says "I need this capability and that capability," wires them in, and that's the entire relationship. Each piece is a function or a small object with one job. Adding a third capability is adding a third dependency, not editing a hierarchy.
+Composition is the opposite: the consumer says "I need this capability and that capability", wires them in, and that's the entire relationship. Each piece is a function or a small object with one job. Adding a third capability is adding a third dependency, not editing a hierarchy.
 
 In a TypeScript/functional codebase, composition is the *natural* choice — function parameters, capability interfaces, and structural typing are all designed for it. Inheritance fights the language; composition fits it.
 
@@ -259,6 +259,7 @@ The composition version is *slightly* more code at the type-declaration site; it
 
 ## Reference
 
-- *Design Patterns* (Gamma, Helm, Johnson, Vlissides — the "Gang of Four," 1994) — the original formulation: *"Favor object composition over class inheritance."*
+- *Design Patterns* (Gamma, Helm, Johnson, Vlissides — the "Gang of Four", 1994) — the original formulation: *"Favor object composition over class inheritance."*
+- Joshua Bloch, *Effective Java* 3e (2018), Item 18 ("Favor composition over inheritance") — the canonical modern statement, with the fragile-base-class argument.
 - Sandi Metz, *Practical Object-Oriented Design* (2nd ed., 2018) — extended treatment of why inheritance is a constraint, not a tool, in most OO codebases.
-- The TypeScript handbook's chapter on [structural typing](https://www.typescriptlang.org/docs/handbook/2/objects.html) — TS's type system makes capability-interface composition the natural style.
+- The TypeScript handbook's chapter on [structural typing](https://www.typescriptlang.org/docs/handbook/type-compatibility.html) — TS's type system makes capability-interface composition the natural style.

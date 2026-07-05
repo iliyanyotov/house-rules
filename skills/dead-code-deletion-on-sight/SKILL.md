@@ -153,9 +153,9 @@ The trap is the *middle* state: a `@deprecated` shim that still has a handful of
 
 **Pressure:** "What if something I don't know about still uses this?"
 
-**Response:** That's what "Find References" is for. If your IDE shows zero, your tests still pass, and the build succeeds — there are no callers.
+**Response:** That's what "Find References" is for — but zero *static* references is necessary, not sufficient. Anything dynamically addressable can be referenced by string: filesystem-convention routes, DI tokens, serialized/reflected names, i18n keys, env-var names read by CI/infra, published-package exports.
 
-**Action:** Run "Find References." If zero, delete.
+**Action:** Run "Find References." For anything dynamically addressable, also grep for the name as a string. If both come back zero, delete.
 
 ### 5. "Tests depend on the dead code"
 

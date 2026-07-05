@@ -1,6 +1,6 @@
 ---
 name: walking-skeleton
-description: Use when starting a new feature or a new project. Use when the team has been "building the foundation" for two weeks without any end-to-end demo. Use when a design doc proposes building the database layer first, then the API, then the UI — in sequence. Use when a teammate says "we'll integrate it all at the end." Use when the first user-visible result is many sprints away.
+description: Use when starting a new project or feature that spans UI, API, and database and has no thin end-to-end slice wired up yet. Use when the team has been "building the foundation" for two weeks without any end-to-end demo. Use when a design doc proposes building the database layer first, then the API, then the UI — in sequence. Use when a teammate says "we'll integrate it all at the end." Use when the first user-visible result is many sprints away.
 ---
 
 # Walking Skeleton
@@ -97,12 +97,12 @@ That's the skeleton. It walks: user clicks → action runs → handler runs → 
 
 Each PR is small, deployable, and end-to-end:
 
+- Add auth / authorization at the boundary (before any real user or real write).
 - Add schema validation at the handler boundary; UI shows validation errors.
 - Add the DB insert; handler returns a real `orderId`.
-- Add the payment call; handler returns success/failure.
-- Add idempotency keys.
+- Add idempotency keys and bounded timeouts/retries — the safety net a payment needs.
+- Add the real payment call; handler returns success/failure.
 - Add observability tags.
-- Add timeouts and retries.
 
 At every stage, the feature *walks* — even if the muscles are still skeletal.
 
@@ -122,12 +122,14 @@ Skip any of these on day 1 and you skip the joint that will actually surprise yo
 
 ### What's *not* on day 1
 
-- **Auth.** Stub or skip; revisit when the skeleton walks.
+- **Auth.** Stub or skip *only while the skeleton is walled off and has no real side effect* (see below). The moment it's reachable by real users or writes real data, auth is a prerequisite, not muscle.
 - **Styling.** Plain HTML is fine.
 - **Error handling beyond "it errors."** The error path *is* on day 1; refined error messages are not.
 - **Observability.** Add when the skeleton walks; `console.log` is enough until then.
 - **Performance.** Measure first; optimize when measurements show a problem.
 - **Edge cases.** The skeleton handles the happy path. Edge cases are muscle.
+
+**Prerequisites, not muscle — for a real mutating flow.** Auth, authorization, idempotency, and bounded external calls can be deferred *only* while the skeleton is walled off (a protected preview env, a fail-closed flag, or a genuinely access-controlled internal route) **and** its side effects are stubbed. Before the skeleton charges a real card, writes real user data, or is reachable by anyone untrusted, those controls come first — an externally-reachable, unauthenticated, non-idempotent, unbounded write is a hole, not a skeleton. Concretely: don't wire the *real* payment call before idempotency and timeout/retry semantics exist.
 
 ### Walking skeleton vs MVP
 
@@ -140,7 +142,7 @@ You build the skeleton *inside* the MVP. The MVP defines the feature's outer env
 
 ### The skeleton is deployed
 
-The walking skeleton lives in production from day 1, behind a flag or at an internal URL. The deploy isn't busywork — it's the *test that the joints really hold*. Local dev hides plenty of deploy-time issues (env vars, build cache, runtime mismatches). The deploy is the proof.
+The walking skeleton lives in production from day 1, behind a flag or at an internal URL. "Behind a flag or at an internal URL" has to mean *actually access-controlled*: a **fail-closed** flag (any resolution error defaults to *off*, never *on*) and an internal route that enforces auth — not merely an unlinked path. Security by obscurity doesn't protect a mutating endpoint; an unauthenticated checkout URL is reachable whether or not you linked to it. The deploy isn't busywork — it's the *test that the joints really hold*. Local dev hides plenty of deploy-time issues (env vars, build cache, runtime mismatches). The deploy is the proof.
 
 The flag is typically *scoped*, not just on/off: enable it for yourself/your team first, then widen to GA by flipping the scope — same code, no redeploy. A good flag is checked per-user, per-team, and globally, so the skeleton is live in prod *for you* on day 1 and graduates by widening the enabled cohort rather than by editing code. (This is the cohort-widening rollout from `decouple-deploy-from-release-via-flags`.)
 

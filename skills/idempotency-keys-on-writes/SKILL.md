@@ -1,6 +1,6 @@
 ---
 name: idempotency-keys-on-writes
-description: Use when designing a route, handler, webhook receiver, or queue consumer that mutates state. Use when a write may be retried by a client, a load balancer, a queue, or a user double-clicking a button. Use when reviewing a payment, order, or signup endpoint that doesn't accept an `Idempotency-Key` header. Use when "we noticed duplicate rows" appears in a bug ticket.
+description: Use when a consequential write may be retried by a client, load balancer, queue, webhook sender, or double-click. Use when a payment, order, or signup endpoint lacks an idempotency key, or duplicate rows/effects appear in a bug report.
 ---
 
 # Idempotency Keys on Writes
@@ -14,7 +14,7 @@ The retention window is at least 24 hours. The key is client-supplied. The imple
 ## The Iron Rule
 
 ```
-NEVER expose a mutating endpoint without idempotency. Networks lose responses; clients retry.
+NEVER expose a *consequential* mutating endpoint without idempotency. Networks lose responses; clients retry. (Low-stakes notifications can use a lighter UI-guard + short-window dedup — see "Low-stakes notifications".)
 ```
 
 **No exceptions:**
@@ -25,9 +25,9 @@ NEVER expose a mutating endpoint without idempotency. Networks lose responses; c
 
 ## Why
 
-Networks lose responses. Clients retry on timeout. Queues redeliver. Load balancers re-issue. Users double-click. A mutating endpoint that doesn't dedup will, eventually, charge a card twice, create two orders, send two welcome emails.
+Networks lose responses. Clients retry on timeout. Queues redeliver. Load balancers re-issue. Users double-click. A mutating endpoint that doesn't dedupe will, eventually, charge a card twice, create two orders, send two welcome emails.
 
-The fix is not "be more careful." It's structural: **let the client name each unique intent and let the server enforce one execution per name.** The client retries safely; the server dedups deterministically.
+The fix is not "be more careful." It's structural: **let the client name each unique intent and let the server enforce one execution per name.** The client retries safely; the server dedupes deterministically.
 
 ## Detection
 
@@ -57,33 +57,60 @@ The consumer side has a second failure mode the producer side doesn't: a deliver
 async function handleCreateOrder(req: Request) {
   const endpoint = 'POST /orders';
   const key = req.headers.get('idempotency-key');
-  if (!key) return json({ error: 'missing_idempotency_key' }, 400);
+  if (!key) return json({ error: 'missing_idempotency_key' }, { status: 400 });
 
-  // Atomic insert: the unique `(endpoint, key)` constraint decides who executes.
+  // Parse BEFORE reserving — a malformed body must never strand a key in `processing`.
+  const body = CreateOrder.parse(await req.json());
+  // Bind the key to the exact request, so a reused key with a different body is caught, not replayed.
+  const requestHash = sha256(canonicalJson(body));
+
+  // Atomic insert: the unique `(endpoint, key)` decides who executes. The short lease
+  // makes the reservation reclaimable if the owner dies mid-flight.
   const reservation = await idempotencyKeys.reserve({
     endpoint,
     key,
+    requestHash,
+    leaseUntil: new Date(Date.now() + 30_000),
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
 
   if (reservation.status === 'completed') {
+    if (reservation.requestHash !== requestHash) {
+      return json({ error: 'idempotency_key_reuse' }, { status: 422 }); // same key, different intent
+    }
     return replay(reservation);
   }
 
-  if (reservation.status === 'processing_elsewhere') {
-    const completed = await idempotencyKeys.waitForCompletion({ endpoint, key });
+  if (reservation.status === 'processing') {
+    // Reject a different intent immediately; do not wait for unrelated work to finish.
+    if (reservation.requestHash !== requestHash) {
+      return json({ error: 'idempotency_key_reuse' }, { status: 422 });
+    }
+    // Someone else holds a live lease. Wait with a DEADLINE — never block forever.
+    const completed = await idempotencyKeys.waitForCompletion({ endpoint, key }, { timeoutMs: 5_000 });
+    if (!completed) return json({ error: 'processing', retryAfter: 1 }, { status: 409 });
+    if (completed.requestHash !== requestHash) return json({ error: 'idempotency_key_reuse' }, { status: 422 });
     return replay(completed);
   }
 
-  // We own the reservation. Now, and only now, perform the side effect.
-  const body = CreateOrder.parse(await req.json());
+  // status === 'owned' — a fresh insert, or we reclaimed an expired lease. `generation`
+  // is a monotonically increasing fencing token: a stale owner can never complete generation N
+  // after a reclaimer has advanced the row to N+1.
+  const generation = reservation.generation;
   const result = await db.transaction(async (tx) => {
+    // Lock the reservation row and prove we still own this generation in the SAME transaction
+    // as the business write. A concurrent reclaimer either ran first (this returns false) or
+    // waits for this transaction and then observes `completed`.
+    const stillOwned = await tx.idempotencyKeys.lockOwned({ endpoint, key, generation });
+    if (!stillOwned) throw new Error('idempotency_ownership_lost');
+
     const order = await tx.orders.create(body);
     const responseBody = JSON.stringify({ order });
 
     await tx.idempotencyKeys.complete({
       endpoint,
       key,
+      generation,
       responseBody,
       responseStatus: 201,
     });
@@ -95,7 +122,7 @@ async function handleCreateOrder(req: Request) {
 }
 ```
 
-The `(endpoint, key)` primary key gives O(1) lookups *and* enforces uniqueness. Two concurrent requests with the same key race on the reservation insert, before the side effect. The winner executes; the loser waits for, then replays, the winner's stored result.
+Six properties make this safe, and dropping any one reintroduces a duplicate or a hang: **parse before reserve** (a bad body can't strand a key), **bind the key to a `requestHash`** (a reused key with a different body is rejected, not silently replayed), **a processing lease** (a dead owner's key is reclaimable, not stuck forever), **a fencing generation** (a reclaimed stale owner cannot commit), **a bounded wait** (a slow owner yields a `409` retry, not an infinite block), and **ownership verification + side effect + `complete` in one transaction** (they commit or roll back together under the reservation-row lock). A long database transaction holds that row lock, so reclamation waits and then sees completion. External effects that *can't* join that transaction — an email send, a third-party charge — go through an outbox row written *inside* the transaction and dispatched after commit (forwarding an idempotency key downstream; see *Outbound calls*). A lease without fencing is unsafe: expiry alone does not stop the old worker.
 
 ### Concurrency — handle the race deterministically
 
@@ -104,8 +131,9 @@ try {
   await idempotencyKeys.insertProcessing({ endpoint, key }); // succeeds → we execute
 } catch (err) {
   if (isUniqueViolation(err)) {
-    // Someone else is doing or did the work. Poll, block, or return 409.
-    const completed = await idempotencyKeys.waitForCompletion({ endpoint, key });
+    // Someone else is doing or did the work. Wait with a deadline, then 409 if still pending.
+    const completed = await idempotencyKeys.waitForCompletion({ endpoint, key }, { timeoutMs: 5_000 });
+    if (!completed) return json({ error: 'processing', retryAfter: 1 }, { status: 409 });
     return replay(completed);
   }
   throw err;
@@ -133,7 +161,7 @@ async function createOrder(input: CreateOrderInput): Promise<Order> {
 }
 ```
 
-The key is generated *once per intent*. Retries reuse the same key, so the server dedups.
+The key is generated *once per intent*. Retries reuse the same key, so the server dedupes.
 
 ### Webhooks — dedup on the provider's event ID
 
@@ -207,7 +235,8 @@ Idempotency is mandatory when duplicates are *consequential* — money moves, da
 | Webhook from a provider | Mandatory event-ID dedup |
 | Cron-triggered write | Mandatory naturally-stable-key precheck |
 | Contact-form notification | UI guard + short-window payload dedup |
-| `PUT` / `PATCH` pure overwrite | Naturally idempotent |
+| `PUT` (pure overwrite) | Naturally idempotent |
+| `PATCH` | Only when it's a pure overwrite — RFC 9110 doesn't guarantee PATCH idempotency (a JSON-Patch array append duplicates on retry) |
 | `DELETE` | Naturally idempotent |
 | `GET` | Naturally idempotent — no key needed |
 
@@ -238,7 +267,7 @@ One header. The client passes a UUID. The server stores it. The complication is 
 - A mutating endpoint with no idempotency-key handling.
 - A client that retries on 5xx without sending a stable key.
 - A webhook handler that doesn't check the provider's event ID.
-- A queue consumer that doesn't dedup on message ID.
+- A queue consumer that doesn't dedupe on message ID.
 - A retried handler that re-calls a payment/email SDK without passing that SDK's idempotency-key option — your dedup is intact, the downstream charge/send fires twice.
 - A unique-constraint violation surfaced to a retrying caller as a 409 instead of caught-and-replayed — a collision guard mistaken for idempotency.
 - A bug ticket containing "we saw two records when we expected one."
@@ -267,5 +296,5 @@ One header. The client passes a UUID. The server stores it. The complication is 
 ## Reference
 
 - Stripe Engineering, [*Designing robust and predictable APIs with idempotency*](https://stripe.com/blog/idempotency) — the canonical industry write-up.
-- Marc Brooker (AWS), [*Reliability, constant work, and a good cup of coffee*](https://aws.amazon.com/builders-library/reliability-and-constant-work/) — idempotency tokens framed as a foundational reliability primitive.
+- Malcolm Featonby (AWS), [*Making retries safe with idempotent APIs*](https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/) — the Amazon Builders' Library treatment of idempotency tokens as the mechanism that makes retries safe.
 - Consumer-side companion: `dead-letter-and-replay` handles the *other* failure mode of an at-least-once stream — an event whose handler throws — which dedupe alone does not cover.

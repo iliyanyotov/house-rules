@@ -9,7 +9,7 @@ description: Use when opening a PR, dividing work, or sizing a piece of in-fligh
 
 **A PR is one reviewable concern.** Target ≤400 lines of non-generated diff. If a reviewer can't read it carefully in under 30 minutes, it's too big.
 
-The primary test is *one reviewable concern* — not the line count. A 200-line PR that bundles a security fix, a logger swap, and a refactor is four PRs in a trenchcoat; the 400-line number is a coarse upper bound, the concern count is what actually catches the defects.
+The primary test is *one reviewable concern* — not the line count. A 200-line PR that bundles a security fix, a logger swap, a type fix, and a perf tweak is four PRs in a trenchcoat; the 400-line number is a coarse upper bound, the concern count is what actually catches the defects.
 
 Split refactor from behavior change; split feature from infrastructure; split each independently-shippable step into its own PR.
 
@@ -142,7 +142,7 @@ A change to a shared test fixture or helper signature that fans out across many 
 
 **Pressure:** "Multiple small PRs are annoying for the reviewer."
 
-**Response:** They *much* prefer many small PRs over one big one. The literature is unambiguous. Defect detection collapses past 400 lines.
+**Response:** They *much* prefer many small PRs over one big one. The best-known study (SmartBear/Cisco) found defect detection collapsing past ~400 lines — and reviewer experience matches it.
 
 **Action:** Ask a senior reviewer their preference. The answer is always small.
 
@@ -200,7 +200,7 @@ Plan the split *before* writing the code. Stack PRs when work has dependencies. 
 
 ## Reference
 
-- SmartBear / Cisco code review study (2008) — defect detection collapses past ~400 lines of diff. Still the canonical data on review size vs. defect-detection rate.
+- SmartBear / Cisco code review study (Jason Cohen, 2006) — defect detection collapses past ~400 lines of diff. The canonical citation for review size vs. defect-detection rate — though vendor-published and rarely replicated, so treat the exact number as a heuristic, not a law.
 - Google, *Engineering Practices* — *"In general, the right size for a CL is one self-contained change."*
 - Paul Hammant, [trunkbaseddevelopment.com](https://trunkbaseddevelopment.com/) — the trunk-based-development case for small, frequent merges.
 - [Graphite](https://graphite.dev/), [git-spr](https://github.com/ejoffe/spr) — tooling for stacked PRs.

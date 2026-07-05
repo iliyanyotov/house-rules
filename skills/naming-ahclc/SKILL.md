@@ -1,6 +1,6 @@
 ---
 name: naming-ahclc
-description: Use when naming a function, hook, file, variable, or symbol. Use when reaching for `handleStuff`, `getData`, `doProcess`, `manager`, `helper`, or `utils`. Use when a boolean isn't prefixed with `is` / `has` / `should`. Use when a collection variable is singular or a single-value variable is plural. Use when reviewing a name that requires its surrounding code to make sense.
+description: Use when reaching for `handleStuff`, `getData`, `doProcess`, `manager`, `helper`, or `utils`. Use when a boolean isn't prefixed with `is` / `has` / `should`. Use when a collection variable is singular or a single-value variable is plural. Use when reviewing a name that requires its surrounding code to make sense.
 ---
 
 # Naming: A/HC/LC
@@ -14,7 +14,7 @@ Names are the most-read part of any codebase. A good name eliminates the need to
 ## The Iron Rule
 
 ```
-NEVER use a name that needs its surrounding code to be understood.
+NEVER use a name that needs its surrounding code to be understood. (One exception: a framework-convention boundary that supplies the context, e.g. JSX `onSubmit={handleSubmit}` — see Pressure Resistance.)
 ```
 
 If you have to read the body to know what the function does, the name is wrong.
@@ -144,7 +144,7 @@ function handleSubmit(e: FormEvent) { /* ... */ }
 | `data`, `result`, `value`, `item`, `obj`, `info`, `thing` as standalone names | Name the *kind* of data |
 | Files named `utils.ts`, `helpers.ts`, `common.ts`, `misc.ts`, `lib.ts` | Split by domain; name by content |
 | Function name contains `And` or `Or` | Split — it has multiple responsibilities |
-| Class suffixed `Manager`, `Helper`, `Util`, `Coordinator` (says it does *something*, not what) | Name the actual thing it does. `*Service`/`*Repository` are accepted layer names *with a domain-noun prefix* (`PaymentService` ✓); a do-something prefix is still a smell (`SMSManager` → `SMSSender`) |
+| Class suffixed `Manager`, `Helper`, `Util`, `Coordinator` (says it does *something*, not what) | Name the actual thing it does. `*Service`/`*Repository` are accepted layer names *with a domain-noun prefix* (`PaymentService` is fine); a do-something prefix is still a smell (`SMSManager` → `SMSSender`) |
 | Boolean without an `is` / `has` / `should` / `can` prefix | Add the prefix, or model as a discriminated union |
 | Returned collection named in singular | Pluralize, or unwrap to a scalar |
 | Abbreviations: `btn`, `usr`, `cfg`, `mgr`, `svc` | Spell it out |

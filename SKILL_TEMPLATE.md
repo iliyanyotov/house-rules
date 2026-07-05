@@ -132,5 +132,5 @@ So `yagni` yields to a resilience skill on a real safety control; a naming heuri
 
 ## Reference
 
-- [Anthropic's `writing-skills` skill](https://github.com/anthropics) — the canonical guidance on skill authoring.
+- [Anthropic's skills repository](https://github.com/anthropics/skills) — the canonical guidance and examples for skill authoring.
 - [agentskills.io/specification](https://agentskills.io/specification) — the Agent Skills specification.
