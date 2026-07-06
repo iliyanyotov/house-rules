@@ -11,17 +11,17 @@ description: Use when accepting or returning a money amount, percentage, ISO dat
 
 A `Money` is not a `number`. An `EmailAddress` is not a `string`. A `Percentage` is not a `number`. Each has invariants — non-negative, well-formed, in range — and a fixed unit. Wrapping them once eliminates an entire class of repeated guards.
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER use a raw `string` or `number` for a domain concept with constraints. Wrap once at the boundary; trust inside.
+Prefer a value object over a raw `string`/`number` for a constrained domain
+concept. Validate once at construction; trust the value thereafter. Mandatory
+once the constraint is enforced in more than one place — see below.
 ```
 
-**No exceptions:**
-- Not for "it's just a number — wrapping is overkill"
-- Not for "I'd have to wrap and unwrap everywhere"
-- Not for "we use schema parsing at the boundary, that's enough"
-- Not for "performance — class allocations / brand casts"
+**When this doesn't apply:**
+- **Mandatory once the same constraint is checked in ≥2 places, or the unit/scale is ambiguous.** Three functions each re-checking `amount >= 0`, or a `number` that's cents in one place and dollars in another, is exactly what the wrapper eliminates. The "When NOT to wrap" section of this skill draws the same line.
+- **A one-off, locally-checked constrained value** — validated at the single point it's produced and consumed, never crossing a boundary — doesn't need its own type. Wrap by default; skip when the constraint genuinely lives in one place.
 
 ## Why
 

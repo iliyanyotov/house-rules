@@ -184,7 +184,7 @@ Independently, wire **secret scanning / push protection** (gitleaks, GitHub push
 
 The patterns above each guard one stage. A credential survives a mistake at any *one* stage only if the other layers also hold. Defend a secret at rest, in the type system, and at the egress boundary.
 
-**Layer 1 — at rest: store a vault *reference*, not the secret.** The committed config holds a pointer the deploy resolves; the literal never touches the repo. `.env.example` lists names only.
+**Layer 1 — at rest: store a vault *reference*, not the secret.** This is how you harden rung 3 of the ladder above — if you're on env vars rather than workload identity, the committed config holds a *pointer* the deploy resolves, so the literal never touches the repo. `.env.example` lists names only.
 
 ```bash
 # .env.example — names and a reference shape, never a value

@@ -11,17 +11,17 @@ description: Use when a single route, cron, or page calls multiple external depe
 
 The name comes from ship hulls: a watertight compartment that floods doesn't sink the ship because the next compartment's wall holds. Same rule here — if the email provider is slow, the bulkhead around it fills up; the bulkhead around the database stays dry.
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER share a timeout, concurrency cap, or breaker across dependencies. One bulkhead per dep.
+Prefer isolating each dependency's timeout, concurrency cap, and breaker state
+rather than sharing one budget across all of them. The threshold that triggers
+this is named below.
 ```
 
-**No exceptions:**
-- Not for "all our deps are fast"
-- Not for "it's the same `withTimeout` either way"
-- Not for "it's overkill for a small app"
-- Not for "concurrency caps will reject good requests"
+**When this doesn't apply:**
+- **A route/path that calls a single dependency doesn't need a bulkhead** — there's no second failure domain to isolate it from. The rule triggers at **≥2 dependencies in one critical path**, where one slow dep must not starve the others.
+- **Sharing one well-built HTTP client is fine** when its pools and limits are per-destination — that already gives you per-dependency isolation. The anti-pattern is one *shared* budget (a single `withTimeout`, one global concurrency cap) that lets any dep exhaust it for all.
 
 ## Why
 

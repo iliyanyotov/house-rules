@@ -11,13 +11,18 @@ description: Use when reaching for `handleStuff`, `getData`, `doProcess`, `manag
 
 Names are the most-read part of any codebase. A good name eliminates the need to read the implementation; a bad name forces re-parsing on every encounter.
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER use a name that needs its surrounding code to be understood. (One exception: a framework-convention boundary that supplies the context, e.g. JSX `onSubmit={handleSubmit}` — see Pressure Resistance.)
+A name should reveal its intent without needing the surrounding code — that
+much is invariant. The specific A/HC/LC pattern and the get/fetch and boolean-
+prefix conventions below are this codebase's house style: follow them for team
+consistency, not because they are cross-language law.
 ```
 
-If you have to read the body to know what the function does, the name is wrong.
+If you have to read the body to know what the function does, the name is wrong — that part holds everywhere. But the *particular* conventions this skill teaches are choices: the Action/High-Context/Low-Context ordering is one popular convention (not an industry standard); the `get` vs `fetch` memoization distinction is a house rule (much of the JS ecosystem's `getUser`/`getServerSession` hit the wire); boolean `is`/`has`/`should` prefixes are a strong TS/JS default but other languages differ (Ruby's `?` suffix, Python's bare adjectives). Within this codebase, apply them consistently; across languages, keep the intent-revealing invariant and adapt the surface.
+
+**The one framework carve-out:** a convention boundary that supplies the context is fine — JSX `onSubmit={handleSubmit}` reads clearly because the prop names the event (see Pressure Resistance).
 
 ## The Pattern: Action + High Context + Low Context
 

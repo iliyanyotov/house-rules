@@ -13,10 +13,10 @@ A function that takes `db: Database` when it only calls `db.select` accepts more
 
 A function that takes `db: Pick<Database, 'select'>` accepts exactly what it needs. Tests provide `{ select: () => ... }` and nothing else; the contract is self-documenting; the rest of `Database` is free to evolve.
 
-## The Default
+## The Default Rule
 
 ```
-PREFER a narrow capability at business boundaries. Accept the full client only inside the
+Prefer a narrow capability at business boundaries. Accept the full client only inside the
 adapter/composition layer whose job is to own that client's lifecycle or coordinated surface.
 ```
 

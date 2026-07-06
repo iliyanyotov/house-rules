@@ -11,17 +11,18 @@ description: Use when calling code reads an object's field, branches on it, then
 
 The shift is from **caller-driven logic** ("I read your state and decide") to **module-driven logic** ("I tell your module my intent; it handles the rest").
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER read another module's state to make a decision about that module's data. Tell the module what you want.
+Prefer telling a module your intent over reading its state and deciding from
+outside. An entity's own business rules belong with that entity — not scattered
+across the callers that handle it. The exceptions are named below.
 ```
 
-**No exceptions:**
-- Not for "it's just one if-check"
-- Not for "the module would have too many methods"
-- Not for "it's not OO — we don't have objects"
-- Not for "sometimes I really do need to read the state" *to make a decision* (reading purely for display/logging is fine — see below)
+**When this doesn't apply:**
+- **Cross-entity workflow / orchestration.** A checkout orchestrator that reads invoice state *and* inventory state *and* fraud state to make a decision that belongs to none of those entities is doing its own job — that decision is the workflow's, not any one module's. Tell-don't-ask governs an entity's *own* rules, not the coordination across entities.
+- **Reads for display, logging, or aggregation.** Pulling `order.status` to render a badge or emit a metric is not a decision about the order's data — it's presentation. Unrestricted.
+- **Plain-data / DTO codebases.** When entities are schema-inferred types with no methods, "the module" is a per-entity module of free functions (`canCancel(booking)`, `refund(invoice)`), not a class. The rule is that the rule has *one home*, whatever its shape.
 
 ## Why
 

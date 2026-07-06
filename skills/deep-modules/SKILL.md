@@ -11,17 +11,19 @@ description: Use when tempted to expose every internal helper, write thin pass-t
 
 The metric: interface size vs. implementation size. Small interface + large implementation = deep (good). Large interface + small implementation = shallow (bad).
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER expose more surface than callers need. The interface is the contract; everything else is private.
+Prefer an interface much smaller than its implementation. Expose the surface
+callers need and no more; everything else is private. What counts as "much
+smaller" is a ratio, not a fixed count — see below.
 ```
 
-**No exceptions:**
-- Not for "flexibility — more options means callers can do more"
-- Not for "I'll expose it just in case someone needs it"
-- Not for "it's just a quick utility, no need to design it"
-- Not for "hiding things makes debugging harder"
+**When this doesn't apply:**
+- **Depth is measured by ratio, not an absolute public-name count.** A module with a dozen public methods over a genuinely enormous implementation (a stdlib `Array`, a mature date library) is still deep. The "≤5 public names" figure in Detection is a smell to *investigate*, not a limit to enforce — a wide-but-deep module is fine.
+- **A few kinds of exposure are legitimate.** A framework contract may require a broad surface; a deliberately-thin adapter that maps one foreign shape to one internal shape earns its wrapper. The real target is the *incidental* pass-through — a wrapper that adds a layer without hiding anything.
+
+The invariant underneath stays firm: never widen the interface merely because an internal exists. It's the "how narrow, measured how" that takes judgment.
 
 ## Why
 

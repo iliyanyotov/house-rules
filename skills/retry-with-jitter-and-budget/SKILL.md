@@ -300,6 +300,6 @@ Until it isn't. The double-charge or duplicate-row bug is hard to trace and impo
 
 ## Reference
 
-- Marc Brooker (AWS), [*Timeouts, retries, and backoff with jitter*](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) — the canonical write-up, including the comparison of jitter strategies.
+- Marc Brooker (AWS), [*Timeouts, retries, and backoff with jitter*](https://builder.aws.com/content/3EumjoZascWd1oZiEgL8ORlv3qE/timeouts-retries-and-backoff-with-jitter) — the canonical write-up, including the comparison of jitter strategies.
 - Marc Brooker, [*Exponential Backoff And Jitter*](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) (AWS Architecture Blog, 2015) — the original blog post with the measured data.
 - Michael Nygard, *Release It!* 2e (2018), ch. 5 — pairs retries with circuit breakers and bulkheads.

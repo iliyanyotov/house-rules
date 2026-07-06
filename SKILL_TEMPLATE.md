@@ -33,7 +33,10 @@ For rules that fire on every line or every PR. Examples: `tdd`, `kiss`, `yagni`,
 ```
 ## Overview          — 2 lines: punch + supporting
 ## When to Use       — 3-5 concrete triggers
-## The Iron Rule     — code-fence "NEVER ..." + No exceptions list
+## The Iron Rule     — headline rule; label at its true strength (see below):
+##                     `## The Iron Rule` (invariant, code-fence "NEVER ..." + No exceptions),
+##                     `## The Default Rule` (default, "Prefer ..." + "When this doesn't apply"),
+##                     or `## The Heuristic` (smell, "Treat ... as a signal" + "What doesn't trip it")
 ## Detection: The "<X>" Smell — one before/after example
 ## Why <This> Wins   — 2-column table
 ## Pressure Resistance — 3-5 entries, each "Pressure / Response / Action"
@@ -51,7 +54,7 @@ For rules whose value is the pattern itself: naming conventions, type-design con
 
 ```
 ## Overview
-## The Iron Rule
+## The Iron Rule / Default Rule / Heuristic   — headline rule at its true strength
 ## The Pattern: <name>
 ### <Sub-rule 1>  — tables or short examples
 ### <Sub-rule 2>
@@ -70,7 +73,7 @@ For skills where the rule needs several sub-patterns to be useful: resilience, t
 
 ```
 ## Overview
-## The Iron Rule
+## The Iron Rule / Default Rule / Heuristic   — headline rule at its true strength
 ## Why              — 1-2 paragraphs on the concrete failure mode
 ## Detection        — bullet list of signals
 ## The Pattern
@@ -124,11 +127,11 @@ So `yagni` yields to a resilience skill on a real safety control; a naming heuri
 - [ ] No project-specific proper nouns or domain entities lifted from real code
 - [ ] Examples use universal-sounding domains (`User`, `Invoice`, `Order`)
 - [ ] Not baked into one framework's mental model
-- [ ] A truthfully labeled Invariant, Default, or Heuristic; at least one example; Pressure Resistance; References — all present
+- [ ] Headline uses the heading that matches its true strength — `## The Iron Rule` (invariant), `## The Default Rule` (default), or `## The Heuristic` (heuristic); at least one example; Pressure Resistance; References — all present
 - [ ] `## Related` lists genuine neighbors by backticked name (or is omitted if the skill stands alone) — no `[[wiki]]` or markdown file links, which don't resolve
 - [ ] No decorative emoji (❌/✅ comparators are allowed)
 - [ ] `description` triggers are failure-shaped and specific, not broad postures (high-signal, so the skill doesn't collide on every task)
-- [ ] Headline rule is labeled at its true strength — a `NEVER … / No exceptions` list contains no case the body later walks back (else it's a *default*, reword it)
+- [ ] Headline rule is labeled at its true strength — a `## The Iron Rule` with `NEVER … / No exceptions` contains no case the body later walks back (else make it `## The Default Rule` with a "When this doesn't apply" list, or `## The Heuristic` with a "What doesn't trip it" list)
 
 ## Reference
 

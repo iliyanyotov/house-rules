@@ -11,17 +11,17 @@ description: Use when integrating with an external dependency that has a non-tri
 
 The breaker is a per-dependency state machine. Tripping it is automatic. Recovering from it is deliberate.
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER call a flaky dependency directly. Wrap it in a breaker with thresholds, cooldowns, and a named fallback.
+Any dependency with a non-trivial failure rate gets a breaker with thresholds,
+cooldowns, and a named fallback — do not call a flaky dependency directly. The
+scope is "flaky", defined below.
 ```
 
-**No exceptions:**
-- Not for "we don't have that many failures"
-- Not for "retries are enough"
-- Not for "adding a breaker is complex"
-- Not for "I'll add it when I see problems"
+**When this doesn't apply:**
+- **The rule is scoped to *flaky* dependencies** — payment providers, LLM APIs, partner services, third-party search, any internal service with known intermittency, anything with a non-trivial failure rate. Those get a breaker; the exceptions here are about what *doesn't*.
+- **A dependency with no meaningful failure rate doesn't need one** — a healthy in-process call, a local well-behaved database on the same host. Adding a breaker there is machinery guarding against a failure mode that doesn't occur. When in doubt about a *networked* dependency, wrap it: the qualifier is "flaky", and most cross-network calls qualify.
 
 ## Why
 

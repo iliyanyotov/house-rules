@@ -13,17 +13,20 @@ This rule fights one of the most expensive failure modes in software: the spiral
 
 This is the library's one **meta-process rule**. The others govern the shape of code; this one governs the shape of *the change-making process itself*. It's narrower in trigger and broader in applicability — every engineer hits the muddled-diff spiral; this rule names it and provides the exit.
 
-## The Iron Rule
+## The Heuristic
 
 ```
-NEVER push past ~30 minutes of muddled diff without a hypothesis. Revert and redo from green.
+Treat ~30 minutes of thrashing on a muddled diff — red leading to more red, no
+clear hypothesis — as a signal to stop: save the patch, write down the lesson,
+revert to green, and redo smaller. The clock is a prompt, not a stopwatch.
 ```
 
-**No exceptions:**
-- Not for "I've already spent 30 minutes — reverting is wasted work"
-- Not for "I'm so close — five more minutes"
-- Not for "reverting loses my insight"
-- Not for "senior devs push through"
+The signal is *confusion*, not elapsed time. Thirty minutes is the rule of thumb for "you'd have noticed by now if you were on track"; the real trigger is the loss of a hypothesis — you're changing things to see what happens rather than because you expect a result.
+
+**What does *not* trip it:**
+- Steady progress, even if slow — a diff that's green and advancing toward a goal you can still state.
+- A genuinely hard problem you *understand* and are methodically working through; difficulty isn't confusion.
+- A long but coherent change where each step was deliberate. Revert is the tool for being lost, not for the clock running.
 
 ## Why
 

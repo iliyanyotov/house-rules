@@ -11,10 +11,10 @@ description: Use when a function under test requires mocking the DB, the clock, 
 
 The split is a design default, not a demand to extract every trivial transformation. Extract the decision-making core when logic and effects are tangled, independently useful, or hard to test through the public boundary.
 
-## The Default
+## The Default Rule
 
 ```
-PREFER a pure decision core and an effectful orchestration shell. Keep trivial glue together
+Prefer a pure decision core and an effectful orchestration shell. Keep trivial glue together
 when extraction would only add indirection; never hide I/O inside a function presented as pure.
 ```
 
@@ -175,7 +175,7 @@ The feature grows by adding logic. The longer it stays tangled, the more logic a
 ## Red Flags
 
 - A "pure" function with `new Date()`, `Math.random()`, `await`, or any import from `db/`, `fetch`, `fs`, `process.env`.
-- A test that needs fake timers or module-mocking to test business logic.
+- A test that needs the DB, the network, or module-mocking to reach a business *decision* — the decision is tangled with I/O and wants extracting. (Freezing the clock for a function whose *sole* impurity is the current time is fine — see "Pass the clock in".)
 - A helper used by both a route and a job whose two callers each do "their own" pre-processing.
 - A computation duplicated in three places because none of the existing copies could be reused.
 - A function that returns `Promise<T>` but doesn't actually `await` anything — it's mid-extraction.

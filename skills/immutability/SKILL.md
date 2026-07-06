@@ -11,17 +11,17 @@ description: Use when tempted to `.push`, `.splice`, `.sort` in place, reassign 
 
 If a function changes the caller's data, the function's signature is lying.
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER mutate a value the caller passed in. Build a new one and return it.
+Prefer building a new value over mutating one the caller passed in. Return the
+new value; leave the caller's untouched. The one exception is a measured hot
+path — see below.
 ```
 
-**No exceptions:**
-- Not for "copying everything is slow"
-- Not for "I'm the only caller, I know it's safe to mutate"
-- Not for "sort in place is faster"
-- Not for "JS arrays are passed by reference, mutation is idiomatic"
+**When this doesn't apply:**
+- **A profiled, hot-path local mutation of a value you own.** If a benchmark shows the copy is a real bottleneck, mutating a locally-constructed value is legitimate — provided it can't escape to a caller who assumed immutability. This is the same "profile and decide locally" the body already prescribes; "sort in place is faster" is a hypothesis to *measure*, not a blanket license.
+- Never a mutation of a value the caller handed you and still holds a reference to — that's the aliasing bug this rule exists to prevent, and no performance argument buys it back.
 
 ## Why
 

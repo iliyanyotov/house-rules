@@ -276,4 +276,4 @@ Modern clients (most SDKs, AWS SDK, browser `fetch` retry libraries) honor `Retr
 
 - Michael Nygard, *Release It!* 2e (2018), ch. 5 — names "Shed Load" and "Back Pressure" as paired stability patterns.
 - Google SRE Book, ch. 21 ("Handling Overload") — its core position, paraphrased: overload behavior is a first-class concern in service design, not an afterthought.
-- AWS Builders' Library, [*Using load shedding to avoid overload*](https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/) — production case study covering `Retry-After`, priority-based shedding, and saturation signals.
+- AWS Builders' Library, [*Using load shedding to avoid overload*](https://builder.aws.com/content/3Eun1EEyX6p2e3VYNyRLSJzLuMV/using-load-shedding-to-avoid-overload) — production case study covering `Retry-After`, priority-based shedding, and saturation signals.

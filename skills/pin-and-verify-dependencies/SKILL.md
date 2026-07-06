@@ -11,7 +11,7 @@ description: Use when adding a dependency with a floating range (`^`/`~`) or wit
 
 The supply chain is now a primary attack vector, not a theoretical one: malicious versions published to real registries have self-propagated through hundreds of packages by riding auto-installed updates. The defense is boring and effective — reproducible installs and a review gate.
 
-## The Core Rule
+## The Default Rule
 
 This is a **default with a clear boundary**, not an exceptionless invariant: pin and verify what you can control in a pull request, and leave the org-scale machinery (SBOM generation, signing infrastructure, registry policy) to the platform.
 

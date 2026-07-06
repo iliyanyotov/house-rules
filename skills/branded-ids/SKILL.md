@@ -11,17 +11,17 @@ description: Use when declaring a function that takes IDs as parameters, or acce
 
 `UserId` is not `OrgId` even though both are strings. The compiler must enforce this.
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER pass a raw `string` or `number` where a domain ID is expected. Brand at the boundary; trust inside.
+Prefer branded ID types over raw `string`/`number` for domain identifiers.
+Brand at the boundary; trust inside. It becomes mandatory wherever the mix-up
+bug actually lives — see below.
 ```
 
-**No exceptions:**
-- Not for "it's just a string, this is overengineering"
-- Not for "I'll be careful about argument order"
-- Not for "I'll add brands later when the codebase grows"
-- Not for "third-party libraries return raw strings, this gets ugly"
+**When this doesn't apply:**
+- **Mandatory where two or more same-primitive IDs can meet in one signature.** `f(userId: string, orgId: string)` is the classic swap-the-arguments bug — brand both. That's the case the canonical guidance (*Effective TypeScript* Item 64, "*Consider* Brands") treats as non-negotiable.
+- **Optional where an ID never co-occurs ambiguously.** In a small module where a single ID type flows through and no two same-typed IDs are ever adjacent, the mint/parse ceremony can outweigh the payoff. Brand by default; skip only when you can see the swap can't happen.
 
 ## Why
 

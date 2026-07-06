@@ -292,5 +292,5 @@ Internal calls hit databases, caches, queues, internal services — all with fai
 
 ## Reference
 
-- Marc Brooker (AWS), [*Timeouts, retries, and backoff with jitter*](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) — AWS Builders' Library. Required reading.
+- Marc Brooker (AWS), [*Timeouts, retries, and backoff with jitter*](https://builder.aws.com/content/3EumjoZascWd1oZiEgL8ORlv3qE/timeouts-retries-and-backoff-with-jitter) — AWS Builders' Library. Required reading.
 - Michael Nygard, *Release It!* 2e (2018), ch. 5 — introduces *Timeouts* as a foundational stability pattern, paired with circuit breakers and bulkheads.

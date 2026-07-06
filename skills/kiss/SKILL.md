@@ -19,17 +19,20 @@ Code is read far more often than it's written. Cleverness is a cost paid by ever
 - Writing code that requires re-parsing to understand
 - A reviewer's first question would be "what does this do?"
 
-## The Iron Rule
+## The Heuristic
 
 ```
-NEVER choose clever over clear. Simple wins.
+Treat "clever over clear" as a signal to simplify, not a law to cite. When a
+line makes you pause to decode it, that pause is the smell — spend the effort
+on clarity, not on the cleverness.
 ```
 
-**No exceptions:**
-- Not for "it's more elegant"
-- Not for "it's a nice one-liner"
-- Not for "it's technically faster"
-- Not for "this is how experts write it"
+The posture is strong — simple wins, and elegance is never a reason to ship something harder to read — but "clever" isn't a bright line, so this is a diagnostic, not an invariant. The concrete smells to act on: a method chain past ~5 calls, a regex past a screenful, type-level machinery where a plain type would do, a one-liner that needs a comment to parse.
+
+**What does *not* trip it:**
+- A short, idiomatic chain (`items.filter(...).map(...)`) — declarative and clear is *simple*, not clever.
+- A genuinely-needed abstraction that removes more complexity than it adds.
+- Brevity that is *also* clearer than the long form. The rule is against clever-*instead-of*-clear, not against concise.
 
 ## Detection: The "Clever" Smell
 
