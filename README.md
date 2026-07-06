@@ -2,13 +2,15 @@
 
 **Claude Code skills for writing software that holds up.**
 
-> **Status: unreleased and not yet properly versioned.** This plugin is still being evaluated against a range of real codebases; treat it as a work in progress. It carries no meaningful version yet, and skills may be added, reworded, or removed without notice until it settles.
+Type-driven correctness, module design, resilience, testing, security, observability, data and migrations, change management, and the meta-principles. Each is a self-contained rule with a worked example and citations.
 
 Every skill comes from the same four places: the books and talks worth re-reading, the bugs that woke someone up at 3am and stayed memorable a year later, the refactors of code nobody planned to inherit, and the patterns that kept showing up no matter how the team was shaped — solo, small, large, distributed, in-person, fast-iteration, or a long-running product.
 
 ## What's in it
 
-Type-driven correctness, module shape, resilience, testing discipline, security (authorization, injection, supply chain), async correctness, change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Bun / Node.js / Postgres; the rules themselves are language-agnostic.
+Type-driven correctness, module shape, resilience, testing discipline, security (authorization, injection, supply chain), observability (structured logging, health checks, metric cardinality), async correctness, data and migrations (expand/contract, transaction isolation, N+1, the outbox pattern), change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Bun / Node.js / Postgres; the rules themselves are language-agnostic.
+
+Each rule is labeled at its honest strength — an **Iron Rule** (a genuine invariant), **the Default Rule** (right unless named exceptions apply), or **a Heuristic** (a smell worth investigating) — so a rule you can't actually hold everywhere doesn't pretend to be one.
 
 ## How a skill works
 
@@ -30,7 +32,7 @@ Claude Code indexes the `description:` from every installed skill and loads the 
 
 ## Writing or fixing one
 
-Every skill follows [`SKILL_TEMPLATE.md`](./SKILL_TEMPLATE.md): trigger-only frontmatter, an honestly labeled invariant/default/heuristic, generic examples, and 2–4 citations. Run new skills through the checklist at the bottom of the template before opening a PR.
+Every skill follows [`SKILL_TEMPLATE.md`](./SKILL_TEMPLATE.md): trigger-only frontmatter, a headline rule labeled at its honest strength (`## The Iron Rule`, `## The Default Rule`, or `## The Heuristic`), generic examples, and 2–4 citations. Run new skills through the checklist at the bottom of the template before opening a PR.
 
 Bar for changes: show me the code where this rule would have prevented the bug.
 
