@@ -11,17 +11,19 @@ description: Use when explicitly checking whether a module has more than one rea
 
 A reason to change is a *stakeholder concern* — a customer-facing requirement, a schema, a UI layout, an auth policy. Two stakeholders, two modules.
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER let a module own two reasons to change. If "and" describes it, split it.
+Prefer one reason to change per module. If "and" joins two genuinely separate
+stakeholder concerns, split it. The exceptions are named below.
 ```
 
-**No exceptions:**
-- Not for "splitting means jumping between files"
-- Not for "it's only used once"
-- Not for "the team will refactor later"
-- Not for "this is the same domain so it belongs together"
+**When this doesn't apply:**
+- A long orchestration handler that reads top-to-bottom as one coherent workflow (`auth → parse → call service → log → return`) is *one* concern — the workflow at that URL. Delegating each step to a named service keeps it single-purpose however long it runs (see "orchestration vs. inlining").
+- A `getXAndY` returning a coherent tuple whose parts have a real data dependency is a sequenced read, not an `And`-joined violation.
+- Cross-cutting guards (auth, rate-limit, bot-detection) inlined at the top of a handler are fine — they're the boundary's job, not a second concern.
+
+The rule bites when a module owns two *genuinely separate* stakeholder concerns; it does not bite on line count or on coherent orchestration.
 
 ## Why
 

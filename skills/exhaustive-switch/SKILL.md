@@ -199,6 +199,7 @@ That's a different problem. Either the union is over-faceted (split into nested 
 
 - `make-illegal-states-unrepresentable` — the discriminated union the switch is exhaustive over
 - `no-any-escape-via-unknown-or-never` — the `never` default guard; `any` would silence the check
+- `errors-as-values` — the `Result` union is exactly the kind of closed set a switch must exhaust
 
 ## Reference
 

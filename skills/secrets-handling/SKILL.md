@@ -7,7 +7,7 @@ description: Use when accepting an API key, database URL, signing secret, webhoo
 
 ## Overview
 
-**Secrets enter the process via environment variables, are read once at startup through a typed schema, and never leave that boundary** — not in logs, not in error messages, not in URLs, not in error response bodies, not in client bundles, not in `git`.
+**Secrets enter the process through the narrowest intake available — ideally none at all — are read once at startup through a typed schema, and never leave that boundary** — not in logs, not in error messages, not in URLs, not in error response bodies, not in client bundles, not in `git`. The intake half is a preference ladder (below); the egress half is an invariant.
 
 A leaked secret is not a bug you fix — it's a secret you rotate. The work to prevent the leak is always cheaper than the work to rotate after a breach.
 
@@ -169,6 +169,16 @@ DATABASE_URL=postgres://user:pass@localhost:5432/db
 ```
 
 The `.env.example` documents *what* keys exist without exposing their values.
+
+### Intake is a preference ladder — the best secret is one that doesn't exist
+
+"Read from `process.env`" is the 2011 twelve-factor default, and it is the *last* rung, not the first. Env vars are inherited by every child process, readable via `/proc/<pid>/environ`, and routinely captured in crash dumps and diagnostic output — so prefer, in order:
+
+1. **No static secret at all.** Where the platform supports it, use workload identity / OIDC federation (GitHub Actions OIDC, cloud workload identity, SPIFFE/SPIRE) so the process exchanges its *identity* for a short-lived, auto-rotating credential. Nothing to leak, nothing to rotate.
+2. **A secret manager fetched at runtime, or injected as a file mount.** The literal lives in a manager (Vault, cloud Secrets Manager) and is pulled or mounted at boot — not spread across the environment of every subprocess.
+3. **Env vars as the fallback** — still parsed once through a typed schema at startup, still never a committed literal (use the vault-reference form in Layer 1).
+
+Independently, wire **secret scanning / push protection** (gitleaks, GitHub push protection) into the repo so a committed literal is blocked before it ever lands — a mandatory layer regardless of which intake rung you're on. The rest of this section hardens whichever intake you land on.
 
 ### Defense in depth — three layers, no single point of failure
 

@@ -216,6 +216,8 @@ That's about boundaries you don't control. Within one process, the boundary is t
 - `fail-fast` — env/config at startup is a parse boundary too: one typed parse at boot, refuse to start on failure
 - `authorize-every-access` — parsing proves the shape is legal; authorization proves *this caller* may act on *this object* — different questions
 - `parameterize-every-query` — a parsed value is still data: bind it, never concatenate it into an interpreter
+- `define-errors-out-of-existence` — a parse boundary can return the "invalid" case as a value instead of throwing it
+- `secrets-handling` — a secret is a parse boundary too: one typed read at startup, never re-parsed downstream
 
 ## Reference
 

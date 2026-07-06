@@ -183,6 +183,7 @@ Convert at the boundary. The external shape is wire-level; your type is domain-l
 
 - `exhaustive-switch` — discriminated unions define legal states; exhaustive switch enforces handling them
 - `parse-dont-validate` — parsing produces the narrowed states; illegal states never enter typed code
+- `errors-as-values` — a `Result` union makes "succeeded-with-no-value" and similar illegal states unrepresentable
 
 ## Reference
 

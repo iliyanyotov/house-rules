@@ -11,17 +11,18 @@ description: Use when a pure-logic file imports a network client, a database dri
 
 Imports flow in one direction: **outer → inner, never the reverse.**
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER let domain code import infrastructure at runtime. The domain declares the port; the adapter implements it. (Type-only imports of shared shapes are fine — see the import-direction check.)
+Prefer keeping domain code from importing infrastructure at runtime. The domain
+declares the port; the adapter implements it. (Type-only imports of shared
+shapes are fine — see the import-direction check.) The exceptions are named below.
 ```
 
-**No exceptions:**
-- Not for "it's so simple to just call the DB directly"
-- Not for "we're not going to swap databases"
-- Not for "ports are overengineered" — a function parameter *is* the port (the tiny-project note is in "When this is overkill", not a reason to skip it)
-- Not for "I'd have to refactor everything"
+**When this doesn't apply:**
+- **A tiny codebase (~≤30 files, one entity, one adapter):** the port indirection is overhead with no payoff. Introduce it when the *second* adapter appears, or when the domain genuinely needs to not know its infrastructure (see "When this is overkill").
+- **Existing code:** apply DIP to *new* code; don't retrofit wholesale. The codebase converges over months, not in one PR.
+- A function parameter *is* the port — "ports are overengineered" is answered by passing a function, not by skipping the inversion.
 
 ## Why
 

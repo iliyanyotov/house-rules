@@ -288,6 +288,7 @@ Internal calls hit databases, caches, queues, internal services — all with fai
 
 - `retry-with-jitter-and-budget` — per-attempt timeout sits inside the retry budget
 - `bulkhead-isolated-failure-domains` — the per-dependency timeout is part of the bulkhead
+- `cap-async-fan-out` — a concurrency cap without per-item timeouts just queues the hang; both bound the fan-out
 
 ## Reference
 

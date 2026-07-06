@@ -11,17 +11,23 @@ description: Use when typing `a.b.c.d` to reach a value. Use when a function par
 
 The point isn't dot-counting. The point is that `a.b.c.d` *encodes knowledge* about `b`'s and `c`'s internal structure — knowledge that should be inside `a` or `b`, not at the call site.
 
-## The Iron Rule
+## The Heuristic
+
+This is a **smell to investigate**, not an invariant. A single `order.customer.name` is fine; the signal fires on *depth plus repetition*.
 
 ```
-NEVER drill more than one level into a domain type whose shape you control. Take the value you need, or ask the immediate neighbor. (External APIs, built-in types, and fluent transforms are out of scope — see below.)
+Treat 3+ entity-boundary crossings in one expression (a.b.c.d), OR the same
+two-level path repeated across call sites, as a coupling smell — extract an
+accessor, or have the caller pass the value. (External APIs, built-in types,
+and fluent transforms are out of scope — see below.)
 ```
 
-**No exceptions:**
-- Not for "it's just navigation, what's the harm?"
-- Not for "I only do this in one place"
-- Not for "the chain reads naturally as English"
-- Not for "optional chaining handles nulls — same thing"
+**What does *not* trip it:**
+- A one-off `order.customer.name` on data you own — reading a neighbor's field is normal, especially on plain DTOs (`tell-dont-ask` builds on exactly this).
+- Fluent/builder chains on one object (`items.filter(...).map(...)`) — same entity, not boundary crossings.
+- Navigating a parsed external payload or a built-in type — you don't own the shape to fix.
+
+The point was never dot-counting. It's that a *repeated* or *deep* `a.b.c.d` encodes knowledge about `b`'s and `c`'s internals — knowledge that wants to live inside `a` or `b`, or be resolved once by the caller.
 
 ## Why
 

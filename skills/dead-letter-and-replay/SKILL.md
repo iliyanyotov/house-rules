@@ -187,6 +187,7 @@ The dead-letter store grows; left alone it grows forever. Delete on successful r
 - `idempotency-keys-on-writes` — dedup on arrival before processing
 - `retry-with-jitter-and-budget` — bound in-line attempts, then dead-letter
 - `steady-state-purge-unbounded-growth` — the dead-letter table needs a retention policy
+- `outbox-for-atomic-write-and-publish` — the outbox guarantees the event is sent; this catches the ones that fail after delivery
 
 ## Reference
 

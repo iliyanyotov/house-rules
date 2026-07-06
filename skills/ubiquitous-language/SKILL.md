@@ -166,6 +166,10 @@ Maintain a glossary file in the repo (`docs/glossary.md` or similar) that lists 
 
 The glossary makes onboarding fast and prevents drift; it's also the artifact you point at in code review when someone proposes a name that diverges.
 
+### One language per bounded context, not one global vocabulary
+
+Evans scopes the ubiquitous language *per bounded context* — not one dictionary for the whole system. The same real-world thing legitimately has different names, or the same word different meanings, in different contexts: "customer" in a Sales context and "account holder" in a Support context can be the same person modeled differently, and a `Subscription` in Billing is not the `Subscription` in the analytics pipeline. Inside one context the rule is strict — one word per concept, no synonyms. *Across* contexts, deliberate translation at the boundary is correct architecture, not a smell: an anti-corruption layer that maps another context's `Order` onto yours is exactly what `dependency-inversion` and `parse-dont-validate` prescribe. The Red Flag below targets gratuitous renaming *within* a single context; a mapping layer that exists *because* two contexts genuinely speak different languages is the opposite of the problem.
+
 ## Pressure Resistance
 
 ### "I prefer `data` / `obj` / `record` — they're generic and reusable"
@@ -195,7 +199,7 @@ The business is rarely "sure" — they refine vocabulary over time. Start with t
 - A code comment defining what an identifier "represents in business terms."
 - A type and a schema table with different names for the same concept.
 - A generic verb standing alone or fronting another generic word (`processData`, `handleStuff`, `manageRecords`) where a domain verb would fit (`approve`, `reject`, `archive`, `publish`). A generic verb paired with a domain term is fine, and often correct by layer: `handleCancelBooking` (an orchestration entry point) and a repository's `updateNoShow` / `findById` (persistence CRUD) read clearly — the domain verb belongs in the service layer, the CRUD verb in the repository.
-- "Translation" code: a function whose only job is to map between `DbOrder` and `ApiOrder` and `UiOrder` because each layer renamed the same concept.
+- "Translation" code that renames the *same concept in the same context* purely because each layer picked a different word (`DbOrder` vs `ApiOrder` vs `UiOrder` for one identical `Order`). This is the smell — not deliberate mapping at a *context boundary*, which is legitimate architecture (see the bounded-context note below).
 - A pivot or rename happened in the business >2 weeks ago and the code still uses the old word.
 
 **All of these mean: the code has its own dialect — bring it back to the domain's words.**

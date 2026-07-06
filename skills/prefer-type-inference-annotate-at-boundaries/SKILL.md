@@ -1,6 +1,6 @@
 ---
 name: prefer-type-inference-annotate-at-boundaries
-description: Use when about to write a type annotation on a local variable that TypeScript would infer correctly. Use when reviewing code where every `const` has a redundant `: string` after it. Use when a refactor changes a function's return type and ten callers have to be updated because they all annotated `: OldType` instead of relying on inference. Use when deciding whether to add an explicit return type to an exported function. Use when reading code where the noise of annotations obscures the logic.
+description: "Use when about to write a type annotation on a local variable that TypeScript would infer correctly. Use when reviewing code where every `const` has a redundant `: string` after it. Use when a refactor changes a function's return type and ten callers have to be updated because they all annotated `: OldType` instead of relying on inference. Use when deciding whether to add an explicit return type to an exported function. Use when reading code where the noise of annotations obscures the logic."
 ---
 
 # Prefer Type Inference; Annotate at Boundaries

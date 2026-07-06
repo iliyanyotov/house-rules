@@ -292,6 +292,7 @@ One header. The client passes a UUID. The server stores it. The complication is 
 - `retry-with-jitter-and-budget` — makes retried writes safe
 - `dead-letter-and-replay` — consumer-side dedup so replay is safe
 - `race-conditions` — prevents double-submit races
+- `outbox-for-atomic-write-and-publish` — the producer side: the event exists because it committed with the write; this is the consumer side that dedupes its redelivery
 
 ## Reference
 

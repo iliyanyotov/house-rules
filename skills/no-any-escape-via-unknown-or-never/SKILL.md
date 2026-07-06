@@ -1,6 +1,6 @@
 ---
 name: no-any-escape-via-unknown-or-never
-description: Use when about to type a variable, parameter, or return as `any`. Use when reviewing code that contains `: any`, `as any`, `Array<any>`, `Record<string, any>`, or `@ts-ignore`/`@ts-expect-error` without justification. Use when wrapping an untyped third-party library and the easy path is to type its surface as `any`. Use when a parsing boundary returns an unwieldy union and the temptation is to cast to `any`. Use when an unreachable branch is silenced with `as any` instead of `never`.
+description: "Use when about to type a variable, parameter, or return as `any`. Use when reviewing code that contains `: any`, `as any`, `Array<any>`, `Record<string, any>`, or `@ts-ignore`/`@ts-expect-error` without justification. Use when wrapping an untyped third-party library and the easy path is to type its surface as `any`. Use when a parsing boundary returns an unwieldy union and the temptation is to cast to `any`. Use when an unreachable branch is silenced with `as any` instead of `never`."
 ---
 
 # No `any` — Escape Via `unknown` or `never`

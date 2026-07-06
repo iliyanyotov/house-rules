@@ -235,6 +235,7 @@ Development data flows through the same pipelines and contributes to the same in
 
 - `steady-state-purge-unbounded-growth` — bounded keyspaces also need retention and capacity plans
 - `secrets-handling` — moving data out of indexed tags does not make sensitive context safe
+- `structured-logs-not-strings` — high-cardinality values belong in log fields, which tolerate them; the metric label is where the bound bites
 
 ## Reference
 

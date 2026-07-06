@@ -140,7 +140,7 @@ function calculateShipping(weight: number, distance: number): number {
 | "Tests later" | Tests now. Always now. |
 | "Hard to test" | Decompose first — pure logic out, deps in. |
 
-## Common Rationalizations (All Invalid)
+## Common Rationalizations
 
 | Excuse | Reality |
 |---|---|

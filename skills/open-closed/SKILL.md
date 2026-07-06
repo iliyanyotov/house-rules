@@ -11,16 +11,19 @@ description: Use when adding a new variant to an existing union, a new case to a
 
 In a TS/functional stack this takes two forms, and *which* one is closed for modification depends on what grows — new operations vs new kinds (the expression-problem tradeoff, below): a **discriminated union + exhaustive switch** when the set of kinds is stable, or a **registry / port** when kinds are open-ended. Either way, new behavior lands as *new code* the type system or registry connects — never a new `if` branch quietly bolted into a stable function.
 
-## The Iron Rule
+## The Default Rule
 
 ```
-NEVER add a new kind by editing an existing if-chain. Make it an addition the type system or a registry connects — a union variant (compiler-checked) or a new module in a registry.
+Once a second variant exists, prefer adding a new kind as an addition the type
+system or a registry connects — a union variant (compiler-checked) or a new
+module in a registry — not a new if-branch in a stable function. The exception
+is named below.
 ```
 
-**No exceptions — once a second variant exists** (before that, an `if/else` is fine; see "When NOT to OCP"):
-- Not for "adding an `if` is faster"
-- Not for "I just need to add one *more* if" (you've done this before)
-- Not for "discriminated unions are TS-specific magic"
+**When this doesn't apply:**
+- **For a single variant, don't build the extension machinery.** An `if/else` is correct until a second variant exists — the mechanism (unions + exhaustiveness, or a registry) breaks even at two and pays off from the third variant on. Speculative OCP-ification for variants that may never arrive is a `yagni` violation (see "When NOT to OCP").
+
+The signal that OCP is worth it: you've already added the *second* variant. Two is data; one is a guess.
 
 ## Why
 
