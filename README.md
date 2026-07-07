@@ -4,12 +4,6 @@
 
 Each skill is a self-contained rule with a worked example and citations. Each one comes from the same four places: the books and talks worth re-reading, the bugs that woke someone at 3am and were still memorable a year later, the refactors of code nobody planned to inherit, and the patterns that held no matter the team shape — solo, small, large, distributed, in-person, fast-iteration, or long-running product.
 
-## What's in it
-
-Type-driven correctness, module shape, resilience, testing discipline, security (authorization, injection, supply chain), observability (structured logging, health checks, metric cardinality), async correctness, data and migrations (expand/contract, transaction isolation, N+1, the outbox pattern), change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Bun / Node.js / Postgres; the rules are language-agnostic.
-
-Each rule is labeled at its honest strength — an **Iron Rule** (a genuine invariant), **the Default Rule** (right unless named exceptions apply), or **a Heuristic** (a smell worth investigating) — so a rule you can't actually hold everywhere doesn't pretend to be one.
-
 ## Install
 
 In Claude Code, add this repo as a plugin marketplace, then install the plugin:
@@ -20,6 +14,20 @@ In Claude Code, add this repo as a plugin marketplace, then install the plugin:
 ```
 
 The skills load automatically and fire on relevance from then on. To update, run `/plugin marketplace update house-rules`.
+
+## What's in it
+
+Type-driven correctness, module shape, resilience, testing discipline, security (authorization, injection, supply chain), observability (structured logging, health checks, metric cardinality), async correctness, data and migrations (expand/contract, transaction isolation, N+1, the outbox pattern), change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Bun / Node.js / Postgres; the rules are language-agnostic.
+
+Each rule is labeled at its honest strength — an **Iron Rule** (a genuine invariant), **the Default Rule** (right unless named exceptions apply), or **a Heuristic** (a smell worth investigating) — so a rule you can't actually hold everywhere doesn't pretend to be one.
+
+## Running the whole skillset on a project
+
+If you want to run the whole skillset on a project — instead of waiting for each skill to fire on its own — paste this into Claude Code from inside the repo:
+
+> Audit this codebase against every **house-rules** skill. Read each skill before judging, not just its name. Group findings by area (security, resilience, data, types, async, testing, observability, structure) and within each area sort by severity. For each finding give the file, the skill it breaks, the severity, and the smallest fix. Report first — don't change anything yet.
+
+Scope a large repo or monorepo by naming a path (*"just `packages/api/`"*) or a category (*"just the resilience rules"*).
 
 ## How a skill works
 
