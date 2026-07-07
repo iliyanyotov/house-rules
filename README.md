@@ -10,6 +10,17 @@ Type-driven correctness, module shape, resilience, testing discipline, security 
 
 Each rule is labeled at its honest strength — an **Iron Rule** (a genuine invariant), **the Default Rule** (right unless named exceptions apply), or **a Heuristic** (a smell worth investigating) — so a rule you can't actually hold everywhere doesn't pretend to be one.
 
+## Install
+
+In Claude Code, add this repo as a plugin marketplace, then install the plugin:
+
+```
+/plugin marketplace add iliyanyotov/house-rules
+/plugin install house-rules@house-rules
+```
+
+The skills load automatically and fire on relevance from then on. To update, run `/plugin marketplace update house-rules`.
+
 ## How a skill works
 
 Each skill is one `SKILL.md`:
