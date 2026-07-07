@@ -2,13 +2,11 @@
 
 **Claude Code skills for writing software that holds up.**
 
-Type-driven correctness, module design, resilience, testing, security, observability, data and migrations, change management, and the meta-principles. Each is a self-contained rule with a worked example and citations.
-
-Every skill comes from the same four places: the books and talks worth re-reading, the bugs that woke someone up at 3am and stayed memorable a year later, the refactors of code nobody planned to inherit, and the patterns that kept showing up no matter how the team was shaped — solo, small, large, distributed, in-person, fast-iteration, or a long-running product.
+Each skill is a self-contained rule with a worked example and citations. Each one comes from the same four places: the books and talks worth re-reading, the bugs that woke someone at 3am and were still memorable a year later, the refactors of code nobody planned to inherit, and the patterns that held no matter the team shape — solo, small, large, distributed, in-person, fast-iteration, or long-running product.
 
 ## What's in it
 
-Type-driven correctness, module shape, resilience, testing discipline, security (authorization, injection, supply chain), observability (structured logging, health checks, metric cardinality), async correctness, data and migrations (expand/contract, transaction isolation, N+1, the outbox pattern), change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Bun / Node.js / Postgres; the rules themselves are language-agnostic.
+Type-driven correctness, module shape, resilience, testing discipline, security (authorization, injection, supply chain), observability (structured logging, health checks, metric cardinality), async correctness, data and migrations (expand/contract, transaction isolation, N+1, the outbox pattern), change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Bun / Node.js / Postgres; the rules are language-agnostic.
 
 Each rule is labeled at its honest strength — an **Iron Rule** (a genuine invariant), **the Default Rule** (right unless named exceptions apply), or **a Heuristic** (a smell worth investigating) — so a rule you can't actually hold everywhere doesn't pretend to be one.
 
@@ -28,7 +26,7 @@ description: Use when accepting external input. Use when tempted to call `z.pars
 ...
 ```
 
-Claude Code indexes the `description:` from every installed skill and loads the matching one into context when your work fits the trigger. Skills fire on relevance; you can also invoke one by name: *"use `parse-dont-validate` on this handler."*
+Claude Code indexes the `description:` of every installed skill and loads the matching one into context when your work fits the trigger. Skills fire on relevance — or you invoke one by name: *"use `parse-dont-validate` on this handler."*
 
 ## Writing or fixing one
 
