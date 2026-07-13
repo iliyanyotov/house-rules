@@ -3,7 +3,7 @@ name: parameterize-every-query
 description: Use when building a SQL string with a template literal or concatenation that contains a variable (`WHERE email = '${email}'`). Use when passing a built-up command string to `exec`, `eval`, or a shell. Use when constructing a MongoDB filter, LDAP query, or any interpreter input from request data. Use when a value from the request reaches an ORM's raw-query escape hatch. Use when tempted to interpolate a column or table name from user input.
 ---
 
-# Parameterize Every Query
+# Parameterize every query
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when building a SQL string with a template literal or concatena
 
 One mental model covers the whole family: keep the *code* (the query template) separate from the *data* (the values), and let the driver combine them. The driver knows how to keep data as data; string concatenation does not.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER build an interpreter's input by concatenating or interpolating untrusted data.
@@ -62,7 +62,7 @@ You are violating the rule if any of these are true:
 - A NoSQL filter is built by spreading or assigning a raw request object into the query (`find({ ...req.query })`).
 - A column name, table name, sort direction, or `LIMIT` is interpolated from input (parameters bind *values*, not identifiers — see the identifier rule below).
 
-## The Pattern
+## The pattern
 
 ### SQL: bind values; use `sql` template tags, not raw interpolation
 
@@ -127,7 +127,7 @@ const user = await users.findOne({ email });
 
 Here `parse-dont-validate` and this skill compose directly: parsing to a `string` type at the boundary is what stops an operator object from occupying a value position.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "I already validated the input, so it's safe"
 
@@ -149,7 +149,7 @@ The ORM protects you *until you reach for the raw escape hatch* — `raw`, `Unsa
 
 Then allowlist it against a fixed map (above). Identifiers can't be bound as parameters, so a closed set of known-safe columns is the only safe way to make them dynamic.
 
-## Red Flags
+## Red flags
 
 - A template literal or `+` inside a query string containing a variable.
 - Any `raw`, `Unsafe`, or `$queryRawUnsafe` call with an interpolated value.
@@ -160,7 +160,7 @@ Then allowlist it against a fixed map (above). Identifiers can't be bound as par
 
 **All of these mean: separate code from data — bind the value, allowlist the identifier, or pass args as an array.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

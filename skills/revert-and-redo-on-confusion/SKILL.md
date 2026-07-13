@@ -3,7 +3,7 @@ name: revert-and-redo-on-confusion
 description: Use when you've been refactoring or debugging the same problem for more than ~30 minutes without forward progress. Use when "let me just fix one more thing" has fired three times in a row. Use when the diff is getting larger and the test failures are getting weirder. Use when you stopped being sure what your code is supposed to do. Use when a teammate or AI agent asks "what state is the code in?" and the honest answer is "I don't know."
 ---
 
-# Revert and Redo on Confusion
+# Revert and redo on confusion
 
 ## Overview
 
@@ -13,7 +13,7 @@ This rule fights one of the most expensive failure modes in software: the spiral
 
 This is the library's one **meta-process rule**. The others govern the shape of code; this one governs the shape of *the change-making process itself*. It's narrower in trigger and broader in applicability — every engineer hits the muddled-diff spiral; this rule names it and provides the exit.
 
-## The Heuristic
+## The heuristic
 
 ```
 Treat ~30 minutes of thrashing on a muddled diff — red leading to more red, no
@@ -64,7 +64,7 @@ You are violating the rule if any of these are true:
 
 Most of these markers — a `// FIXME` you don't understand, a `describe.skip` with a "fix later" note, a large commented-out block — turn up in *already-committed* code you're reading, not your live diff. The live rule (revert + redo) doesn't apply once it's merged; `git revert` would undo unrelated work too. Instead, treat the marker as a signal that a past attempt was abandoned mid-confusion, and do one of two things: redo that slice cleanly *now* with a clear hypothesis, or file a tracked ticket and delete the dead artifact (see `dead-code-deletion-on-sight`). Do **not** leave it in place to be rediscovered — a marker no one acts on is the confusion made permanent.
 
-## The Pattern
+## The pattern
 
 ### Start from a clean checkpoint
 
@@ -167,7 +167,7 @@ Then redo. The second pass takes 15 minutes because you skip:
 
 The same spiral happens server-side: stuck in a confusing fan-out delete handler, unsure which failures to surface, you patch the symptom (`// FIXME: error handling`, a stray `setTimeout`, a swallowed `catch`) and ship the marker instead of reverting to pick one coherent error strategy. The `// FIXME` *is* the muddle, made permanent.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "I've already spent 30 minutes — reverting is wasted work"
 
@@ -193,7 +193,7 @@ The opposite is true. Senior devs revert *more often* than juniors — they're c
 
 Flow built on a wrong model produces wrong work. The "flow" of the last 30 minutes was the *appearance* of progress, not progress. Real flow comes from the second-attempt clarity, when each step has obvious next steps.
 
-## Red Flags
+## Red flags
 
 - You've changed your mind about the approach mid-edit.
 - You're reading the test output and the result doesn't match either your code OR the original code.
@@ -207,7 +207,7 @@ Flow built on a wrong model produces wrong work. The "flow" of the last 30 minut
 
 **All of these mean: stop, revert, capture the lesson in words, then start fresh.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

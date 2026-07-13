@@ -3,7 +3,7 @@ name: exhaustive-switch
 description: Use when writing a `switch` over a discriminated union, an enum, a string-literal type, or any closed set of values. Use when the linter complains about a missing `default`. Use when reviewing a pattern-match that "shouldn't reach this case" — that's exactly the case to fail-closed on.
 ---
 
-# Exhaustive Switch
+# Exhaustive switch
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when writing a `switch` over a discriminated union, an enum, a 
 
 No silent `default`. No silent fall-through. No "we'll never hit this" comment.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER let a switch over a closed set silently fall through. End with assertNever, or rely on a typed return.
@@ -67,7 +67,7 @@ You are violating the rule if any of these are true (TS won't catch these withou
 - The phrase `// @ts-ignore — should never happen` appears anywhere near a switch.
 - The discriminant is typed `string` or `number` (`switch (value: string)`), so `assertNever` *can't* compile — that loose type **is** the bug. Narrow the parameter to the closed union (`value: EventLocationType`) first; the exhaustiveness anchor only works once the type is closed.
 
-## The Pattern
+## The pattern
 
 ### The basic guard
 
@@ -151,7 +151,7 @@ function FetchView({ state }: { state: FetchState<Order[]> }) {
 
 JSX is just an expression. Same rule applies.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "I'll never add a new variant, this is overkill"
 
@@ -173,7 +173,7 @@ The cost is one function call in a path that, by construction, can't execute. If
 
 That's a different problem. Either the union is over-faceted (split into nested unions) or the consumer is doing too much (split the function). The exhaustiveness check is right; the abstraction below it is wrong.
 
-## Red Flags
+## Red flags
 
 - A `switch` over a discriminant with no `default`, where the function returns `void`.
 - A `default: break;` over a closed value set.
@@ -184,7 +184,7 @@ That's a different problem. Either the union is over-faceted (split into nested 
 
 **All of these mean: the exhaustiveness anchor is missing — add the `never` check.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

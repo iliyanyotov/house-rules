@@ -3,7 +3,7 @@ name: shed-load-under-overload
 description: Use when a route queues work without bound during downstream slowdown, instances pile up during overload, a buffer holds more work than workers can drain, or load-shedding is proposed without a concrete saturation signal.
 ---
 
-# Shed Load Under Overload
+# Shed load under overload
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a route queues work without bound during downstream slowdo
 
 Once shedding, return *immediately*; do not pay the cost of any downstream call you're about to fail anyway.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER queue indefinitely under overload. Shed fast with 503 + Retry-After.
@@ -49,7 +49,7 @@ You are violating the rule if any of these are true:
 - A "rate limit" is described in the design but no concrete trigger (request count? queue depth? latency?) is specified.
 - A bulkhead is configured with `maxInFlight: 1000` — effectively no shedding for any realistic single-region traffic.
 
-## The Pattern
+## The pattern
 
 ### Detect saturation; reject fast; tell the caller when to retry
 
@@ -212,7 +212,7 @@ export async function handleAdminMaintenance(req: Request) {
 
 Priority is not exemption. A maintenance action can be more expensive than public traffic and worsen an incident, so give it reserved, bounded capacity. Keep health/readiness probes cheap and independent of scarce downstream pools; they may bypass the public admission gate only because their own cost is tightly bounded.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "We don't get enough traffic to overload"
 
@@ -242,7 +242,7 @@ Queues and buffers don't *solve* overload — they *delay* it. A buffer that fil
 
 Modern clients (most SDKs, AWS SDK, browser `fetch` retry libraries) honor `Retry-After`, and many also read the `RateLimit-Reset` family. Even crude clients benefit because *some* portion of traffic backs off, which is enough to break the death spiral.
 
-## Red Flags
+## Red flags
 
 - A route handler that does *zero* checks before calling its downstream.
 - A queue with no max size.
@@ -255,7 +255,7 @@ Modern clients (most SDKs, AWS SDK, browser `fetch` retry libraries) honor `Retr
 
 **All of these mean: the system has no defined behavior for overload — it will collapse instead of degrading.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

@@ -3,7 +3,7 @@ name: principle-of-least-astonishment
 description: Use when a function does more than its name suggests — sends an email, writes to the DB, or modifies global state behind a tame-sounding name. Use when a "getter" mutates state. Use when a "validator" returns a different type from the value it validated. Use when a developer reading your code has to read the body to know what it does. Use when a function's behavior surprised a reviewer.
 ---
 
-# Principle of Least Astonishment
+# Principle of least astonishment
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a function does more than its name suggests — sends an e
 
 If the implementation conflicts with the obvious reading of the name, fix the name — or fix the implementation.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER let a name promise one thing while the body does another. Fix the name or fix the body.
@@ -19,7 +19,7 @@ NEVER let a name promise one thing while the body does another. Fix the name or 
 
 If you have to read the body to know what the function does, the name is wrong.
 
-## The Pattern
+## The pattern
 
 The rule has three dimensions:
 
@@ -163,7 +163,7 @@ function chargeCard(amount: Money): Result<ChargeId, ChargeError> { /* ... */ }
 
 A return type that varies by outcome forces every caller to type-narrow at the call site. A discriminated `Result<T, E>` is consistent.
 
-## Pressure Resistance
+## Pressure resistance
 
 **"Renaming will break callers."** Use the IDE refactor. The break is one search-and-replace; the surprise is permanent until renamed.
 
@@ -175,7 +175,7 @@ A return type that varies by outcome forces every caller to type-narrow at the c
 
 **"TypeScript catches the type mismatches."** TS catches *type* surprises, not *side-effect* surprises. A `formatPrice` that also logs typechecks fine; the surprise is runtime behavior.
 
-## Common Mistakes
+## Common mistakes
 
 | Smell | Fix |
 |---|---|
@@ -188,7 +188,7 @@ A return type that varies by outcome forces every caller to type-narrow at the c
 | Parameters in different order from a similar function in the same module | Match the local convention |
 | Return type that varies by outcome (`string \| { error }`) | Use a discriminated `Result<T, E>` |
 
-## The Bottom Line
+## The bottom line
 
 **A name is a promise. The body has to keep it.**
 

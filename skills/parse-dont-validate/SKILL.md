@@ -3,7 +3,7 @@ name: parse-dont-validate
 description: Use when accepting external input — request bodies, form submits, env vars, API responses, message payloads. Use when tempted to call a schema parser more than once in a request path, or to re-check a field three layers down. Use when reaching for `as` to coerce `unknown` into a domain type. Use when writing a guard function that returns `boolean` and then using the input as the narrow type.
 ---
 
-# Parse, Don't Validate
+# Parse, don't validate
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when accepting external input — request bodies, form submits,
 
 The boundary parses. The interior trusts. A function whose parameter type already encodes the proof you need does not need to re-prove it. If it feels like it does, the parameter type is wrong.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER re-validate a value the type system already considers proven.
@@ -45,7 +45,7 @@ You are violating the rule if any of these are true in a single request path:
 - A `try { Schema.parse(x) } catch {}` falls through to default values — that's hoping, not parsing.
 - A DB/ORM row exposes a field as `Json` / `unknown` / `any` (e.g. a Prisma `Json?` column), so every reader must `.parse()` it. The DB read *is* the boundary — parse the column once in the repository and return the narrowed type, so callers get the proven type, not the raw row.
 
-## The Pattern
+## The pattern
 
 ### Webhooks and external responses — `safeParse` at the edge
 
@@ -162,7 +162,7 @@ One parse, at module load. Every consumer reads `env.DATABASE_URL` (typed as `st
 
 A lazy typed accessor — `getEnv(key): T => process.env[key] as T` — is *not* this pattern, even though it looks typed. The `as` asserts a type that was never checked: `STRIPE_SECRET_KEY` typed `string` is never verified to start with `sk_`, and a `number`-typed var is still the raw string at runtime. That's the `as`-coercion lie, just centralized behind a helper. Parse once with a schema so the narrowed type is *earned*, not asserted.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's only one extra `.parse()`, what's the harm?"
 
@@ -184,7 +184,7 @@ Derivation isn't re-validation. `const total = items.reduce(...)` is fine. `Sche
 
 That's about boundaries you don't control. Within one process, the boundary is the boundary. Defense in depth applies between systems, not between functions.
 
-## Red Flags
+## Red flags
 
 - A function signature with `unknown` or `any` more than one call away from a route handler / action / webhook / env load.
 - A schema `.parse()` inside a service, a repository, or a database adapter.
@@ -196,7 +196,7 @@ That's about boundaries you don't control. Within one process, the boundary is t
 
 **All of these mean: the boundary is the wrong place — find it and parse there, once.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

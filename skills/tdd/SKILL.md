@@ -3,7 +3,7 @@ name: tdd
 description: Use when explicitly following test-driven development. Use when asked to "add tests later". Use when writing code before tests. Use when "this is hard to test" comes up — that's a design smell, not a testing smell.
 ---
 
-# Test-Driven Development (TDD)
+# Test-driven development (TDD)
 
 ## Overview
 
@@ -11,14 +11,14 @@ description: Use when explicitly following test-driven development. Use when ask
 
 TDD is a design practice, not a testing one. Writing tests first forces you to think about the interface before the implementation.
 
-## When to Use
+## When to use
 
 - Explicitly choosing TDD for a new behavior
 - Asked to "write code now, add tests later"
 - Fixing a bug (write the test that reproduces it first)
 - Refactoring existing code
 
-## The Iron Rule
+## The iron rule
 
 ```
 WHEN following TDD for new behavior, observe a relevant test fail before writing that behavior.
@@ -35,7 +35,7 @@ The cycle: **RED** (write a failing test) → **GREEN** (write the minimum code 
 
 The bar is highest where logic and blast radius are highest — but "it's too simple" is exactly the rationalization that ships an untested regex like an email validator that silently accepts `foo@bar..com`. If a function has branches or a regex, it is not too simple; write the test. Reserve the judgment call for genuinely behavior-free pass-throughs, not for anything with a branch.
 
-## Detection: The Code-First Smell
+## Detection: the code-first smell
 
 If you're about to write implementation without a test, STOP:
 
@@ -63,7 +63,7 @@ function calculateShipping(weight: number, distance: number): number {
 }
 ```
 
-## Why Test-First Matters
+## Why test-first matters
 
 | Test-After | Test-First |
 |---|---|
@@ -73,7 +73,7 @@ function calculateShipping(weight: number, distance: number): number {
 | Hard-to-test = poor design, discovered late | Hard-to-test = caught immediately |
 | "Does it work?" | "Is it right?" |
 
-## Pressure Resistance
+## Pressure resistance
 
 ### 1. "We'll add tests later"
 
@@ -117,7 +117,7 @@ function calculateShipping(weight: number, distance: number): number {
 
 **Caveat:** this is about functions mixing *logic* with I/O. Once the logic is extracted, the remaining thin **orchestration shell** — the handler that just calls repo, service, webhook in order — has little logic of its own and is legitimately tested by stubbing those collaborators (or with an integration test). Many stubs in a *shell* test is expected; many stubs in a test that should be exercising *pure logic* is the smell.
 
-## Red Flags
+## Red flags
 
 - Writing any function without a test
 - "Let me just get it working first"
@@ -130,7 +130,7 @@ function calculateShipping(weight: number, distance: number): number {
 
 **All of these mean: stop. Write the test first.**
 
-## Quick Reference
+## Quick reference
 
 | Situation | TDD Response |
 |---|---|
@@ -140,7 +140,7 @@ function calculateShipping(weight: number, distance: number): number {
 | "Tests later" | Tests now. Always now. |
 | "Hard to test" | Decompose first — pure logic out, deps in. |
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|
@@ -151,7 +151,7 @@ function calculateShipping(weight: number, distance: number): number {
 | "Just a prototype" | Prototypes become production. Test them. (A true throwaway spike may skip tests; code that survives into production gets them — rewrite with tests, don't keep as-is.) |
 | "TypeScript catches enough" | Types catch shape, not logic. Off-by-one passes the compiler. |
 
-## The Bottom Line
+## The bottom line
 
 **New behavior starts red. Behavior-preserving refactoring stays green.**
 

@@ -3,7 +3,7 @@ name: ubiquitous-language
 description: Use when stakeholders use words for a concept that the code names differently (e.g. domain says "invoice", code says `bill_record`). Use when naming a schema column, route, or type for a domain concept and choosing between the domain's word and a code-only word. Use when "what should we call this?" comes up in code review. Use when reading code in a project area you're unfamiliar with and need to map between domain terms and code terms.
 ---
 
-# Ubiquitous Language
+# Ubiquitous language
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when stakeholders use words for a concept that the code names d
 
 There is no "developer dialect" of the domain. If the business says "invoice" and the code says `bill_record`, the code is lying about what it is.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER invent code-only names for concepts the domain already names. The domain's words are the code's words.
@@ -48,7 +48,7 @@ You are violating the rule if any of these are true:
 - A PR review surfaces "what's `xyz_handler`?" — and the answer requires reading the body.
 - The business pivoted (renamed customers → members, charges → subscriptions) and the code still uses the old terms a month later.
 
-## The Pattern
+## The pattern
 
 ### Names come from the domain glossary, not the developer's head
 
@@ -170,7 +170,7 @@ The glossary makes onboarding fast and prevents drift; it's also the artifact yo
 
 Evans scopes the ubiquitous language *per bounded context* — not one dictionary for the whole system. The same real-world thing legitimately has different names, or the same word different meanings, in different contexts: "customer" in a Sales context and "account holder" in a Support context can be the same person modeled differently, and a `Subscription` in Billing is not the `Subscription` in the analytics pipeline. Inside one context the rule is strict — one word per concept, no synonyms. *Across* contexts, deliberate translation at the boundary is correct architecture, not a smell: an anti-corruption layer that maps another context's `Order` onto yours is exactly what `dependency-inversion` and `parse-dont-validate` prescribe. The Red Flag below targets gratuitous renaming *within* a single context; a mapping layer that exists *because* two contexts genuinely speak different languages is the opposite of the problem.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "I prefer `data` / `obj` / `record` — they're generic and reusable"
 
@@ -192,7 +192,7 @@ Naming is hard *because it's important*. A name that lasts the project's life is
 
 The business is rarely "sure" — they refine vocabulary over time. Start with the best term they have today; when it changes, change with them. The agility to rename is the whole point.
 
-## Red Flags
+## Red flags
 
 - Variable names ending in `Obj`, `Data`, `Info`, `Record`, `Entity`, `Model` (without a specific domain noun before them).
 - Abbreviations or acronyms in identifiers that aren't terms the business uses (`cfg`, `mgr`, `proc`, `usr`).
@@ -204,7 +204,7 @@ The business is rarely "sure" — they refine vocabulary over time. Start with t
 
 **All of these mean: the code has its own dialect — bring it back to the domain's words.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

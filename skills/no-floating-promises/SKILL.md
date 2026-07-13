@@ -3,7 +3,7 @@ name: no-floating-promises
 description: Use when a promise-returning call sits as a bare statement — not `await`ed, not returned, no `.catch()`. Use when a fire-and-forget side effect (analytics, email, cache warm) is launched with no rejection handler. Use when `void somePromise()` appears. Use when a promise is started early and awaited later, with other `await`s in between. Use when a process dies with an `unhandledRejection`, or an async failure leaves no trace in the logs.
 ---
 
-# No Floating Promises
+# No floating promises
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a promise-returning call sits as a bare statement — not 
 
 The point is observation, not serialization. You don't have to `await` everything immediately — you have to guarantee that *someone* will see every rejection.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER leave a promise's rejection unobserved.
@@ -62,7 +62,7 @@ You are violating the rule if any of these are true:
 - Inside a `try`, a promise is `return`ed without `await` — not an unobserved rejection (the caller observes it), but a trap in the same family: the local `catch` silently never fires, and the async stack trace drops this frame. Use `return await` inside `try`.
 - The process's `unhandledRejection` hook logs and continues — that keeps rejections *observed* but defeats this skill's discipline: the hook is a crash reporter, not a recovery path (see below).
 
-## The Pattern
+## The pattern
 
 ### Await it, return it, or catch it — the three legal states
 
@@ -115,7 +115,7 @@ process.on('unhandledRejection', (reason) => {
 
 Keep the platform default (`throw`); never downgrade to `warn` or `none` to make the symptom stop.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's just analytics — who cares if it fails"
 
@@ -133,7 +133,7 @@ By design, that handler's job is to crash you gracefully. Routing expected failu
 
 Observation ≠ serialization. Start work concurrently, then observe it together (`Promise.all` / `allSettled`) or hand it a reporting `.catch`. The rule constrains who *sees* the rejection, not when you await.
 
-## Red Flags
+## Red flags
 
 - A bare `somethingAsync();` statement — the signature returns `Promise`, nobody reads it.
 - `void` prefixing a promise as the "fix" for a lint error.
@@ -145,7 +145,7 @@ Observation ≠ serialization. Start work concurrently, then observe it together
 
 **All of these mean: decide who observes this rejection, and wire it — await, return, or a reporting catch.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

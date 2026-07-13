@@ -3,7 +3,7 @@ name: interface-segregation
 description: Use when typing a function parameter as a full SDK / framework / library object (Drizzle's `Database`, a payment SDK instance, an email SDK instance, `Request`) when the function only calls one or two of its methods. Use when writing a test fake and the mock object has to implement 30 methods because the parameter type demands it. Use when reviewing a function signature that takes a "do-everything" object.
 ---
 
-# Interface Segregation
+# Interface segregation
 
 ## Overview
 
@@ -13,7 +13,7 @@ A function that takes `db: Database` when it only calls `db.select` accepts more
 
 A function that takes `db: Pick<Database, 'select'>` accepts exactly what it needs. Tests provide `{ select: () => ... }` and nothing else; the contract is self-documenting; the rest of `Database` is free to evolve.
 
-## The Default Rule
+## The default rule
 
 ```
 Prefer a narrow capability at business boundaries. Accept the full client only inside the
@@ -46,7 +46,7 @@ You are violating the rule if any of these are true:
 - Adding a method to a popular type breaks tests for functions that don't use that method.
 - The phrase "just take the full X, simpler" appears in code review.
 
-## The Pattern
+## The pattern
 
 ### `Pick<T, ...>` — for simple upstream method types
 
@@ -175,7 +175,7 @@ function processOrder(reader: InvoiceReader, writer: InvoiceWriter) { /* ... */ 
 
 This makes intent visible at the call site: "this function only reads" vs "this function writes" is encoded in the type.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Pick is verbose"
 
@@ -201,7 +201,7 @@ For `Pick`, you import nothing new — it's built in. For hand-written interface
 
 The point of segregation is the opposite — you're typing to the *minimum contract*, which is more abstract than the full library type. Less "implementation detail", not more.
 
-## Red Flags
+## Red flags
 
 - A test setup with `as unknown as` followed by a library type — almost always interface-segregation pressure.
 - A function whose body uses 1-2 methods on a parameter whose type has 30.
@@ -212,7 +212,7 @@ The point of segregation is the opposite — you're typing to the *minimum contr
 
 **All of these mean: inspect the boundary. Business code usually needs a narrow port; an adapter that intentionally owns the full client may not.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

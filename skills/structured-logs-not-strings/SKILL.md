@@ -3,7 +3,7 @@ name: structured-logs-not-strings
 description: "Use when writing a log call that concatenates or interpolates variables into the message string, or when `console.log` appears in service code. Use when an incident requires grepping prose with a regex to find all failures for one order. Use when an alert can't be defined because the error code lives inside a sentence. Use when the same fact is logged as `order 123 failed`, `failed order 123`, and `Order#123 failure` in three different files."
 ---
 
-# Structured Logs, Not Strings
+# Structured logs, not strings
 
 ## Overview
 
@@ -13,7 +13,7 @@ Prose is for humans reading one line; production logs are queried, grouped, join
 
 Scope: logs a service ships to an aggregator — including one-off scripts run against production, whose output is the audit trail. Human-facing CLI/TUI output is presentation, not logging, and is out of scope.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER emit a production log line whose variable data exists only inside an
@@ -46,7 +46,7 @@ You are violating the rule if any of these are true:
 - A dashboard query that starts with a regex over the message body.
 - An alert request that can't be built because the discriminating value is inside prose.
 
-## The Pattern
+## The pattern
 
 ### Constant event name + fields
 
@@ -146,7 +146,7 @@ A `userId` belongs in a log field and never in a metric label. The full rule —
 
 Structure makes logs _more_ leak-prone, not less — a fields object invites dumping whole entities, headers, and request bodies, secrets included. `secrets-handling` owns the never-log list (credentials, tokens, signatures, card data) and the redaction discipline; apply it to every fields object, and log projections (`{ userId, plan }`), not entire objects.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's just a quick debug line"
 
@@ -168,7 +168,7 @@ Post-hoc parsing means writing and maintaining a regex per message variant, fore
 
 Tracing _assumes_ the discipline: consistent IDs in consistent fields. Adopting it on top of prose logs means doing this migration anyway, at incident-count interest rates.
 
-## Red Flags
+## Red flags
 
 - `console.log` in a service or worker.
 - `+` or a bare template literal building a log message with no fields object.
@@ -180,7 +180,7 @@ Tracing _assumes_ the discipline: consistent IDs in consistent fields. Adopting 
 
 **All of these mean: data is trapped in prose — name the event, move every variable into a field.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse                                     | Reality                                                                       |
 | ------------------------------------------ | ----------------------------------------------------------------------------- |

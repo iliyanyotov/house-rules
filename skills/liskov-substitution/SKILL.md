@@ -3,7 +3,7 @@ name: liskov-substitution
 description: Use when creating a subtype (`extends` a class or `implements` an interface). Use when tempted to override a method with `throw` or a no-op. Use when an inheritance hierarchy or interface implementation feels forced. Use when handling subtypes via `instanceof` checks at the call site.
 ---
 
-# Liskov Substitution
+# Liskov substitution
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when creating a subtype (`extends` a class or `implements` an i
 
 The "L" in SOLID. In a TypeScript codebase, it applies to both class inheritance (`extends`) *and* interface implementation (`implements`) — anywhere structural or nominal subtyping is in play.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER create a subtype that breaks the supertype's contract — no throw-in-override, no no-op-override, no semantic change.
@@ -47,7 +47,7 @@ You are violating the rule if any of these are true:
 - The supertype has a method that "doesn't apply" to a subtype.
 - Adding a subtype requires updating every caller to handle the new case.
 
-## The Pattern
+## The pattern
 
 ### Don't subtype what you can't honor
 
@@ -215,7 +215,7 @@ In TypeScript, the question "can `S` substitute for `T`?" is partly answered by 
 
 Test it: write a small function that uses the supertype, and try every subtype. If any subtype breaks the function's assumptions, the subtype relationship is wrong — restructure to capability interfaces.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's the standard approach to override-and-throw"
 
@@ -241,7 +241,7 @@ The first one is. The next maintainer sees the pattern and adds a second. By the
 
 Yes — when an LSP violation is deep in the codebase, the restructure is real. The cost of *not* restructuring is permanent: every caller now has to know which subtypes throw on which methods, which is a worse cost. Restructure once.
 
-## Red Flags
+## Red flags
 
 - An overridden method that contains `throw new Error(...)` and the supertype's method doesn't.
 - An overridden method whose body is empty or comment-only.
@@ -252,7 +252,7 @@ Yes — when an LSP violation is deep in the codebase, the restructure is real. 
 
 **All of these mean: the subtype isn't a true subtype — split it into capability interfaces.** (LSP is about *substitution*, not about never inspecting type. Classifying a caught error by subtype to route it — user-facing 400 vs. re-thrown system error — is correct; capability interfaces are the wrong fix for error classification.)
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

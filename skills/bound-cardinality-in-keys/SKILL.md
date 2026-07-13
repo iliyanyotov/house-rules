@@ -3,7 +3,7 @@ name: bound-cardinality-in-keys
 description: Use when emitting a metric label, cache key, log dimension, error-monitoring tag, or any string that becomes a "key" in an external system. Use when tempted to include `userId`, `email`, a URL path with params, or any other unbounded user input as a label. Use when reviewing an error-tracker dashboard with millions of unique fingerprints, or a metric-provider bill that doubled overnight.
 ---
 
-# Bound Cardinality in Keys
+# Bound cardinality in keys
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when emitting a metric label, cache key, log dimension, error-m
 
 User IDs, email addresses, URL paths with parameters, free-text fields — these belong in *attributes* or *bodies*, never in *keys* or *labels*.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER put unbounded user input into a metric label, error tag, or span name — and never key a cache on an unbounded *parameter-tuple* (a single entity ID like `invoice:${id}` is fine; see Cache keys).
@@ -49,7 +49,7 @@ You are violating the rule if any of these are true:
 - A `histogram(name, value, { tag: someRawHeader })`.
 - An OpenTelemetry span attribute key (not value) derived from input.
 
-## The Pattern
+## The pattern
 
 ### Metrics — label by category, not identity
 
@@ -182,7 +182,7 @@ export const requestLabels = ['route', 'method', 'status_class'] as const;
 
 When someone adds a label, they update this file. The cardinality multiplication is visible.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "I need to see per-user metrics"
 
@@ -208,7 +208,7 @@ The bill goes up *retroactively* — you pay for the high-cardinality month. Add
 
 Development data flows through the same pipelines and contributes to the same indexes. The bill is one environment, but the architectural mistake is recorded everywhere.
 
-## Red Flags
+## Red flags
 
 - A metric label whose value is `req.userId`, `req.email`, `req.url`, `req.headers['x-*']`, or any unmodified user input.
 - An error-tracker `setTag` with user-supplied or per-request data.
@@ -220,7 +220,7 @@ Development data flows through the same pipelines and contributes to the same in
 
 **All of these mean: unbounded input is leaking into a key — move it to attributes or bodies.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

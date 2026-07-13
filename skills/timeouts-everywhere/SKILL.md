@@ -3,7 +3,7 @@ name: timeouts-everywhere
 description: Use when an HTTP, database, queue, RPC, LLM, or SDK call has no explicit deadline; when an await chain hangs; or when a serverless function reaches its platform wall.
 ---
 
-# Timeouts, Everywhere
+# Timeouts, everywhere
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when an HTTP, database, queue, RPC, LLM, or SDK call has no exp
 
 The acceptable values are documented numbers ("10s for DB reads, 5s for payment writes, 60s for LLM completions"). The unacceptable value is "whatever the library decides."
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER make an external call without an explicit per-call deadline.
@@ -43,7 +43,7 @@ You are violating the rule if any of these are true:
 - The platform's hard wall is the *only* timeout (300s on serverless, 15min on Lambda) — that's a kill switch, not a timeout.
 - A code review where "what happens if the dependency hangs?" has no clear answer.
 
-## The Pattern
+## The pattern
 
 ### `fetch` — always with `AbortSignal.timeout`
 
@@ -239,7 +239,7 @@ export const TIMEOUTS_MS = {
 
 Every call site references the same constant. Tuning is one edit.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "The library has a default"
 
@@ -261,7 +261,7 @@ Flaky timeouts are a signal that either the value is too low or the dependency i
 
 Internal calls hit databases, caches, queues, internal services — all with failure modes. Internal-network timeouts can be aggressive (200–2000ms) but they must exist.
 
-## Red Flags
+## Red flags
 
 - `await fetch(...)` with no `signal`.
 - A new SDK instance created with only the API key — no `timeout`, no `signal`.
@@ -273,7 +273,7 @@ Internal calls hit databases, caches, queues, internal services — all with fai
 
 **All of these mean: a deadline is missing — name it in seconds, write it down.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

@@ -3,7 +3,7 @@ name: value-objects-for-domain-primitives
 description: Use when accepting or returning a money amount, percentage, ISO date string, email address, URL, phone number, postal code, temperature, geographic coordinate, or any data whose validity is more constrained than its built-in type. Use when typing a field as `string` or `number` even though only certain values are legal. Use when an `assert(amount >= 0)` appears in three different functions. Use when a function comment says "must be a valid ISO-8601 date" or similar.
 ---
 
-# Value Objects for Domain Primitives
+# Value objects for domain primitives
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when accepting or returning a money amount, percentage, ISO dat
 
 A `Money` is not a `number`. An `EmailAddress` is not a `string`. A `Percentage` is not a `number`. Each has invariants — non-negative, well-formed, in range — and a fixed unit. Wrapping them once eliminates an entire class of repeated guards.
 
-## The Default Rule
+## The default rule
 
 ```
 Prefer a value object over a raw `string`/`number` for a constrained domain
@@ -48,7 +48,7 @@ You are violating the rule if any of these are true:
 - A bug post-mortem cites "passed cents but expected dollars" or "wrong currency added."
 - Two function parameters of the same primitive type can be swapped without a typecheck error, and getting the order wrong is a real risk.
 
-## The Pattern
+## The pattern
 
 ### Money
 
@@ -271,7 +271,7 @@ Some primitives are fine raw:
 
 The rule applies to **domain primitives** — values where the type system could carry more information than `string` or `number` does. Loop indices aren't domain primitives.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's just a number — wrapping is overkill"
 
@@ -301,7 +301,7 @@ Schemas parse at the boundary — good. But the *output* of `z.email().parse(inp
 
 Branded types are functional. You don't need classes; you need types and a parsing function. The branded-type form (`Percentage`, `EmailAddress`, `IsoDate`) is functional and FP-friendly.
 
-## Red Flags
+## Red flags
 
 - Two parameters of the same primitive type whose order matters semantically.
 - The phrase "must be a valid X" in a JSDoc comment, code comment, or type annotation.
@@ -313,7 +313,7 @@ Branded types are functional. You don't need classes; you need types and a parsi
 
 **All of these mean: the value-object is missing — wrap the constraint into a type.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

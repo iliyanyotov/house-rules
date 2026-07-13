@@ -3,7 +3,7 @@ name: tell-dont-ask
 description: Use when calling code reads an object's field, branches on it, then mutates the same or related field. Use when "feature envy" appears in code review — one module repeatedly accessing another's internals to make decisions. Use when validation logic lives outside the entity it validates. Use when a `switch` on `entity.status` appears in code that's *not* the entity's definition. Use when entities are plain DTOs / schema-inferred types with no methods and the same `entity.status` rule is duplicated across the services that handle them.
 ---
 
-# Tell, Don't Ask
+# Tell, don't ask
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when calling code reads an object's field, branches on it, then
 
 The shift is from **caller-driven logic** ("I read your state and decide") to **module-driven logic** ("I tell your module my intent; it handles the rest").
 
-## The Default Rule
+## The default rule
 
 ```
 Prefer telling a module your intent over reading its state and deciding from
@@ -48,7 +48,7 @@ You are violating the rule if any of these are true:
 - Validation rules live in a separate `validators/` directory disconnected from the types they validate.
 - A workflow function reads an object's fields, makes a decision, then calls a setter on the same object — could be one function call.
 
-## The Pattern
+## The pattern
 
 ### The classic example — refund
 
@@ -259,7 +259,7 @@ Note the two copies above are already *inconsistent* — `cancel` checks `!cance
 
 **The guard:** "entities must be plain data" justifies *no methods on the type*. It does **not** justify scattering the entity's rules across its callers. Give the entity a domain-function module and tell *it*.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's just one if-check"
 
@@ -289,7 +289,7 @@ It applies, just not as methods. The owner of the rule is a per-entity *domain m
 
 Apply incrementally. Next time you'd write `if (entity.x === ...)` outside the entity's module, write `if (entityShouldX(entity))` instead and put the rule in the module. Over months, the codebase converges.
 
-## Red Flags
+## Red flags
 
 - A `switch (x.kind)` outside the file that defines `x.kind`'s union.
 - A function that reads 3+ fields from a parameter and decides based on the combination.
@@ -302,7 +302,7 @@ Apply incrementally. Next time you'd write `if (entity.x === ...)` outside the e
 
 **All of these mean: the decision belongs in the module that owns the data, not in the caller.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

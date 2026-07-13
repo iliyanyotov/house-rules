@@ -3,7 +3,7 @@ name: finish-the-migration
 description: Use when introducing a replacement for an existing pattern, library, module, or API — a new data-access layer beside the old one, a v2 client, a new state container, a different validation approach. Use when "the new way" and "the old way" both exist and both are reachable. Use when a doc or CLAUDE.md says "use X for new code, don't use Y" but Y is still wired and used. Use when a migration has been "90% done" for months. Use when two implementations of one concept coexist with no removal date.
 ---
 
-# Finish the Migration
+# Finish the migration
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when introducing a replacement for an existing pattern, library
 
 This is the complement to `dead-code-deletion-on-sight`. That skill deletes code with **zero references** the moment you find it. This skill governs the harder case: an old path that is *still referenced* and still working, sitting beside its replacement. You can't just delete it — but you must not let it live forever either.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER leave a superseded path reachable without a deprecation marker, a guard against new uses, and a removal trigger.
@@ -41,7 +41,7 @@ You are leaving a migration unfinished if any of these are true:
 - The phrase "we're mostly migrated" has been true for more than one release cycle.
 - A code reviewer can't tell, from the code alone, which of two patterns is preferred.
 
-## The Pattern
+## The pattern
 
 ### Step 1 — Make the replacement the obvious default, then *mark* the old path
 
@@ -114,7 +114,7 @@ The two skills hand off at the reference count:
 
 `finish-the-migration` exists to *drive the count to zero*; `dead-code-deletion-on-sight` exists to *act the instant it's there*.
 
-## Pressure Resistance
+## Pressure resistance
 
 **"The new way is the standard — everyone knows to use it."** Everyone who read the announcement, was on the team when it happened, and remembers. The next hire read none of that and will extend whichever path they grep into first. Knowledge in people's heads doesn't constrain a codebase; a CI guard does.
 
@@ -126,7 +126,7 @@ The two skills hand off at the reference count:
 
 **"Deleting the old path is risky — things might depend on its quirks."** That risk *grows* the longer you wait, as more code piles onto the old path and its quirks calcify into contracts. The way to shrink the risk is to drive the reference count down deliberately now, while the surface is small — not to leave it and hope.
 
-## Red Flags
+## Red flags
 
 - A replacement landed but the old path has no `@deprecated` marker.
 - "Don't use X for new code" lives only in a doc, with nothing enforcing it.
@@ -138,7 +138,7 @@ The two skills hand off at the reference count:
 
 **All of these mean: the migration has no finish line — add the marker, the guard, the count, and the trigger.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|
@@ -149,7 +149,7 @@ The two skills hand off at the reference count:
 | "Deleting the old one is too risky" | The risk only compounds with time. Shrink it now while the surface is small. |
 | "Keeping both is more flexible" | Two ways to do one thing is not flexibility; it's a permanent tax on every reader. |
 
-## The Bottom Line
+## The bottom line
 
 Introducing a replacement is signing up to *remove the original* — on a schedule, behind a guard, against a count that reaches zero. Until the old path is deleted from the tree, the migration isn't done; it's just two ways of doing one thing, costing you both.
 

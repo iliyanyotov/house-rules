@@ -3,7 +3,7 @@ name: transaction-isolation
 description: Use when two database transactions can touch overlapping rows and the outcome depends on their order. Use when wrapping a read-then-write in `db.transaction(...)` and assuming that alone makes it safe. Use when a check across multiple rows (sum of bookings, count of seats, on-call coverage) must stay true after concurrent writes. Use when a balance, inventory count, or unique-slug assignment can be corrupted by two requests racing. Use when deciding between a row lock, an optimistic version column, and bumping the isolation level.
 ---
 
-# Transaction Isolation
+# Transaction isolation
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when two database transactions can touch overlapping rows and t
 
 This skill is about the *database* concurrency layer: isolation levels, row locks, and optimistic version columns. App-level async races (a `useEffect` fetch, a timer after unmount, a double-clicked button) are a different execution model — see the `race-conditions` skill for those. The handoff: `race-conditions` covers making a **single-row** read-then-write atomic; this skill covers the failures that survive that — **multi-row invariants and isolation-level choice.**
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER assume a transaction is safe at the default isolation level. Match the level — or a lock — to the anomaly the operation can hit.
@@ -46,7 +46,7 @@ You are violating the rule if any of these are true:
 - A retry loop around a write does *not* handle the serialization-failure error code (`40001` on Postgres) — so a `SERIALIZABLE` transaction that aborts is treated as a hard failure.
 - The phrase "it's in a transaction, so it's safe" appears without naming an isolation level or a lock.
 
-## The Pattern
+## The pattern
 
 ### A transaction at `READ COMMITTED` does not stop a lost update
 
@@ -217,7 +217,7 @@ A unique constraint is the cheapest concurrency control there is: the database e
 | Invariant spanning multiple/absent rows (write skew, phantom) | `SERIALIZABLE` + retry, or lock the whole conflict set |
 | Uniqueness ("one active X", "unique slug") | DB unique constraint (partial index if conditional) |
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's wrapped in a transaction, so it's atomic and safe"
 
@@ -243,7 +243,7 @@ The alternative is silent corruption, which is far more complexity — to detect
 
 The application check races with itself across processes. Two instances both pass it. The only check that can't race is the one the database makes atomically — a constraint. Application-level uniqueness is a constraint you forgot to write.
 
-## Red Flags
+## Red flags
 
 - A `db.transaction(...)` around a read-then-write with no `FOR UPDATE`, no version column, and no elevated isolation level.
 - A `SELECT COUNT(*)` / `SUM(...)` validated, then a write that depends on the count staying the same — at the default level.
@@ -254,7 +254,7 @@ The application check races with itself across processes. Two instances both pas
 
 **All of these mean: the operation can hit an anomaly the current isolation level permits — pick the level or lock that forbids it, and name it.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|
@@ -265,7 +265,7 @@ The application check races with itself across processes. Two instances both pas
 | "We check uniqueness in code" | App checks race across processes. Only a DB constraint is atomic. |
 | "It's never corrupted in prod" | You haven't queried for the corruption, or traffic hasn't peaked. Absence of evidence isn't isolation. |
 
-## The Bottom Line
+## The bottom line
 
 **A transaction without a chosen isolation level (or lock) is a guess, not a guarantee.**
 

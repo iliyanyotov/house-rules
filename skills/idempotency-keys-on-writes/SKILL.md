@@ -3,7 +3,7 @@ name: idempotency-keys-on-writes
 description: Use when a consequential write may be retried by a client, load balancer, queue, webhook sender, or double-click. Use when a payment, order, or signup endpoint lacks an idempotency key, or duplicate rows/effects appear in a bug report.
 ---
 
-# Idempotency Keys on Writes
+# Idempotency keys on writes
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a consequential write may be retried by a client, load bal
 
 The retention window is at least 24 hours. The key is client-supplied. The implementation is server-side dedup keyed by `(endpoint, key)`.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER expose a *consequential* mutating endpoint without idempotency. Networks lose responses; clients retry. (Low-stakes notifications can use a lighter UI-guard + short-window dedup — see "Low-stakes notifications".)
@@ -49,7 +49,7 @@ Idempotency shows up in two situations, and they differ in *who owns the key*:
 
 The consumer side has a second failure mode the producer side doesn't: a delivery can not just *duplicate* but *fail to process at all*. Dedupe (this skill) stops a duplicate from double-applying; it does **not** save an event whose handler throws. For that — persisting the failed event and replaying it — see `dead-letter-and-replay`. The two compose: dedupe on arrival, dead-letter on failure.
 
-## The Pattern
+## The pattern
 
 ### Server-side: reserve the key before the side effect
 
@@ -240,7 +240,7 @@ Idempotency is mandatory when duplicates are *consequential* — money moves, da
 | `DELETE` | Naturally idempotent |
 | `GET` | Naturally idempotent — no key needed |
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's overkill for our scale"
 
@@ -262,7 +262,7 @@ Set an expiry (24h is a common default). Auto-clean expired rows nightly. The vo
 
 One header. The client passes a UUID. The server stores it. The complication is on the server, where the team owns and tests it. The API gains one optional header (which becomes mandatory in v2).
 
-## Red Flags
+## Red flags
 
 - A mutating endpoint with no idempotency-key handling.
 - A client that retries on 5xx without sending a stable key.
@@ -276,7 +276,7 @@ One header. The client passes a UUID. The server stores it. The complication is 
 
 **All of these mean: dedup is missing — name the key and store it.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

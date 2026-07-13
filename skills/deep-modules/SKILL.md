@@ -3,7 +3,7 @@ name: deep-modules
 description: Use when tempted to expose every internal helper, write thin pass-through wrappers, or add another configuration option "for flexibility." Use when reviewing a class with 30 public methods or a function with 12 parameters. Use when a feature requires touching seven files to make a small change.
 ---
 
-# Deep Modules
+# Deep modules
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when tempted to expose every internal helper, write thin pass-t
 
 The metric: interface size vs. implementation size. Small interface + large implementation = deep (good). Large interface + small implementation = shallow (bad).
 
-## The Default Rule
+## The default rule
 
 ```
 Prefer an interface much smaller than its implementation. Expose the surface
@@ -46,7 +46,7 @@ You are violating the rule if any of these are true:
 - A change to internal behavior requires updating five public signatures.
 - A module exports a high-level operation everyone imports *and* the lower-level helpers it composes — but those helpers have zero external callers. They're dead public surface widening the interface for nothing; stop exporting them (see `dead-code-deletion-on-sight`).
 
-## The Pattern
+## The pattern
 
 ### Repository — deep, not shallow
 
@@ -141,7 +141,7 @@ The first version is `mailer.send` with extra typing — a tax with no benefit. 
 
 Ousterhout's flagship deep module is the Unix file I/O interface: five calls — `open`, `read`, `write`, `lseek`, `close` — hiding an enormous implementation (device drivers, buffering, filesystems, caching), with good defaults (sequential access; `lseek` exists only for the rare random-access case). His shallow counter-example is the layered Java I/O class library — to read serialized objects with buffering, every caller assembles `FileInputStream` + `BufferedInputStream` + `ObjectInputStream` themselves ("classitis"). Same problem, two depths.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Flexibility is good — more options means callers can do more"
 
@@ -167,7 +167,7 @@ Single-responsibility says **one reason to change**, not **small surface**. A de
 
 Utilities are the worst offenders. They grow public-by-accident: someone exposes a helper "just for this test", then it's in the API forever. Start utilities private; promote to public only when justified.
 
-## Red Flags
+## Red flags
 
 - A module's `index.ts` re-exports everything in the directory.
 - A function with `Options` or `Config` parameter containing 8+ fields.
@@ -179,7 +179,7 @@ Utilities are the worst offenders. They grow public-by-accident: someone exposes
 
 **All of these mean: the interface is too wide — collapse to named use cases.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

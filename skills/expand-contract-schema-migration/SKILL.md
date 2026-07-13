@@ -3,7 +3,7 @@ name: expand-contract-schema-migration
 description: Use when writing a Drizzle migration that drops a column, renames a column, narrows a column type, or makes a nullable column NOT NULL. Use when changing a Postgres enum's values. Use when reshaping a JSON column's structure. Use when the diff between two deploys would have *old code* reading rows written by *new code* or vice versa. Use when a code reviewer says "we can do this in one PR" about a destructive schema change.
 ---
 
-# Expand / Contract Schema Migration
+# Expand / contract schema migration
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when writing a Drizzle migration that drops a column, renames a
 
 The multi-deploy framing assumes any modern deploy model where old and new instances overlap for seconds-to-minutes during rollout. Even if you don't believe in rollback, you can't avoid the overlap window — old code and new code run side-by-side, against the same database, while traffic shifts. That overlap is what the rule protects.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER ship a destructive schema change and the code that depends on it in the same deploy.
@@ -68,7 +68,7 @@ You are violating the rule if any of these are true:
 - A Postgres enum change that removes values (`ALTER TYPE ... DROP VALUE` doesn't exist; the only "removal" is a destructive rebuild).
 - A migration's safety depends on "no traffic during deploy" — serverless platforms don't give you that.
 
-## The Pattern
+## The pattern
 
 ### Three categories — only the first is safe in one PR
 
@@ -230,7 +230,7 @@ Migration tooling makes it easy to generate one file for a multi-step schema cha
 
 The unit that matters is the *deploy*, not the file: splitting a destructive change across several files in the *same* PR/deploy doesn't make it safe — old code still meets the new shape. Conversely, several DDL statements in one migration file are fine when they're all part of one safe step (e.g. `CREATE TABLE` + its backfill `INSERT`). Split by *deploy boundary*, not by file count.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "There's no traffic at 3 AM — we'll deploy then"
 
@@ -256,7 +256,7 @@ Table size doesn't drive the rule — the *rollover window* does. A 12-row table
 
 That's expand/contract with a JSON column as the "new shape." Same rule; just messier execution. Use a real column.
 
-## Red Flags
+## Red flags
 
 - A PR titled like "rename X → Y" with one migration file and code changes both.
 - A *deploy* that ships a `DROP`/`RENAME`/narrowing migration together with the code that depends on the new shape — regardless of how many files the SQL is split across. (Multiple DDL statements in one file is *not* itself the smell; coupling a destructive change with its dependent code in one deploy is.)
@@ -267,7 +267,7 @@ That's expand/contract with a JSON column as the "new shape." Same rule; just me
 
 **All of these mean: the destructive change is collapsed into one deploy — split it before merging.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

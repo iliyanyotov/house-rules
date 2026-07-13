@@ -3,7 +3,7 @@ name: yagni
 description: Use when explicitly deciding whether an abstraction, option, or capability is needed yet. Use when tempted to add a config option "for flexibility", extract an abstraction "in case we have more", or build production-grade infrastructure for a prototype. Use when reviewing a PR that adds capabilities the requirement didn't ask for. Use when the words "might", "probably", "eventually", or "in case" appear in your justification.
 ---
 
-# YAGNI (You Aren't Gonna Need It)
+# YAGNI (you aren't gonna need it)
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when explicitly deciding whether an abstraction, option, or cap
 
 The cheapest code is the code you don't write.
 
-## When to Use
+## When to use
 
 - Tempted to add a config option no caller currently sets
 - Extracting an abstraction on the first occurrence
@@ -19,7 +19,7 @@ The cheapest code is the code you don't write.
 - Pre-building cache, queue, or duplicate retry layers before measuring need or identifying the owning layer
 - Adding schema fields the product doesn't use yet
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER add capability before a real need exists. Wait for the second occurrence.
@@ -33,7 +33,7 @@ NEVER add capability before a real need exists. Wait for the second occurrence.
 
 Count *real, exercised* implementations toward the "second occurrence." A `Noop`/null-object/identity fallback or an unreachable branch does **not** count as a second one. A factory that returns the same concrete type from every branch (or carries a TODO list of future types) has *one* implementation — no matter how many `if`s it contains — so the abstraction is still speculative.
 
-## Detection: The Speculation Smell
+## Detection: the speculation smell
 
 If your justification contains "might", "probably", "in case", or "eventually" — STOP:
 
@@ -59,7 +59,7 @@ export async function sendEmailNotification(userId: UserId, body: string): Promi
 
 The "ready for SMS" version is *less ready*. When SMS arrives, the interface will be wrong (SMS has no subject line, has character limits, has different delivery semantics). You'll restructure anyway. Better to start concrete.
 
-## Why YAGNI Wins
+## Why YAGNI wins
 
 | Speculative code | YAGNI code |
 |---|---|
@@ -71,7 +71,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 
 **Scope:** YAGNI applies to **capabilities**, **abstractions**, **configurability**, and **infrastructure beyond current stakes** — unmeasured **caching**, **queues**, and **capacity/scale** work. It does *not* apply to type safety, input validation at edges, error handling at boundaries, tests for behavior that exists, or correctness/safety baselines that bound failure regardless of scale: a per-call **timeout** on every external call (`timeouts-everywhere`), **bounded** retries with jitter and a budget (`retry-with-jitter-and-budget`), and **idempotency** on writes (`idempotency-keys-on-writes`). Those are baseline requirements, not speculative features.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### 1. "It's easy to add now, hard to add later"
 
@@ -121,7 +121,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 
 **Action:** Document the scaling path in an ADR. Build the simple version. Scale when measurement demands it.
 
-## Red Flags
+## Red flags
 
 - The words "might", "probably", "eventually", "just in case", "to be safe" in a comment or PR description
 - An interface with one implementation
@@ -136,7 +136,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 
 **All of these mean: delete the speculation. Build the concrete version.**
 
-## Quick Reference
+## Quick reference
 
 | Symptom | Action |
 |---|---|
@@ -148,7 +148,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 | Pre-built cache or duplicate retry layer without an owner/measurement | Remove it; keep one bounded retry owner where transient failure is real |
 | Feature flag with no rollout plan | Remove; ship the change directly |
 
-## Common Rationalizations (All Invalid)
+## Common rationalizations (all invalid)
 
 | Excuse | Reality |
 |---|---|
@@ -159,7 +159,7 @@ The "ready for SMS" version is *less ready*. When SMS arrives, the interface wil
 | "It's a best practice in this domain" | Best practices solve specific problems. Apply when you have the problem. |
 | "I'll forget if I don't add it now" | Write a TODO in the issue tracker, not in the codebase. |
 
-## The Bottom Line
+## The bottom line
 
 **Build what's asked. Skip what's imagined. Refactor when reality arrives.**
 

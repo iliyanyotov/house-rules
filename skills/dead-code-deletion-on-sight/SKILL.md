@@ -3,7 +3,7 @@ name: dead-code-deletion-on-sight
 description: Use when finishing any change that left a function, type, file, import, env var, feature flag, or commented-out block unused. Use when reviewing a PR that introduces "just in case" code or leaves old code paths beside new ones. Use when grep-finding zero-reference symbols.
 ---
 
-# Dead Code, Deletion on Sight
+# Dead code, deletion on sight
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when finishing any change that left a function, type, file, imp
 
 Git remembers. Deletion is reversible. Keeping unused code is not free — it's a slow tax on every future reader.
 
-## When to Use
+## When to use
 
 - Finishing any change that left a symbol with zero references
 - Reviewing a PR that introduces "just in case" branches
@@ -19,7 +19,7 @@ Git remembers. Deletion is reversible. Keeping unused code is not free — it's 
 - A commented-out block that's been there longer than a sprint
 - A `@deprecated` JSDoc tag with no removal date and no current consumers
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER keep unused code. Delete on sight; git remembers if you need it back.
@@ -31,7 +31,7 @@ NEVER keep unused code. Delete on sight; git remembers if you need it back.
 - Not for "I'll delete it next sprint"
 - Not for "tests depend on it" (the tests are also dead)
 
-## Detection: The Zero-Reference Smell
+## Detection: the zero-reference smell
 
 If a symbol has zero references and the build still succeeds, STOP and delete:
 
@@ -53,7 +53,7 @@ export async function createOrder(input: OrderInput) {
 
 The flag exists to support a decision *that has been made*. Leaving it in place inverts the cost — flags accumulate, the system gets less testable, not more.
 
-## Why Dead Code Costs
+## Why dead code costs
 
 | Dead code looks free | Dead code actually costs |
 |---|---|
@@ -65,7 +65,7 @@ The flag exists to support a decision *that has been made*. Leaving it in place 
 
 Every line of code is a maintenance commitment. Code you aren't using is commitment without benefit.
 
-## The Pattern
+## The pattern
 
 ### Reactive — every PR includes a deletion pass
 
@@ -123,7 +123,7 @@ The shim exists *for callers*. No callers, no shim.
 
 The trap is the *middle* state: a `@deprecated` shim that still has a handful of callers the deprecating PR hasn't migrated yet. That isn't dead code — it's an unfinished migration. Don't delete it (you'd break the callers) and don't leave it indefinitely (it rots). Finish migrating the callers, then delete the shim and the `@deprecated` tag in the same PR (see `finish-the-migration`). "No callers, no shim" applies only once "Find References" is *actually* zero.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### 1. "We might need it again"
 
@@ -165,7 +165,7 @@ The trap is the *middle* state: a `@deprecated` shim that still has a handful of
 
 **Action:** Delete both.
 
-## Red Flags
+## Red flags
 
 - An IDE warning "X is declared but never used"
 - A commented-out block of code longer than one line
@@ -178,7 +178,7 @@ The trap is the *middle* state: a `@deprecated` shim that still has a handful of
 
 **All of these warrant a zero-reference check; if `Find References` comes back zero, delete now, in this PR.**
 
-## Quick Reference
+## Quick reference
 
 | Situation | Action |
 |---|---|
@@ -189,7 +189,7 @@ The trap is the *middle* state: a `@deprecated` shim that still has a handful of
 | `@deprecated` internal API with no callers | Delete |
 | Test exists for a function nothing else calls | Delete both |
 
-## Common Rationalizations (All Invalid)
+## Common rationalizations (all invalid)
 
 | Excuse | Reality |
 |---|---|
@@ -200,7 +200,7 @@ The trap is the *middle* state: a `@deprecated` shim that still has a handful of
 | "It's referenced in docs/comments" | Update or delete the docs/comments. They're equally stale. |
 | "We'll do a cleanup sprint" | No team has ever successfully cleaned up at the end. The cleanest codebase is the one cleaned continuously. |
 
-## The Bottom Line
+## The bottom line
 
 **Zero references = delete now. Git holds the history if you ever need it back.**
 

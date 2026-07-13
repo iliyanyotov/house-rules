@@ -3,7 +3,7 @@ name: steady-state-purge-unbounded-growth
 description: Use when adding a table, cache, log index, file-storage bucket, queue, or session store that grows over time. Use when reviewing a cron that *creates* rows without any companion that *deletes* them. Use when a database table is described as "we never delete from it." Use when a Redis key family has no `EXPIRE`. Use when an idempotency-keys table has lived for >30 days and nobody can answer "how big is it now?" Use when a logs index has no retention policy.
 ---
 
-# Steady-State: Purge Unbounded Growth
+# Steady-state: purge unbounded growth
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when adding a table, cache, log index, file-storage bucket, que
 
 The **hot working set** reaches steady state when expiry, purge, or partition rotation bounds the data that production queries and indexes must scan. A cold archive may still grow because the business must retain history; that archive needs a separate capacity, partition, access, and deletion/legal-hold plan. "Bound the hot path" and "plan retained growth" are both lifecycle work—neither implies deleting records the domain must keep.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER ship a create-path without a retention plan. Every growing thing gets a paired rule: purge, or — for records that must be kept — archive/partition off the hot path.
@@ -56,7 +56,7 @@ You are violating the rule if any of these are true:
 - A `pg_cron` extension is enabled but no scheduled cleanup job exists.
 - A purge cron exists, is scheduled, and returns 200 — but its `DELETE` is commented out, behind a disabled flag, or silently no-ops (wrong cutoff, empty match). "The cron exists" is not the bar; "it deleted N rows last run, and N tracks the insert rate" is.
 
-## The Pattern
+## The pattern
 
 ### Every create-path has a purge-path — in the same PR
 
@@ -192,7 +192,7 @@ A useful PR-checklist item:
 
 If you can't fill in those variables, the retention policy doesn't exist — the data has no plan.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "The table is tiny — we'll deal with it later"
 
@@ -218,7 +218,7 @@ Backups protect against *data loss*. They don't protect against *bad performance
 
 Then your queries scan an ever-growing set of soft-deleted rows. The optimizer skips them, but the storage and the maintenance (autovacuum, index bloat) don't. Soft delete is a UX feature; it's not a retention strategy.
 
-## Red Flags
+## Red flags
 
 - A new table migration with no companion purge cron in the same PR.
 - A new Redis key family with no `EX`.
@@ -232,7 +232,7 @@ Then your queries scan an ever-growing set of soft-deleted rows. The optimizer s
 
 **All of these mean: the data has no plan — it will grow until it breaks something.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

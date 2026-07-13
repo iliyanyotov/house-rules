@@ -3,7 +3,7 @@ name: circuit-breaker-on-flaky-deps
 description: Use when integrating with an external dependency that has a non-trivial failure rate — payment processors, LLM APIs, third-party search, partner services, internal services with known intermittency. Use when a slow dependency is degrading unrelated parts of the system. Use when log dashboards show a flat-top of timeouts during an upstream outage.
 ---
 
-# Circuit Breaker on Flaky Dependencies
+# Circuit breaker on flaky dependencies
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when integrating with an external dependency that has a non-tri
 
 The breaker is a per-dependency state machine. Tripping it is automatic. Recovering from it is deliberate.
 
-## The Default Rule
+## The default rule
 
 ```
 Any dependency with a non-trivial failure rate gets a breaker with thresholds,
@@ -50,7 +50,7 @@ You are violating the rule if any of these are true:
 - An LLM call is in the critical path of a page render with no breaker.
 - A code review can't answer "what happens if the dependency is down for 10 minutes?"
 
-## The Pattern
+## The pattern
 
 ### The three states
 
@@ -226,7 +226,7 @@ Rule of thumb: if you've ever seen its dashboard go red, it needs a breaker.
 
 The breaker counts *failures after retries*. If the retry succeeded, the breaker sees success. If retries exhausted, the breaker sees one failure (not three).
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "We don't have that many failures"
 
@@ -252,7 +252,7 @@ Fallbacks are *named* failures. The UI shows "search unavailable, showing cached
 
 Then the fallback is "fail fast with a typed error." The breaker still helps — it stops the system from queuing retries while the dependency is down. The user sees an error in 100ms instead of 30s.
 
-## Red Flags
+## Red flags
 
 - A dependency with documented intermittency called directly with no breaker.
 - A timeout-error dashboard with a flat-topped error rate during upstream incidents.
@@ -263,7 +263,7 @@ Then the fallback is "fail fast with a typed error." The breaker still helps —
 
 **All of these mean: the breaker is missing, mis-tuned, or being bypassed — fix it before the next outage.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

@@ -3,7 +3,7 @@ name: retry-with-jitter-and-budget
 description: Use when adding or reviewing retries for HTTP, DB, SDK, or LLM calls; when dashboards show synchronized retry spikes; or when code retries a non-idempotent write without a stable idempotency key.
 ---
 
-# Retry With Jitter and Budget
+# Retry with jitter and budget
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when adding or reviewing retries for HTTP, DB, SDK, or LLM call
 
 A retry without these three (jitter, budget, idempotency) makes things worse, not better.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER retry without jitter, a deadline, and idempotency safety. Naked retries cause outages.
@@ -45,7 +45,7 @@ You are violating the rule if any of these are true:
 - Retries layered: SDK retries 3×, your wrapper retries 3×, the framework retries 3× → 27× actual attempts.
 - A "transient error" handler that doesn't classify the error before retrying.
 
-## The Pattern
+## The pattern
 
 ### The canonical retry loop
 
@@ -247,7 +247,7 @@ The data (Marc Brooker, AWS Builders' Library) compares four:
 
 Default to **full jitter** unless you have measurement saying otherwise.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "I'll just retry 3 times with a 1-second delay"
 
@@ -269,7 +269,7 @@ No retry is infinite. Even "must eventually succeed" jobs need a deadline; what 
 
 Until it isn't. The double-charge or duplicate-row bug is hard to trace and impossible to undo. Idempotency keys cost one line on the request; their absence costs customer trust.
 
-## Red Flags
+## Red flags
 
 - A retry loop with `await sleep(constant)` between attempts.
 - A retry on `POST`/`PUT` with no `Idempotency-Key` header.
@@ -281,7 +281,7 @@ Until it isn't. The double-charge or duplicate-row bug is hard to trace and impo
 
 **All of these mean: the retry will make the outage worse — add jitter, budget, and idempotency before shipping.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

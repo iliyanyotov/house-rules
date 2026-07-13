@@ -3,7 +3,7 @@ name: open-closed
 description: Use when adding a new variant to an existing union, a new case to a switch, a new handler to a router, a new payment method, a new file format, or any other "new kind of X." Use when reviewing a PR that edits an `if/else` branch to add a new condition rather than adding a new variant. Use when tempted to add a `type` parameter to handle a new case via flag-driven branching.
 ---
 
-# Open/Closed Principle
+# Open/closed principle
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when adding a new variant to an existing union, a new case to a
 
 In a TS/functional stack this takes two forms, and *which* one is closed for modification depends on what grows — new operations vs new kinds (the expression-problem tradeoff, below): a **discriminated union + exhaustive switch** when the set of kinds is stable, or a **registry / port** when kinds are open-ended. Either way, new behavior lands as *new code* the type system or registry connects — never a new `if` branch quietly bolted into a stable function.
 
-## The Default Rule
+## The default rule
 
 ```
 Once a second variant exists, prefer adding a new kind as an addition the type
@@ -52,7 +52,7 @@ You are violating the rule if any of these are true:
 - A configuration object grows a new field for every new behavior toggle.
 - The phrase "add another flag to the function" appears in code review.
 
-## The Pattern
+## The pattern
 
 ### Two axes — which "closed" you're buying
 
@@ -186,7 +186,7 @@ The rule applies when **the variants are likely to grow**. If you have a functio
 
 The signal that OCP is worth it: you've already added the *second* variant. Two is data; one is a guess.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Adding an `if` is faster than restructuring"
 
@@ -212,7 +212,7 @@ Inheritance was the canonical OCP mechanism in the OO era. In a functional TS st
 
 If the next variant arrives in a week, this rationalization compounds. The check: have you added an `if` to this same function before? If yes, this is the third+ time — restructure.
 
-## Red Flags
+## Red flags
 
 - A switch or if-chain that grows by one branch per quarter.
 - A function whose body has the shape `if (type === 'A') ... else if (type === 'B') ... else if (type === 'C')`.
@@ -224,7 +224,7 @@ If the next variant arrives in a week, this rationalization compounds. The check
 
 **All of these mean: the module is closed for the wrong axis — restructure so new behavior is an addition, not an edit.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

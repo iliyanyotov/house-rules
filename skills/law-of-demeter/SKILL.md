@@ -11,7 +11,7 @@ description: Use when typing `a.b.c.d` to reach a value. Use when a function par
 
 The point isn't dot-counting. The point is that `a.b.c.d` *encodes knowledge* about `b`'s and `c`'s internal structure — knowledge that should be inside `a` or `b`, not at the call site.
 
-## The Heuristic
+## The heuristic
 
 This is a **smell to investigate**, not an invariant. A single `order.customer.name` is fine; the signal fires on *depth plus repetition*.
 
@@ -58,7 +58,7 @@ You are violating the rule if any of these are true:
 - A code comment "navigates the X graph" or "drills into Y" near the chain.
 - Optional chaining (`?.`) appears 3+ times in one expression.
 
-## The Pattern
+## The pattern
 
 ### Pass the value, not the container
 
@@ -178,7 +178,7 @@ Some chains are unavoidable and fine:
 
 The rule applies to *your own domain types* whose structure *you control*. External APIs and built-in primitives are exempt. But a chain that *starts* in a framework type and *ends* in one of yours (`axiosError.response.data.error.message` — Axios's `.response.data`, then your own error payload) is still governed: extract an accessor (`getApiErrorMessage(err)`) that owns both the framework navigation and your shape in one place — especially when the same drill repeats across call sites.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's just navigation, what's the harm?"
 
@@ -204,7 +204,7 @@ You have three: (1) accept it directly as a parameter; (2) ask the immediate nei
 
 Apply incrementally — when you'd write `a.b.c.d`, write `getXFromA(a)` instead and put the chain in `a`'s module. Over time, the codebase converges. Don't refactor everything at once.
 
-## Red Flags
+## Red flags
 
 - Three or more dots between named entities in a single expression.
 - A `?.?.?.?` chain with multiple optional steps — each one is a place that might fail.
@@ -215,7 +215,7 @@ Apply incrementally — when you'd write `a.b.c.d`, write `getXFromA(a)` instead
 
 **All of these mean: the function is reaching across module boundaries — delegate or pass the value directly.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

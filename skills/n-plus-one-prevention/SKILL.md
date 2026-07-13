@@ -3,7 +3,7 @@ name: n-plus-one-prevention
 description: Use when fetching related data in loops. Use when seeing multiple queries for one request. Use when a list endpoint is slow but a detail endpoint is fast. Use when query count grows with result size. Use when reviewing code with `await` inside `.map()` or `.forEach()`.
 ---
 
-# N+1 Query Prevention
+# N+1 query prevention
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when fetching related data in loops. Use when seeing multiple q
 
 N+1 is the pattern where you fetch N items, then make N more queries to get related data — 1 + N queries total. It's the most common database performance failure in apps, and it's almost always invisible until traffic grows enough to surface it.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER make query count proportional to result count. Join or batch each relation for a
@@ -49,7 +49,7 @@ You are violating the rule if any of these are true:
 - A monitoring dashboard shows query count tracking row count.
 - An ORM is configured with lazy loading by default and no eager-loading pattern is in use.
 
-## The Pattern
+## The pattern
 
 ### The canonical N+1 — related entity in a loop
 
@@ -178,7 +178,7 @@ async function handleRequest(req: Request) {
 
 A list endpoint making >10 queries is suspicious. The exact threshold depends on the route, but the count must be request-scoped; a module-level counter races across concurrent requests.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's only a few items"
 
@@ -206,7 +206,7 @@ Classic ORMs (Hibernate, ActiveRecord, Sequelize) default to lazy loading — th
 
 Internal endpoints get hit by cron, by background jobs, by data exports, by retries. The N+1 surfaces when one of those processes runs over a large dataset.
 
-## Red Flags
+## Red flags
 
 - `await` inside `.map()`, `.forEach()`, or a `for` loop body.
 - A list endpoint's p99 latency tracks row count.
@@ -217,7 +217,7 @@ Internal endpoints get hit by cron, by background jobs, by data exports, by retr
 
 **All of these mean: N+1 is shipping — refactor to batch or JOIN.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

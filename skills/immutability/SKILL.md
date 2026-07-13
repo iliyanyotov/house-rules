@@ -11,7 +11,7 @@ description: Use when tempted to `.push`, `.splice`, `.sort` in place, reassign 
 
 If a function changes the caller's data, the function's signature is lying.
 
-## The Default Rule
+## The default rule
 
 ```
 Prefer building a new value over mutating one the caller passed in. Return the
@@ -42,7 +42,7 @@ You are violating the rule if any of these are true:
 - A function called `update`, `mutate`, `merge`, or `apply` doesn't return the new value.
 - A function takes a `Date` (or holds a reference to one) and calls `.setDate`, `.setMonth`, `.setFullYear`, `.setHours`, `.setTime`, etc. — these mutate the `Date` in place, even though it's a method call, not an assignment.
 
-## The Pattern
+## The pattern
 
 ### Function parameters — readonly by default
 
@@ -158,7 +158,7 @@ return rows;
 return rows.toSorted(byDate);
 ```
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Copying everything is slow"
 
@@ -180,7 +180,7 @@ You are *now*. The next person on the codebase is not. The signature lies; their
 
 Rename: `withUpdatedUser`, `updatedUser`, or use a verb-noun convention that returns the new value. Names that imply mutation lie about the type system; either fix the name or fix the implementation.
 
-## Red Flags
+## Red flags
 
 - `.push`, `.pop`, `.splice`, `.sort`, `.reverse`, `.shift`, `.unshift` on an argument.
 - `arr[i] = ...` for any non-locally-constructed array.
@@ -193,7 +193,7 @@ Rename: `withUpdatedUser`, `updatedUser`, or use a verb-noun convention that ret
 
 **All of these mean: the function's signature is lying — return a new value instead.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

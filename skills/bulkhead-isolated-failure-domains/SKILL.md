@@ -3,7 +3,7 @@ name: bulkhead-isolated-failure-domains
 description: Use when a single route, cron, or page calls multiple external dependencies (a payment provider + an email provider + an LLM + a cache) and they all share one timeout/retry/concurrency budget. Use when a slow third-party has caused unrelated features to degrade or time out. Use when reviewing code that uses one shared `withTimeout` helper or one shared HTTP client for every outbound call. Use when planning capacity for a serverless function that fans out to several APIs.
 ---
 
-# Bulkhead: Isolated Failure Domains
+# Bulkhead: isolated failure domains
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a single route, cron, or page calls multiple external depe
 
 The name comes from ship hulls: a watertight compartment that floods doesn't sink the ship because the next compartment's wall holds. Same rule here — if the email provider is slow, the bulkhead around it fills up; the bulkhead around the database stays dry.
 
-## The Default Rule
+## The default rule
 
 ```
 Prefer isolating each dependency's timeout, concurrency cap, and breaker state
@@ -57,7 +57,7 @@ You are violating the rule if any of these are true:
 - An incident postmortem identifies one slow dep, but the user-visible degradation was across *all* features the function exposes.
 - A `Promise.all([...])` (or `deps.map((d) => callDep(d))`) over calls to *different* dependency classes, sharing one try-catch and no per-dep timeout — a hang in any element blocks settlement of all.
 
-## The Pattern
+## The pattern
 
 ### Per-dependency timeout and in-flight cap
 
@@ -209,7 +209,7 @@ Each layer guards against a different failure mode. Bulkheads guard against *cap
 
 The bulkhead's state (in-flight count, breaker state) is *shared* across every call site that talks to that dep. Define it once at module scope and import everywhere — never `new Bulkhead()` inside a request handler.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "All our deps are fast — we don't need bulkheads"
 
@@ -235,7 +235,7 @@ Look at the example above. Each call is *more* readable, not less — every outb
 
 Start permissive: half your function-instance concurrency limit per critical dep, one-quarter for non-critical. Tune from real incident data. The *exact* number matters less than *having one*.
 
-## Red Flags
+## Red flags
 
 - A `TIMEOUTS_MS = { default: 5000 }` constant used everywhere.
 - One `withTimeout(promise, 5000)` helper applied to every outbound call regardless of dep.
@@ -247,7 +247,7 @@ Start permissive: half your function-instance concurrency limit per critical dep
 
 **All of these mean: the failure domains aren't isolated — one slow dep will take everything else with it.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

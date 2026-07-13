@@ -3,7 +3,7 @@ name: decouple-deploy-from-release-via-flags
 description: Use when shipping a risky feature — schema migration, payment integration, third-party SDK upgrade, UI rewrite. Use when "we'll just revert if it breaks" is the rollback plan for a feature that can't be cleanly reverted (data migrations, public URL changes). Use when a PR's blast radius is "every user immediately." Use when reviewing code that gates new behavior behind a one-off env var (`ENABLE_NEW_FLOW`) without a typed flag system.
 ---
 
-# Decouple Deploy from Release via Flags
+# Decouple deploy from release via flags
 
 ## Overview
 
@@ -16,7 +16,7 @@ The release surface is a **typed flag**, not a free-form env var. Two things are
 
 Don't blur the two together: staging a rollout (shadow → canary → full) is usually done by *widening which subjects have a boolean on* (per-user, per-team, then global), **not** by encoding stages in the flag value. Either shape is disciplined; pick by whether the code paths actually differ per stage. Every flag — boolean or union — still needs a default, an owner, and a removal plan (unless it's a permanent operational/kill-switch/permission flag; see below).
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER couple a risky behavior change to its deploy. Ship the code dark; release with a flag flip.
@@ -53,7 +53,7 @@ You are violating the rule if any of these are true:
 - A feature was reverted by re-deploying an older commit, and that re-deploy lost an unrelated fix.
 - The codebase has 20+ accumulated flags from old launches, none of them removed.
 
-## The Pattern
+## The pattern
 
 ### A typed flag keyspace, not a free-form env var
 
@@ -261,7 +261,7 @@ Deploy 4 — contract schema; drop old column
 
 The flag turns the rollout into small, reversible stages, but it does not collapse expand/contract safety. The old column survives one full deployment after old reads/writes stop; only then is contraction safe. This obeys the same expand-then-contract discipline as `expand-contract-schema-migration` — the flag replaces that skill's intermediate *migration* deploys (its read-switch and stop-old-writes steps) with runtime flips, but the outer bookend deploys (expand first, drain, contract last) are identical.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Flags are over-engineering for a small team"
 
@@ -291,7 +291,7 @@ Only if you let them. The rule's removal-plan half is *equally important* as the
 
 Then the flag's stages compress — shadow for one day, canary for one day, full. The discipline is still the same; the speed varies. *Some* gap between deploy and release is what gives you the ability to flip back without a re-deploy.
 
-## Red Flags
+## Red flags
 
 - A "feature flag" that's actually `process.env.ENABLE_X === 'true'` with no typed wrapper.
 - A PR description that includes "deploy plan: announce in chat, then merge and watch metrics."
@@ -305,7 +305,7 @@ Then the flag's stages compress — shadow for one day, canary for one day, full
 
 **All of these mean: deploy and release are coupled — the next failure won't have a flip-back path.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

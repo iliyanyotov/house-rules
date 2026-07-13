@@ -3,7 +3,7 @@ name: health-and-readiness-endpoints
 description: Use when a service's only health endpoint is an unconditional 200 stub, or when one `/health` route serves both the restart decision and the routing decision. Use when a liveness probe checks the database and a DB blip restarts the whole fleet. Use when a health check fans out to every dependency on every probe and becomes its own load source. Use when traffic keeps routing to an instance whose DB pool is exhausted, or when a partner-API outage marks every replica NotReady at once.
 ---
 
-# Health and Readiness Endpoints
+# Health and readiness endpoints
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a service's only health endpoint is an unconditional 200 s
 
 Conflate them, or stub them, and the probes act on wrong information — which means restarts that fix nothing and traffic sent to instances that can't serve it.
 
-## The Default Rule
+## The default rule
 
 ```
 Two endpoints. Liveness: process-local only — a dependency check in liveness
@@ -47,7 +47,7 @@ You are violating the rule if any of these are true:
 - No "draining" state — instances shut down while still advertising ready.
 - Dependency-check calls with no timeout, so a slow dependency makes the probe itself hang past the probe's own deadline.
 
-## The Pattern
+## The pattern
 
 ### Two questions, two endpoints
 
@@ -126,7 +126,7 @@ A readiness check verifies *this instance's ability to use* a dependency — a p
 
 During shutdown the process is perfectly *live* (don't restart it — that aborts the drain) but must not receive new traffic. That's the `isDraining()` branch above, flipped by the SIGTERM handler in `graceful-shutdown-drain-on-sigterm`. This pairing is the reason the two endpoints can't be one: drain needs "not ready" and "alive" to be true simultaneously.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "One /health endpoint is simpler"
 
@@ -148,7 +148,7 @@ The stub converts the platform's safety mechanism into a rubber stamp: instances
 
 Thoroughness inverts the availability math: each *non-critical* dependency added to readiness multiplies your fleet-wide eviction probability. Gate on the can't-serve-without set, degrade the rest.
 
-## Red Flags
+## Red flags
 
 - One endpoint answering both probes.
 - Any network call in a liveness handler.
@@ -161,7 +161,7 @@ Thoroughness inverts the availability math: each *non-critical* dependency added
 
 **All of these mean: the probes will answer the wrong question under failure — split the questions, cache the checks, gate on critical deps only.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

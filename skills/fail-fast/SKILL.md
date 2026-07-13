@@ -3,7 +3,7 @@ name: fail-fast
 description: Use when tempted to write defensive `if (x == null) return` early-returns that silently substitute defaults. Use when an invariant is violated and the choice is between throwing now or "hoping it works out." Use when reviewing code that catches an error and falls through with no log, no re-throw, and a default value.
 ---
 
-# Fail Fast
+# Fail fast
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when tempted to write defensive `if (x == null) return` early-r
 
 A function that accepts garbage and produces a value is worse than one that crashes — the crash is loud; the bad value is silent.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER swallow an invariant violation. Throw at the boundary where it's first observable.
@@ -42,7 +42,7 @@ You are violating the rule if any of these are true:
 - An env-var read defaults to a placeholder (`process.env.KEY ?? 'sk_test_dummy'`) without verifying the env in development.
 - A function named `safe*`, `try*`, or `maybe*` wraps a call only to swallow its failure.
 
-## The Pattern
+## The pattern
 
 ### Module-load-time invariants — check at the boundary, not per-call
 
@@ -146,7 +146,7 @@ User input is *expected* to be invalid. That's not fail-fast territory — it's 
 
 Fail-fast applies to **invariants you control** — env vars, function preconditions, internal state. Not to user-supplied data, which has its own discipline.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "But the user will get a 500 if I throw"
 
@@ -168,7 +168,7 @@ Catch and re-throw with author-written context is fine, but attach `cause` only 
 
 Use `cause`. The chain is preserved across the await. Node and most error trackers render it.
 
-## Red Flags
+## Red flags
 
 - A `try/catch` whose catch body has no `throw` and no log.
 - A `?.` chain on a value whose type says it's defined.
@@ -181,7 +181,7 @@ Use `cause`. The chain is preserved across the await. Node and most error tracke
 
 **All of these mean: the throw is missing, and the bug is now silent.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

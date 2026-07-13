@@ -3,7 +3,7 @@ name: race-conditions
 description: Use when writing code where multiple async operations touch the same state. Use when a `useEffect` performs a fetch. Use when a timer or interval mutates state. Use when a handler reads-then-writes a row. Use when calling `setState` inside a `setTimeout`, `setInterval`, or any callback that may fire after unmount. Use when "it works most of the time, but occasionally returns stale data" appears in a bug report.
 ---
 
-# Race Conditions
+# Race conditions
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when writing code where multiple async operations touch the sam
 
 For most JS/TS code, "concurrent" doesn't mean threads — it means *interleaving async continuations, late callbacks, and timer fires on a single event loop*. That's enough to produce real races.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER assume async operations land in the order you issued them. Cancel obsolete ones; prevent stale writes.
@@ -42,7 +42,7 @@ You are violating the rule if any of these are true:
 - A webhook handler can be invoked multiple times for the same event with no idempotency check.
 - A bug report contains "this should never happen but sometimes does."
 
-## The Pattern
+## The pattern
 
 ### React: cancel obsolete fetches in `useEffect`
 
@@ -172,7 +172,7 @@ A button click can fire twice; a webhook delivery can repeat. Both are races whe
 
 When you can't lock and can't make writes atomic, "last write wins" is sometimes fine — but only if you decide that **explicitly** and the data is naturally idempotent (a status update, a presence ping). Don't pick it by default; pick it when the domain allows it and document why.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "JavaScript is single-threaded — there are no races"
 
@@ -194,7 +194,7 @@ Atomic SQL (`UPDATE ... WHERE balance >= ?`) is fast and race-free without expli
 
 If the race silently corrupts data, the user doesn't see an error — that's the whole problem. Visible errors are recoverable; silent corruption is the failure mode that hurts.
 
-## Red Flags
+## Red flags
 
 - A `useEffect` with a `fetch(...)` and no `AbortController`.
 - A `useEffect` returning nothing when it sets up a timer, subscription, or event listener.
@@ -207,7 +207,7 @@ If the race silently corrupts data, the user doesn't see an error — that's the
 
 **All of these mean: the race exists — name it and structurally eliminate it.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

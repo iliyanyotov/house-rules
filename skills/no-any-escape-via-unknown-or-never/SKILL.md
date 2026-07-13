@@ -3,7 +3,7 @@ name: no-any-escape-via-unknown-or-never
 description: "Use when about to type a variable, parameter, or return as `any`. Use when reviewing code that contains `: any`, `as any`, `Array<any>`, `Record<string, any>`, or `@ts-ignore`/`@ts-expect-error` without justification. Use when wrapping an untyped third-party library and the easy path is to type its surface as `any`. Use when a parsing boundary returns an unwieldy union and the temptation is to cast to `any`. Use when an unreachable branch is silenced with `as any` instead of `never`."
 ---
 
-# No `any` — Escape Via `unknown` or `never`
+# No `any` — escape via `unknown` or `never`
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: "Use when about to type a variable, parameter, or return as `any`. 
 
 `any` disables type-checking *transitively* — every value derived from an `any` is also `any`, silently spreading through the codebase. `unknown` disables type-checking *locally* and forces the next reader to narrow before use. The difference between them is the entire point of having a type system.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER let `any` cross into application code or escape a boundary adapter. Use `unknown`
@@ -54,7 +54,7 @@ You are violating the rule if any of these are true:
 - `tsconfig.json` has `"noImplicitAny": false`.
 - An `// eslint-disable-next-line @typescript-eslint/no-explicit-any` sits above a `: any` — the lint rule already flagged it and someone silenced it.
 
-## The Pattern
+## The pattern
 
 ### Inbound untyped data — `unknown` then parse
 
@@ -235,7 +235,7 @@ But tsconfig only catches *implicit* any (a param/var TS can't infer). **Explici
 
 Together — strict tsconfig for implicit any, the lint rule for explicit — the rule becomes build-enforced rather than a code-review habit.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's just temporary"
 
@@ -261,7 +261,7 @@ The rule applies to code you ship, not code you delete. Prototypes that survive 
 
 A type variable (`<T>`) is a feature of every modern language. If `<T>` is confusing for the consumer, the API surface should narrow — not the safety. Sometimes the right answer is two specific functions instead of one generic; never one `any`-typed function.
 
-## Red Flags
+## Red flags
 
 - `: any` in a function signature.
 - `as any` anywhere outside an adapter file.
@@ -275,7 +275,7 @@ A type variable (`<T>`) is a feature of every modern language. If `<T>` is confu
 
 **All of these mean: replace with `unknown` + parse, a type variable, or `never`.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

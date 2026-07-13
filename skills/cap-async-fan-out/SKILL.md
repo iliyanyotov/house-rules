@@ -3,7 +3,7 @@ name: cap-async-fan-out
 description: Use when `Promise.all(items.map(asyncFn))` runs over an array whose length you don't control. Use when a batch job fires one request per row of a growing table. Use when a fan-out exhausts the DB connection pool, trips 429s, or OOMs under load. Use when unrelated requests slow down whenever a bulk operation runs. Use when choosing between `Promise.all` and `Promise.allSettled` for a multi-item operation.
 ---
 
-# Cap Async Fan-Out
+# Cap async fan-out
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when `Promise.all(items.map(asyncFn))` runs over an array whose
 
 Ten items today is ten thousand after growth. The fan-out that was invisible in dev becomes the thing that drains the connection pool for every other request in the process.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER fan out async work with unbounded concurrency over input whose
@@ -60,7 +60,7 @@ You are violating the rule if any of these are true:
 - A burst of 429s from a provider each time a batch feature fires.
 - A "process all users" script with no concurrency control beyond hope.
 
-## The Pattern
+## The pattern
 
 ### A limiter, not chunks
 
@@ -102,7 +102,7 @@ A module-level limiter caps *this process*. Under autoscaling, aggregate downstr
 
 If each item's work is a *query*, the fix is often one query — `WHERE id IN (...)`, a join, a batched upsert — not N capped queries. That's `n-plus-one-prevention`'s territory: bound the query *count* first; cap the concurrency of whatever legitimately remains fan-out (external APIs, emails, per-item side effects that can't batch).
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's only ever a handful of items"
 
@@ -120,7 +120,7 @@ Slightly slower for the batch; dramatically better for everything sharing the pr
 
 One-off scripts run against production data with production credentials, and are exactly where "process all users" lives. The limiter is three lines.
 
-## Red Flags
+## Red flags
 
 - `Promise.all(rows.map(...))` where `rows` came from a query or request.
 - `await` inside `.map(...)` — the map produces promises either way; the await does nothing to bound them.
@@ -130,7 +130,7 @@ One-off scripts run against production data with production credentials, and are
 
 **All of these mean: bound the parallelism — a limiter with a small cap, or restructure into one batched query.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

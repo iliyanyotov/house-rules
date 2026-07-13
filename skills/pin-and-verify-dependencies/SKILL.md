@@ -3,7 +3,7 @@ name: pin-and-verify-dependencies
 description: Use when adding a dependency with a floating range (`^`/`~`) or without committing the lockfile. Use when a CI job runs a bare `bun install` or `npm install` rather than a frozen install (`bun install --frozen-lockfile`, `npm ci`). Use when reviewing a PR that adds a package you haven't vetted, or bumps many transitive versions at once. Use when a dependency ships a post-install script, or `bun pm untrusted` shows blocked scripts nobody has reviewed. Use when the lockfile is absent from the repo or not enforced in the build.
 ---
 
-# Pin and Verify Dependencies
+# Pin and verify dependencies
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when adding a dependency with a floating range (`^`/`~`) or wit
 
 The supply chain is now a primary attack vector, not a theoretical one: malicious versions published to real registries have self-propagated through hundreds of packages by riding auto-installed updates. The defense is boring and effective — reproducible installs and a review gate.
 
-## The Default Rule
+## The default rule
 
 This is a **default with a clear boundary**, not an exceptionless invariant: pin and verify what you can control in a pull request, and leave the org-scale machinery (SBOM generation, signing infrastructure, registry policy) to the platform.
 
@@ -45,7 +45,7 @@ You are at risk if any of these are true:
 - Install scripts run unconditionally in CI (no `--ignore-scripts` on untrusted installs).
 - A new direct dependency merged without anyone stating they looked at what it is, who maintains it, and what it pulls in.
 
-## The Pattern
+## The pattern
 
 ### Commit the lockfile; install it frozen in CI
 
@@ -102,7 +102,7 @@ Reviewer checklist for a new direct dependency:
 
 `npm audit` reports *known* advisories. It is worth running and worth acting on — but a clean audit is not proof of safety (a brand-new malicious version has no advisory yet), and a noisy audit is not always an emergency. Use it to surface known-bad, not as the whole defense.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Floating ranges get us security patches automatically"
 
@@ -124,7 +124,7 @@ You can't, and the rule doesn't ask you to. It asks you to pin them (so they don
 
 Part of it is — and that part is explicitly scoped in. `package.json` ranges, the committed lockfile, and the install step are all in the repo, changed in PRs, and reviewed like code. The rule stops at the org-infrastructure line on purpose.
 
-## Red Flags
+## Red flags
 
 - No lockfile committed, or lockfile in `.gitignore`.
 - `npm install` (not `npm ci`) in a CI or Dockerfile build step.
@@ -135,7 +135,7 @@ Part of it is — and that part is explicitly scoped in. `package.json` ranges, 
 
 **All of these mean: commit and enforce the lockfile, install it frozen, and put a human between a new dependency and the tree.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

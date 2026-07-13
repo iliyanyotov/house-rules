@@ -3,7 +3,7 @@ name: prefer-type-inference-annotate-at-boundaries
 description: "Use when about to write a type annotation on a local variable that TypeScript would infer correctly. Use when reviewing code where every `const` has a redundant `: string` after it. Use when a refactor changes a function's return type and ten callers have to be updated because they all annotated `: OldType` instead of relying on inference. Use when deciding whether to add an explicit return type to an exported function. Use when reading code where the noise of annotations obscures the logic."
 ---
 
-# Prefer Type Inference; Annotate at Boundaries
+# Prefer type inference; annotate at boundaries
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: "Use when about to write a type annotation on a local variable that
 
 The rule has two halves and both matter: *use inference where it works* (most of the body of most functions), and *insist on annotations where it doesn't* (parameters, returns, and exported shapes — the contracts the rest of the codebase depends on).
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER annotate what inference already gives you. ALWAYS annotate the boundary the rest of the codebase reads.
@@ -49,7 +49,7 @@ You are violating the rule if any of these are true:
 - An interior annotation *widens* the inferred type (`const x: SomeEnum = 'LITERAL'` where inference would give the literal). Unless something downstream needs the wider type, it's noise — delete it; if widening is intentional, use `satisfies` or let the consumer's parameter type do the widening.
 - A refactor changing a function's return type forced you to update dozens of call sites' local annotations.
 
-## The Pattern
+## The pattern
 
 ### Interior — let inference do its job
 
@@ -179,7 +179,7 @@ const [state, setState] = useState<SubmitState>({ kind: 'idle' });
 
 The annotation is necessary — `useState({ kind: 'idle' })` alone would infer a non-discriminated `{ kind: 'idle' }`, and the next call `setState({ kind: 'submitting' })` would error. Pinning the union at the call site tells inference what's coming.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Explicit types are always better — they're documentation"
 
@@ -205,7 +205,7 @@ Sometimes. When inference produces the wrong shape (too wide, too narrow, missin
 
 `noImplicitAny` requires *parameter* annotations — exactly the boundary case this rule says to annotate. The rule doesn't conflict; it amplifies the same instinct. Parameters: yes. Local variables initialized from typed values: no.
 
-## Red Flags
+## Red flags
 
 - `const x: T = ...` where `T` is exactly what `...` would infer.
 - A callback parameter annotation that restates the array's element type.
@@ -217,7 +217,7 @@ Sometimes. When inference produces the wrong shape (too wide, too narrow, missin
 
 **All of these mean: either delete the redundant annotation, or move it to the boundary where it earns its space.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

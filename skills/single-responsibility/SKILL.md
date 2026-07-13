@@ -3,7 +3,7 @@ name: single-responsibility
 description: Use when explicitly checking whether a module has more than one reason to change. Use when a description of what something does requires the word "and." Use when reviewing code that mixes transport (HTTP/DB), domain logic, and presentation in one place. Use when a component renders, fetches, validates, and persists. Use when a route handler does parsing, business logic, DB writes, email sends, and response shaping inline.
 ---
 
-# Single Responsibility
+# Single responsibility
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when explicitly checking whether a module has more than one rea
 
 A reason to change is a *stakeholder concern* — a customer-facing requirement, a schema, a UI layout, an auth policy. Two stakeholders, two modules.
 
-## The Default Rule
+## The default rule
 
 ```
 Prefer one reason to change per module. If "and" joins two genuinely separate
@@ -42,7 +42,7 @@ You are violating the rule if any of these are true:
 - A test for the module must mock four unrelated systems.
 - A bug fix in one feature requires editing a file owned by another feature.
 
-## The Pattern
+## The pattern
 
 ### Handler — one responsibility: the HTTP boundary
 
@@ -164,7 +164,7 @@ Both are similar line counts. Only one is a violation. The question is *what doe
 
 This is the shape of a real production booking/checkout handler: it runs the cross-cutting guards inline — turnstile, bot-detection, rate-limit, session — then delegates the entire domain operation to one service call (`bookingService.create(...)`). Guards inline + one domain call out = one reason to change.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Splitting means jumping between files"
 
@@ -186,7 +186,7 @@ The framing is OO; the rule is universal. A pure function has a responsibility. 
 
 Transactions are a separate concern: an *orchestrator* that calls two operations, and each operation does one thing. The orchestrator name reflects the workflow (`registerUserWithWelcome`); the two operations stay named `registerUser` and `sendWelcomeEmail`.
 
-## Red Flags
+## Red flags
 
 - Names that are a *bare unqualified* noun — `Util`, `Helper`, `Manager`, or a lone `Service` — or an `And`/`Plus` joining unrelated concerns. A *specific* service (`BotDetectionService`, `RegularBookingService`) is the goal, not the smell; the problem is `Service` with no domain noun in front of it.
 - A handler longer than ~30 lines of inlined logic (orchestrators that delegate to named services are fine even when long).
@@ -197,7 +197,7 @@ Transactions are a separate concern: an *orchestrator* that calls two operations
 
 **All of these mean: split before the next commit.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

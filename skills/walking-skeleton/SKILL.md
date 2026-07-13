@@ -3,7 +3,7 @@ name: walking-skeleton
 description: Use when starting a new project or feature that spans UI, API, and database and has no thin end-to-end slice wired up yet. Use when the team has been "building the foundation" for two weeks without any end-to-end demo. Use when a design doc proposes building the database layer first, then the API, then the UI — in sequence. Use when a teammate says "we'll integrate it all at the end." Use when the first user-visible result is many sprints away.
 ---
 
-# Walking Skeleton
+# Walking skeleton
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when starting a new project or feature that spans UI, API, and 
 
 A walking skeleton has *bones in every layer* and *muscle in none*. The point is the connections — every wire, every type contract, every deploy seam — proven end-to-end before any layer accumulates depth.
 
-## When to Use
+## When to use
 
 - Starting a new feature or new project
 - Tempted to build "the data layer, then the API, then the UI" in sequence
@@ -19,7 +19,7 @@ A walking skeleton has *bones in every layer* and *muscle in none*. The point is
 - The integration step is on the roadmap as a separate milestone
 - A new framework or library is being adopted across all features in parallel
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER perfect one layer before connecting all of them. Joints first; muscle second.
@@ -31,7 +31,7 @@ NEVER perfect one layer before connecting all of them. Joints first; muscle seco
 - Not for "building it end-to-end is more work"
 - Not for "the skeleton is throwaway code"
 
-## Detection: The Vertical-Tower Smell
+## Detection: the vertical-tower smell
 
 If the plan has sequential layer milestones with no end-to-end demo until the last one, STOP and rework into a thin slice first:
 
@@ -51,7 +51,7 @@ If the plan has sequential layer milestones with no end-to-end demo until the la
   ...      each step is deployed, demonstrable, and small.
 ```
 
-## Why It Wins
+## Why it wins
 
 | Vertical tower | Walking skeleton |
 |---|---|
@@ -62,7 +62,7 @@ If the plan has sequential layer milestones with no end-to-end demo until the la
 | Architecture surprises late, expensive to fix | Architecture surprises early, cheap to fix |
 | First user-visible result: weeks | First user-visible result: hours |
 
-## The Pattern
+## The pattern
 
 ### Day 1 — the absolute minimum that walks
 
@@ -146,7 +146,7 @@ The walking skeleton lives in production from day 1, behind a flag or at an inte
 
 The flag is typically *scoped*, not just on/off: enable it for yourself/your team first, then widen to GA by flipping the scope — same code, no redeploy. A good flag is checked per-user, per-team, and globally, so the skeleton is live in prod *for you* on day 1 and graduates by widening the enabled cohort rather than by editing code. (This is the cohort-widening rollout from `decouple-deploy-from-release-via-flags`.)
 
-## Pressure Resistance
+## Pressure resistance
 
 ### 1. "The DB needs to be designed first"
 
@@ -188,7 +188,7 @@ The flag is typically *scoped*, not just on/off: enable it for yourself/your tea
 
 **Action:** Keep the body trivial. Trust the joints to be the lesson.
 
-## Red Flags
+## Red flags
 
 - A project plan with sequential layer-by-layer milestones
 - A new feature with no deployed preview after 2 weeks
@@ -201,7 +201,7 @@ The flag is typically *scoped*, not just on/off: enable it for yourself/your tea
 
 **All of these mean: the joints are deferred — collapse the plan into a thin slice.**
 
-## Quick Reference
+## Quick reference
 
 | Situation | Action |
 |---|---|
@@ -211,7 +211,7 @@ The flag is typically *scoped*, not just on/off: enable it for yourself/your tea
 | "Can't deploy yet" | Deploy behind a flag; the deploy *is* the test |
 | 2+ weeks with no demo | Drop everything; ship the skeleton |
 
-## Common Rationalizations (All Invalid)
+## Common rationalizations (all invalid)
 
 | Excuse | Reality |
 |---|---|
@@ -223,7 +223,7 @@ The flag is typically *scoped*, not just on/off: enable it for yourself/your tea
 | "It's just a small project" | Small projects benefit *more* — integration cost is a higher fraction of total. |
 | "The team is too small for this discipline" | Discipline scales *down*; small teams need it more. |
 
-## The Bottom Line
+## The bottom line
 
 **Walking skeleton on day 1. Muscle later. Joints prove first.**
 

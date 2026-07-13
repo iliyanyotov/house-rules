@@ -3,7 +3,7 @@ name: authorize-every-access
 description: Use when a handler loads a resource by an ID from the request (`params.id`, `body.orderId`, a slug) and returns or mutates it. Use when a query filters by the resource's own ID but not by the caller's tenant/owner. Use when authorization is enforced in the UI, middleware, or a gateway but not in the handler that touches the data. Use when a new endpoint defaults to reachable without an explicit access check. Use when server code follows a user-supplied URL, hostname, or file path.
 ---
 
-# Authorize Every Access
+# Authorize every access
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a handler loads a resource by an ID from the request (`par
 
 An authenticated request is not an authorized one. Knowing *who* is calling (authentication) says nothing about *what they may touch* (authorization). The gap between them is the most common breach class in production software.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER load or mutate a resource from a request without an explicit, server-side
@@ -73,7 +73,7 @@ You are violating the rule if any of these are true:
 - A mutating handler (`PATCH`, `DELETE`) trusts an ownership field from the request body instead of deriving it from the session.
 - Server code issues an outbound request to a user-supplied URL/host without an allowlist (SSRF — now classified under Broken Access Control).
 
-## The Pattern
+## The pattern
 
 ### Deny by default: the access decision is positive, not the absence of a block
 
@@ -148,7 +148,7 @@ async function fetchAvatar(rawUrl: string) {
 }
 ```
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "The middleware already authenticated the request"
 
@@ -170,7 +170,7 @@ Unguessable is not unauthorized. UUIDs appear in URLs, browser history, referrer
 
 It isn't a separate check if it's the query's `WHERE` clause — it's one clause, and it's the difference between a scoped read and a data leak. Where it *does* feel repetitive, that's the signal to push the scope into a typed repository helper (above), not to drop it.
 
-## Red Flags
+## Red flags
 
 - A `findFirst` / `findById` whose `where` names the resource ID but no owner/tenant column.
 - An after-the-fetch ownership `if` for a policy that could have been the query's `WHERE` clause.
@@ -182,7 +182,7 @@ It isn't a separate check if it's the query's `WHERE` clause — it's one clause
 
 **All of these mean: move the decision into the handler, scope the query to the principal, and default to denied.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

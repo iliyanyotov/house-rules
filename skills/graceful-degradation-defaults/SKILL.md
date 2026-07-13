@@ -3,7 +3,7 @@ name: graceful-degradation-defaults
 description: Use when a non-critical dependency such as recommendations, search, analytics, embeds, or AI causes a full-page failure; when a leaf failure propagates as a 5xx; or when an optional dependency needs an explicit fallback.
 ---
 
-# Graceful Degradation Defaults
+# Graceful degradation defaults
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a non-critical dependency such as recommendations, search,
 
 If a feature is "non-critical", its failure produces a smaller-but-working page. If a feature is "critical", it's subject to higher availability requirements — not to this rule.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER let a non-critical feature's failure produce a 5xx or a blank space. Always fall back to a named state.
@@ -43,7 +43,7 @@ You are violating the rule if any of these are true:
 - A third-party widget blocks the page render until it loads or times out.
 - A retrospective: "the recommendations outage took down the whole dashboard."
 
-## The Pattern
+## The pattern
 
 ### Split criticality at the data layer
 
@@ -168,7 +168,7 @@ Decision-time question: *"Should this feature's outage block the user from doing
 
 When in doubt: *if this fails forever, can the product still ship?* If yes, garnish.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Showing an error is honest, fallbacks hide problems"
 
@@ -198,7 +198,7 @@ A bare `try { ... } catch { return null; }` collapses three states (loading, bro
 
 A fallback that only runs during incidents is code that is never exercised until the worst possible moment — and then it runs cold, under the exact load that triggered it. AWS's engineering guidance argues against *static fallback* for precisely this reason: the untested branch becomes the outage. Prefer fallbacks that run continuously as part of the normal path (the cache you read on every request, the default you render whenever data is absent), keep designed fallbacks trivially simple, and exercise the degraded path routinely — a forced-degrade toggle in staging beats discovering the fallback's own bug mid-incident.
 
-## Red Flags
+## Red flags
 
 - A `Promise.all` of mixed-criticality fetches.
 - A blank section with no fallback when its data is missing.
@@ -210,7 +210,7 @@ A fallback that only runs during incidents is code that is never exercised until
 
 **All of these mean: criticality isn't split — name what's garnish and let it fail to a fallback.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

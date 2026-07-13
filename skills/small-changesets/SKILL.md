@@ -3,7 +3,7 @@ name: small-changesets
 description: Use when opening a PR, dividing work, or sizing a piece of in-flight code. Use when a PR exceeds ~400 lines of non-generated diff, touches three unrelated concerns, or accumulates "while I was in here" changes. Use when reviewing a PR that mixes a feature, a refactor, and a dependency bump.
 ---
 
-# Small Changesets
+# Small changesets
 
 ## Overview
 
@@ -13,7 +13,7 @@ The primary test is *one reviewable concern* — not the line count. A 200-line 
 
 Split refactor from behavior change; split feature from infrastructure; split each independently-shippable step into its own PR.
 
-## When to Use
+## When to use
 
 - Opening any PR
 - Sizing in-flight work — *before* the diff exists
@@ -21,7 +21,7 @@ Split refactor from behavior change; split feature from infrastructure; split ea
 - A "while I was in here" cleanup creeping into the change
 - A PR description that starts with "this PR does several things"
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER ship a PR that mixes unrelated concerns. (And keep it under ~400 lines — but most violations are smaller than that; concern-mixing is the primary test.)
@@ -33,7 +33,7 @@ NEVER ship a PR that mixes unrelated concerns. (And keep it under ~400 lines —
 - Not for "the reviewer will ask for context"
 - Not for "our team merges everything as one squash anyway"
 
-## Detection: The "Several Things" Smell
+## Detection: the "several things" smell
 
 If the PR description needs more than three bullets, STOP and split:
 
@@ -76,7 +76,7 @@ Concern-mixing is independent of *size* — and the small cases are the dangerou
 
 A 13-line diff can be four PRs. The buried security fix is exactly the "defect slips past" failure — it slipped past *because* the diff looked too small to scrutinize.
 
-## Why Small PRs Win
+## Why small PRs win
 
 | Big PR | Small PR |
 |---|---|
@@ -87,7 +87,7 @@ A 13-line diff can be four PRs. The buried security fix is exactly the "defect s
 | Author re-explains scope in every reply | PR description holds the whole scope |
 | Revert is risky — drags unrelated work with it | Revert is one PR |
 
-## The Pattern
+## The pattern
 
 ### Plan the split before writing the code
 
@@ -120,7 +120,7 @@ Production code, tests, and runtime config count. Lockfiles, codegen output, sna
 
 A change to a shared test fixture or helper signature that fans out across many unrelated test files is itself a *concern*, not incidental churn — land the fixture change as its own PR first, then the behavior change on top, rather than mixing both in one diff where the real change drowns in fixture edits.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### 1. "It's all related, it has to ship together"
 
@@ -154,7 +154,7 @@ A change to a shared test fixture or helper signature that fans out across many 
 
 **Action:** Stack the PRs. Tools like Graphite or `git-spr` smooth the workflow.
 
-## Red Flags
+## Red flags
 
 - A PR description with "this PR does X, Y, Z" or three+ bullets of different things
 - Diff stat over 400 lines (excluding lockfiles and generated code)
@@ -166,7 +166,7 @@ A change to a shared test fixture or helper signature that fans out across many 
 
 **All of these mean: split before merging.**
 
-## Quick Reference
+## Quick reference
 
 | Situation | Action |
 |---|---|
@@ -176,7 +176,7 @@ A change to a shared test fixture or helper signature that fans out across many 
 | Risky feature ready | Ship dark behind a flag; flip in a separate PR |
 | Indivisible-looking change | Look for: plumbing → feature → rollout → cleanup |
 
-## Common Rationalizations (All Invalid)
+## Common rationalizations (all invalid)
 
 | Excuse | Reality |
 |---|---|
@@ -187,7 +187,7 @@ A change to a shared test fixture or helper signature that fans out across many 
 | "CI takes 20 minutes — I'd rather batch" | Then make CI faster. Don't compensate for slow CI with un-reviewable PRs. |
 | "It's an experiment, who cares about the size" | Experiments either land or get deleted. If it lands, it gets reviewed. Split. |
 
-## The Bottom Line
+## The bottom line
 
 **One PR, one concern, under 400 lines, under 30 minutes to review.**
 

@@ -3,7 +3,7 @@ name: swallow-deliberately-at-the-boundary
 description: Use when a side effect is optional and its failure must not fail the operation around it — a courtesy email after a committed order, an analytics event, a cache warm, a webhook notification. Use when tempted to write a bare `catch {}` or `catch { return }`. Use when an outer operation has already committed and a follow-on best-effort step throws. Use when `fail-fast` and "this must not block the main flow" seem to conflict. Use when reviewing a `catch` that has no `throw` and no log.
 ---
 
-# Swallow Deliberately at the Boundary
+# Swallow deliberately at the boundary
 
 ## Overview
 
@@ -17,7 +17,7 @@ description: Use when a side effect is optional and its failure must not fail th
 
 Swallowing-and-dropping is correct only for the first kind. For the second, swallow-and-defer.
 
-## When to Use
+## When to use
 
 - A best-effort side effect runs *after* the main transaction commits (confirmation email, receipt, push notification) — these are usually *owed*, so report **and** defer to a retry path.
 - A telemetry/analytics call that must never affect the user-facing result — usually fire-and-forget, so report and drop.
@@ -26,7 +26,7 @@ Swallowing-and-dropping is correct only for the first kind. For the second, swal
 
 **Do NOT use** when the failing work is part of the operation's contract, when it runs *before* the critical write, or for input validation / invariant violations — those are `fail-fast` territory.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER swallow an error silently. Swallow only optional, post-commit work — and always record it.
@@ -44,7 +44,7 @@ Some failures *should* stop everything (a charge that didn't go through). Some s
 
 The danger is that the *correct* tool for the second case — a `catch` that doesn't re-throw — is identical in shape to the *worst* anti-pattern in the first case. The difference is invisible at a glance. So the discipline is: make every legitimate swallow loudly observable and provably optional, so a reviewer can tell it apart from a bug, and so the swallowed failure is never truly lost.
 
-## Detection: The "silent catch" smell
+## Detection: the "silent catch" smell
 
 ```ts
 // ❌ Indistinguishable from a bug. Is this deliberate? Is the work optional?
@@ -109,7 +109,7 @@ async function placeOrder(input: OrderInput) {
 
 Rule of thumb: **fire-and-forget → report-and-drop; owed → report-and-defer** (job/outbox, which then retries and, on exhaustion, dead-letters — see `dead-letter-and-replay`). Either way the catch is observable and the critical path is untouched; the difference is whether the optional work is allowed to vanish.
 
-## Why Deliberate Swallowing Beats Both Extremes
+## Why deliberate swallowing beats both extremes
 
 | Approach | Result |
 |---|---|
@@ -117,7 +117,7 @@ Rule of thumb: **fire-and-forget → report-and-drop; owed → report-and-defer*
 | Swallow everything silently (`catch {}`) | Real failures vanish; corrupt state ships; debugging chases ghosts. |
 | **Swallow deliberately at the boundary** | Optional failures are tolerated *and recorded*; critical failures still propagate. |
 
-## Pressure Resistance
+## Pressure resistance
 
 **Pressure: "Re-throwing here would fail the whole request over a non-critical email."**
 
@@ -155,7 +155,7 @@ Response: Then a failure of the *real* operation can hide behind the swallow, or
 
 Action: Reorder so the critical write is first and fully committed before any best-effort step.
 
-## Red Flags
+## Red flags
 
 - A `catch` with an empty body, or `catch { return }` / `catch { return null }` with no report — including the promise-chain form `.catch(() => {})` / `.catch(() => null)`.
 - A swallow positioned *before* the operation's critical write.
@@ -166,7 +166,7 @@ Action: Reorder so the critical write is first and fully committed before any be
 
 **All of these mean: either re-throw (it's the critical path — `fail-fast`) or fix the swallow (narrow it, move it post-commit, add the report).**
 
-## Quick Reference
+## Quick reference
 
 | Situation | Action |
 |---|---|
@@ -179,7 +179,7 @@ Action: Reorder so the critical write is first and fully committed before any be
 | Step the next step depends on | Re-throw — not optional |
 | A whole block where only one call is optional | Narrow the `try` to the one optional call |
 
-## Common Rationalizations (All Invalid)
+## Common rationalizations (all invalid)
 
 | Excuse | Reality |
 |---|---|
@@ -190,7 +190,7 @@ Action: Reorder so the critical write is first and fully committed before any be
 | "Swallowing is fine, the user doesn't care about the email" | The user cares that their order succeeded — which is *why* you swallow the email, loudly, not the order. |
 | "This failure is probably transient" | Transient → retry explicitly with backoff. Retry and swallow are different operations. |
 
-## The Bottom Line
+## The bottom line
 
 There is exactly one place a `catch` may decline to re-throw: an optional step, after the real work has committed, with the failure recorded. Everywhere else, `fail-fast`. Make every legitimate swallow loud enough that a reviewer can tell it from a bug at a glance.
 

@@ -3,7 +3,7 @@ name: graceful-shutdown-drain-on-sigterm
 description: Use when a service has no SIGTERM handler, or its handler is `process.exit(0)`. Use when every deploy or scale-down produces a burst of 502s, ECONNRESET, or half-finished jobs. Use when `server.close()` is the whole shutdown story and the process hangs until the platform kills it. Use when a queue consumer dies mid-message on every rollout. Use when logs show the platform's kill (OOM-style abrupt exit, grace period exceeded) as the normal end of every instance's life.
 ---
 
-# Graceful Shutdown: Drain on SIGTERM
+# Graceful shutdown: drain on SIGTERM
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a service has no SIGTERM handler, or its handler is `proce
 
 The platform's SIGKILL at the end of the grace period is the backstop, never the plan.
 
-## The Default Rule
+## The default rule
 
 ```
 On SIGTERM: fail readiness → stop taking new work → drain in-flight work
@@ -46,7 +46,7 @@ You are violating the rule if any of these are true:
 - Deploy timestamps line up with 502/ECONNRESET spikes in the dashboard.
 - The DB pool is closed before in-flight requests finish using it.
 
-## The Pattern
+## The pattern
 
 ### The full sequence
 
@@ -135,7 +135,7 @@ HTTP drains by refusing new connections; a consumer drains by not asking for the
 
 A drain deadline is a promise to eventually drop work. That's the correct trade — but it means anything the deadline can kill must be retryable: idempotent writes, redeliverable messages, resumable jobs. Graceful shutdown reduces dropped work from "every deploy" to "rare"; idempotency covers the rare.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "The platform gives us 30 seconds anyway"
 
@@ -157,7 +157,7 @@ It handles the accept side. It does not flip readiness, does not wait for routin
 
 Wire SIGINT to the same path so every local Ctrl-C exercises it, and watch for `shutdown_complete` in deploy logs — its absence is the regression alarm.
 
-## Red Flags
+## Red flags
 
 - No SIGTERM handler, or a handler containing `process.exit(0)`.
 - `server.close()` with no `closeIdleConnections` / force-close deadline.
@@ -169,7 +169,7 @@ Wire SIGINT to the same path so every local Ctrl-C exercises it, and watch for `
 
 **All of these mean: instances die dirty on every rollout — implement the drain sequence and budget it under the grace period.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

@@ -3,7 +3,7 @@ name: characterization-tests-first-for-legacy
 description: Use when about to refactor, fix a bug in, or extend a function/module you didn't write or don't fully understand. Use when "the original author is gone" or "we're not sure what this is supposed to do." Use when the existing code has no tests and you're about to add the first one. Use when tempted to "fix" code that doesn't have a failing test yet — the failing test must come first.
 ---
 
-# Characterization Tests First, for Legacy
+# Characterization tests first, for legacy
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when about to refactor, fix a bug in, or extend a function/modu
 
 A "characterization test" doesn't ask *should this be true*. It asks *what is true right now*. You run the code, observe what it returns, and write the assertion that matches. The test becomes a tripwire: if your refactor changes the behavior, the test fails and you decide deliberately whether the change is intended.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER change unfamiliar code without first pinning its current behavior in tests.
@@ -42,7 +42,7 @@ You are violating the rule if any of these are true:
 - You read a function, can't tell what it should do, and start typing changes.
 - The phrase "I think this is what it does" appears in your head before "the test confirms this is what it does."
 
-## The Pattern
+## The pattern
 
 ### The basic cycle
 
@@ -142,7 +142,7 @@ Warning: snapshots are easy to update mindlessly. Always *read* the diff before 
 
 The characterization tests don't have to be *only* on the function you're changing. If the function has 4 callers and you're not sure how the change affects them, characterize the callers too. Cheap insurance.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Writing tests for code that's already wrong is silly"
 
@@ -168,7 +168,7 @@ Then you have a seams problem, not a characterization problem. Solve the seam fi
 
 Yes. The tests can land as a separate PR — characterization first, then the fix. The reviewer sees: "PR 1: pin current behavior of X. PR 2: change X.foo to return Y when Z, updating the test that captured the old behavior." Each PR is small and the intent is unambiguous.
 
-## Red Flags
+## Red flags
 
 - A bug-fix PR with no test added or changed.
 - A "small refactor" PR touching a function that has zero existing tests.
@@ -180,7 +180,7 @@ Yes. The tests can land as a separate PR — characterization first, then the fi
 
 **All of these mean: you're about to change unfamiliar code blind — pin its current behavior first.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

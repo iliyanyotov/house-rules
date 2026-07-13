@@ -3,7 +3,7 @@ name: functional-core-imperative-shell
 description: Use when a function under test requires mocking the DB, the clock, or a third-party API just to exercise its logic. Use when business logic and side effects are tangled together in one place. Use when a request handler that validates, computes, then writes can't have its computation tested without the surrounding I/O.
 ---
 
-# Functional Core, Imperative Shell
+# Functional core, imperative shell
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a function under test requires mocking the DB, the clock, 
 
 The split is a design default, not a demand to extract every trivial transformation. Extract the decision-making core when logic and effects are tangled, independently useful, or hard to test through the public boundary.
 
-## The Default Rule
+## The default rule
 
 ```
 Prefer a pure decision core and an effectful orchestration shell. Keep trivial glue together
@@ -44,7 +44,7 @@ You are violating the rule if any of these are true:
 - A function returns the same shape but two calls give different results.
 - The same business calculation is duplicated across a route, a job, and a test because none of the three could call the others (each was tangled with its own I/O).
 
-## The Pattern
+## The pattern
 
 ### Handler — shell calls core
 
@@ -150,7 +150,7 @@ I/O is anything not deterministic from arguments:
 
 A function that does none of these can be tested without setup. That's the marker.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Passing `now` to every function is verbose"
 
@@ -172,7 +172,7 @@ They're conceptually one *feature*. They're structurally two concerns: *what we 
 
 The feature grows by adding logic. The longer it stays tangled, the more logic accumulates inside the I/O wrapper, and the bigger the extraction job becomes. Easier early.
 
-## Red Flags
+## Red flags
 
 - A "pure" function with `new Date()`, `Math.random()`, `await`, or any import from `db/`, `fetch`, `fs`, `process.env`.
 - A test that needs the DB, the network, or module-mocking to reach a business *decision* — the decision is tangled with I/O and wants extracting. (Freezing the clock for a function whose *sole* impurity is the current time is fine — see "Pass the clock in".)
@@ -183,7 +183,7 @@ The feature grows by adding logic. The longer it stays tangled, the more logic a
 
 **All of these mean: I/O is buried inside logic — pull it out to the shell.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

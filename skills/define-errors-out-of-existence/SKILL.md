@@ -3,7 +3,7 @@ name: define-errors-out-of-existence
 description: Use when about to throw an exception for a common, non-exceptional input. Use when designing an API boundary whose "error" is really an expected outcome (not-found, empty, already-exists). Use when a caller will immediately wrap your call in `try`/`catch` to handle a "normal" case. Use when the error case is more common than the success case.
 ---
 
-# Define Errors Out of Existence
+# Define errors out of existence
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when about to throw an exception for a common, non-exceptional 
 
 Exceptions are for *exceptional* conditions. "User wanted to substring past the end of a string" is not exceptional. "Database is unreachable" is.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER throw for inputs the caller can reasonably produce. Encode the case in the return type.
@@ -54,7 +54,7 @@ You are violating the rule if any of these are true:
 - The phrase "the caller is responsible for ensuring..." appears in a docstring.
 - A schema `.parse()` runs on a value read from your *own* database (a metadata / JSON column) with no try/catch — data you wrote in the past, after a schema change or a partial migration, is just as "reasonably producible" as form input. Use `.safeParse()` and handle the malformed-row case as a value, not a thrown 500.
 
-## The Pattern
+## The pattern
 
 ### Ousterhout's canonical example — `substring`
 
@@ -162,7 +162,7 @@ function setRetries(n: NonNegativeInt): void {
 
 The throw still exists — but it lives in the parser (the boundary), not in every consumer.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Throwing is faster than constructing a `Result` object"
 
@@ -188,7 +188,7 @@ Yes. Those are the ones to throw. The test: "Could a reasonable caller produce t
 
 Two failure modes, two treatments. Validation failures (user input, schema mismatch) → return tagged result. Infrastructure failures (DB unreachable, timeout, OOM) → throw. The point of this rule is to stop conflating them.
 
-## Red Flags
+## Red flags
 
 - A `throw` followed by a `try { ... } catch` at the only call site.
 - A function with both a "validates" comment and a "throws if invalid" comment.
@@ -199,7 +199,7 @@ Two failure modes, two treatments. Validation failures (user input, schema misma
 
 **All of these mean: the API signature throws for normal input — reshape to return.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

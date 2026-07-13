@@ -3,7 +3,7 @@ name: comments-as-why-not-what
 description: Use when writing a comment that restates what the code already says. Use when reviewing a PR where every block has a one-line preamble describing what the next lines do. Use when an existing comment "explains" what well-named code already expresses. Use when a comment references "the task" or "the ticket" — context that doesn't survive into the future. Use when a `// TODO` has been in the codebase >6 months. Use when JSDoc on a function repeats the types the signature already declares.
 ---
 
-# Comments Explain Why, Not What
+# Comments explain why, not what
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when writing a comment that restates what the code already says
 
 The bar: *would I tell someone reading this for the first time in person?* If yes, comment it. If you'd say "the code already says that" — delete it.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER write a comment that paraphrases the next line of code.
@@ -19,7 +19,7 @@ NEVER write a comment that paraphrases the next line of code.
 
 Code already explains *what* — that's what names, types, and short functions are for. Comments explain *why*: what the code can't.
 
-## The Pattern: Categories of Legitimate Comments
+## The pattern: categories of legitimate comments
 
 ### 1. Delete what-comments — every time
 
@@ -157,7 +157,7 @@ This is the *good* kind of block comment. It explains a non-trivial *design deci
 
 Information the reader cannot reasonably derive from the code, but absolutely needs before changing it.
 
-## The Deletion Test
+## The deletion test
 
 When uncertain about a comment, write it — then ask *"could I delete this and would a future reader be confused?"*
 
@@ -174,7 +174,7 @@ counter++;
 
 If removing the comment loses information, keep it. If it doesn't, delete it.
 
-## Pressure Resistance
+## Pressure resistance
 
 **"Comments help juniors."** Juniors read the code *and* the comment. If the comment paraphrases the code, they read the same information twice. If the comment carries something the code doesn't, they get context they couldn't have otherwise. The rule isn't "no comments for juniors"; it's "comments that *add* information, regardless of audience."
 
@@ -188,7 +188,7 @@ If removing the comment loses information, keep it. If it doesn't, delete it.
 
 **"Comments narrate the change for the reviewer."** That's the PR description's job. The PR description is read once, by the reviewer. A comment in the code is read forever, by every future reader.
 
-## Common Mistakes
+## Common mistakes
 
 | Smell | Fix |
 |---|---|
@@ -202,7 +202,7 @@ If removing the comment loses information, keep it. If it doesn't, delete it.
 | Multi-paragraph history of how the code came to be | Delete; `git blame` carries it for free |
 | `// kept for backward compatibility` with no current callers | Delete the code and the comment |
 
-## The Bottom Line
+## The bottom line
 
 **Code says *what*. Comments say *why*.**
 

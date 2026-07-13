@@ -3,7 +3,7 @@ name: errors-as-values
 description: Use when a function can fail in more than one distinguishable way and the caller must react differently to each. Use when modeling an error channel as `string`, bare `Error`, or `null`. Use when a `try`/`catch` block inspects `err.message` or `err instanceof X` to decide what to do. Use when failures need to propagate through several layers without each one re-wrapping them. Use when a `catch` swallows an error and the caller can no longer tell what went wrong.
 ---
 
-# Errors as Values
+# Errors as values
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a function can fail in more than one distinguishable way a
 
 A thrown exception is invisible in the signature: nothing tells the caller it can happen, what causes it, or which causes are distinct. A typed error value is the opposite — it is *in the type*, exhaustive, and checkable.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER signal a distinguishable, recoverable failure with a stringly-typed error. Return Result<T, E> with E a discriminated union by default — or, as a disciplined alternative, throw a *typed* error to one top-level boundary (see "When throwing is the right call"). Never a bare string.
@@ -57,7 +57,7 @@ You are violating the rule if any of these are true:
 - A caller of a `Result`-returning function does `if (!r.ok) throw new Error(r.error)` — converting a value back into an exception.
 - A bug (`TypeError`, `undefined is not a function`) and an expected failure (declined card) are caught in the same `catch`.
 
-## The Pattern
+## The pattern
 
 ### The Result type — one definition, used everywhere
 
@@ -281,7 +281,7 @@ In a real app that boundary usually fans *in* several foreign taxonomies you don
 
 The line both strategies refuse to cross is the stringly-typed one. `throw new Error('invoice not found')` answered by `if (e.message.includes('not found'))` is the failure mode — whether you return or throw, the discriminant must be a typed `kind`/`type`, never a message. Pick `Result` or typed-throw by where the decision lives; never pick bare strings.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "The error message is enough — I'll just return a string"
 
@@ -307,7 +307,7 @@ Two failure modes, two treatments — the same split as `define-errors-out-of-ex
 
 A wide error union is a signal, not a defect — it tells you exactly how many ways this operation fails, in the type, where you can see it. If it's genuinely too many, the function is doing too much; split it. A function that throws four things has the same four failure modes — it just hides them.
 
-## Red Flags
+## Red flags
 
 - A `catch` block branching on `err.message.includes(...)` or a chain of `instanceof`.
 - A `Result<T, E>` whose `E` is `string`, `Error`, or `unknown`.
@@ -318,7 +318,7 @@ A wide error union is a signal, not a defect — it tells you exactly how many w
 
 **All of these mean: an expected, distinguishable failure is being thrown or stringly-typed — model it as `Result<T, E>` with a discriminated `E`.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|
@@ -329,7 +329,7 @@ A wide error union is a signal, not a defect — it tells you exactly how many w
 | "Returning errors clutters every signature" | The clutter is the contract becoming visible. A throwing function has the same failure modes, hidden. |
 | "I'd have to change every caller" | Callers that branch on failure were going to anyway — better the compiler checks the branches than scattered `try`/`catch` guesses at them. |
 
-## The Bottom Line
+## The bottom line
 
 **A recoverable, distinguishable failure belongs in the return type, not in a `throw`.**
 

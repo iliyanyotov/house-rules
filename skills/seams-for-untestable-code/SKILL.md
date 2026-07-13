@@ -3,7 +3,7 @@ name: seams-for-untestable-code
 description: Use when a function under test imports the DB, `fetch`, `Date`, or a third-party SDK directly and you can't write a unit test for it without mocking three modules. Use when "this is hard to test" comes up on legacy code. Use when tempted to refactor a 300-line function before testing it. Use when the right answer feels like "rewrite the whole module" — there's almost always a smaller intervention.
 ---
 
-# Seams for Untestable Code
+# Seams for untestable code
 
 ## Overview
 
@@ -13,7 +13,7 @@ A **seam** is a place where program behavior can be changed *without editing in 
 
 This skill is specifically for **legacy rescue** — code that already exists and resists being tested. For greenfield code where you're designing modules from scratch, the related discipline is `dependency-inversion` (the domain declares ports; adapters implement them). Seams retrofit testability onto code that wasn't built for it.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER refactor untestable legacy code before testing it. Introduce the smallest seam, test, then refactor.
@@ -57,7 +57,7 @@ You are violating the rule if any of these are true:
 - A bug fix is blocked on "we'd need to refactor a lot first."
 - The phrase "it's tested in integration" appears for code where unit-level coverage would be cheaper.
 
-## The Pattern
+## The pattern
 
 ### Three kinds of seam, ordered from cleanest to ugliest
 
@@ -308,7 +308,7 @@ async function processOrder(order: Order) {
 
 The original function still has the same hard dependencies; you didn't tame all of them. You just carved out the one piece you needed to test. The other 199 lines remain "untestable at the unit level" — that's fine, they'll wait their turn.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Adding a parameter changes the function signature"
 
@@ -334,7 +334,7 @@ The seam *isn't* a refactor in the dangerous sense. Extracting one line into a p
 
 If your seam-extraction produced a 10-parameter function, that's a *signal* the function had 10 hidden dependencies and was doing too much. The 10 parameters made the design problem visible. The next step is to split. But the seam was the right first move — the alternative was leaving the 10 dependencies hidden.
 
-## Red Flags
+## Red flags
 
 - A test file with module-mocks for 3+ modules.
 - A unit test that takes >50ms because it's hitting a real dependency.
@@ -346,7 +346,7 @@ If your seam-extraction produced a 10-parameter function, that's a *signal* the 
 
 **All of these mean: a seam is missing — find the smallest possible one and introduce it.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

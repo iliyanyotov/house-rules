@@ -3,7 +3,7 @@ name: outbox-for-atomic-write-and-publish
 description: Use when a handler commits a database change and then publishes an event, enqueues a job, or fires a webhook as a second, separate step. Use when consumers miss events whose business writes clearly committed, or receive events for writes that rolled back. Use when a `publish` call sits inside a `try/catch` that logs and continues, or inside a `db.transaction` callback. Use when an incident says "the order exists but the fulfillment service never heard about it".
 ---
 
-# Outbox for Atomic Write-and-Publish
+# Outbox for atomic write-and-publish
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a handler commits a database change and then publishes an 
 
 Two operations against two systems (your database, your broker or webhook target) cannot both-succeed-or-both-fail on their own. The outbox turns "write + publish" into one transactional write plus asynchronous, retryable delivery.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER commit a state change and publish its event as two separate operations.
@@ -46,7 +46,7 @@ You are violating the rule if any of these are true:
 - A bug report says the entity changed but the downstream system "missed the webhook", and the producer has no durable record of what it owed.
 - Two systems disagree about state and neither side can say which events were actually sent.
 
-## The Pattern
+## The pattern
 
 ### Write the event in the same transaction
 
@@ -128,7 +128,7 @@ The relay redelivers on crash, so every event carries the outbox row's `id` as `
 
 Published rows are done — sweep them on a retention schedule (`steady-state-purge-unbounded-growth`), and alert on the age of the oldest *unpublished* row: outbox lag is the one metric that says "commits are happening but the world isn't hearing about them".
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "The publish almost never fails"
 
@@ -150,7 +150,7 @@ Most brokers, webhook targets, and HTTP APIs don't participate in your database'
 
 One table, one insert per event, one bounded loop. Compare against the incident where finance asks why the ledger and the orders table disagree, and the answer is "a deploy at 14:02 ate the event". The machinery is the cheap side.
 
-## Red Flags
+## Red flags
 
 - `await db.update(...)` followed by `await publishEvent(...)` with no outbox between them.
 - `publishEvent` / `fetch` to a webhook inside a `db.transaction` callback.
@@ -162,7 +162,7 @@ One table, one insert per event, one bounded loop. Compare against the incident 
 
 **All of these mean: the write and the announcement can diverge — put the event in the transaction and let a relay deliver it.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

@@ -3,7 +3,7 @@ name: mock-only-across-architectural-boundaries
 description: Use when writing a test and reaching for `mock`, `spyOn`, or module-level mocks. Use when a test setup creates more than two mocks. Use when a test mocks a function defined in the same module as the unit-under-test. Use when a refactor that doesn't change observable behavior breaks the tests because internal mock interactions changed. Use when a test mocks a domain entity instead of just constructing one.
 ---
 
-# Mock Only Across Architectural Boundaries
+# Mock only across architectural boundaries
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when writing a test and reaching for `mock`, `spyOn`, or module
 
 A mock at a port is the testing analog of an adapter—it supplies a controlled collaborator through an explicit contract. Mocking an internal helper is a brittle simulation of code the test could simply run.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER mock internal implementation details or domain values. Double explicit ports and
@@ -56,7 +56,7 @@ You are violating the rule if any of these are true:
 - A test asserts on a function call in the same module.
 - A test hand-monkey-patches `Date.now` (e.g. `Date.now = () => ...`) instead of using the runner's clock control or a `now` seam.
 
-## The Pattern
+## The pattern
 
 ### Mock at the boundary; pass real values inside
 
@@ -217,7 +217,7 @@ Each leaf tests in isolation with 1–2 mocks. The orchestrator gets a small int
 | Browser globals in unit tests | Your handlers — test through the boundary with a real `Request` |
 | Logging / error tracker SDKs | Your components — render and assert on DOM |
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Mocking is faster than setting up a real DB"
 
@@ -239,7 +239,7 @@ The London-school caricature does. The actual Freeman & Pryce position is *mock 
 
 Tools enable; they don't recommend. Module-level mocking is a sharp tool. The rule isn't "no mocks" — it's "mocks at unmanaged boundaries, where they earn their weight."
 
-## Red Flags
+## Red flags
 
 - A test uses a mocked domain type instead of constructing a real one.
 - A test mocks a function defined in the same file as the unit-under-test.
@@ -252,7 +252,7 @@ Tools enable; they don't recommend. Module-level mocking is a sharp tool. The ru
 
 **All of these mean: the mock is inside the boundary — move it to the seam or remove it.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

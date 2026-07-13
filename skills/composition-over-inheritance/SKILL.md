@@ -3,7 +3,7 @@ name: composition-over-inheritance
 description: Use when tempted to use class inheritance or `extends`. Use when subclass needs only some of the parent's behavior. Use when an inheritance hierarchy feels forced. Use when a base class accumulates methods that not all subclasses need. Use when reaching for "is-a" thinking before "has-a."
 ---
 
-# Composition Over Inheritance
+# Composition over inheritance
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when tempted to use class inheritance or `extends`. Use when su
 
 Inheritance creates rigid hierarchies and tight coupling: every parent change ripples through every child, and you can only inherit from one parent. Composition creates flexible, swappable behavior: each piece is its own type, callers wire them together, and the same building block can be reused across unrelated contexts.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER use inheritance when composition would work. Default to composition; reach for inheritance only when a true subtype relationship exists.
@@ -50,7 +50,7 @@ You are violating the rule if any of these are true:
 - An `instanceof` check used to handle different subtypes at the call site — the abstraction isn't doing its job.
 - A class hierarchy deeper than one level (Grandparent → Parent → Child), **or** a base class with many children that exists only to share methods. Depth is a symptom; reuse-only inheritance is the disease — a popular one-level base used purely for shared methods is already the smell. (Reuse hierarchies don't stop at three: production email frameworks routinely reach four — `Base → Scheduled → Request → RequestReminder` — because each variant extends the nearest class that already has the methods. Depth only ever grows once you start; the only stable depth is zero or one.)
 
-## The Pattern
+## The pattern
 
 ### Compose capabilities, don't extend a hierarchy
 
@@ -203,7 +203,7 @@ class Square implements Shape {
 
 Square *has* an area; it isn't *a kind of* Rectangle. The hierarchy looked right because both have an area; the contract diverged on `setWidth`.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's the standard OOP approach"
 
@@ -229,7 +229,7 @@ When the framework genuinely requires it (extending `Error`, extending a framewo
 
 The composition version is *slightly* more code at the type-declaration site; it's *substantially* less code at every call site (because each call only depends on the capabilities it needs). Net cost is negative.
 
-## Red Flags
+## Red flags
 
 - `extends` for reasons other than a true subtype relationship.
 - A subclass override that throws, no-ops, or fundamentally changes the parent's contract.
@@ -241,7 +241,7 @@ The composition version is *slightly* more code at the type-declaration site; it
 
 **All of these mean: the inheritance is structural laziness — restructure as composition.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

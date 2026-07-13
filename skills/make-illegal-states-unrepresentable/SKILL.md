@@ -3,7 +3,7 @@ name: make-illegal-states-unrepresentable
 description: Use when designing state shapes for components, server responses, form state, or domain entities. Use when tempted to model state with parallel booleans (`isLoading`, `isError`, `isSuccess`), optional fields that should travel together, or "either/or" data encoded as two nullable fields. Use when reviewing a type that has more impossible combinations than possible ones. Use when a comment says "only set when X is true."
 ---
 
-# Make Illegal States Unrepresentable
+# Make illegal states unrepresentable
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when designing state shapes for components, server responses, f
 
 If two fields must travel together, put them in the same variant. If two fields are mutually exclusive, put them in different variants.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER model state as parallel booleans or correlated optionals. Use a discriminated union.
@@ -40,7 +40,7 @@ You are violating the rule if any of these are true:
 - A type description uses the words "if X then Y is set" — that's the rule that should be in the type.
 - A component with multiple correlated `useState` calls: `isSubmitting`, `isSubmitted`, `submitStatus` — the illegal combos (`isSubmitting && isSubmitted`) are bugs waiting to surface.
 
-## The Pattern
+## The pattern
 
 ### Fetch state — the canonical example
 
@@ -135,7 +135,7 @@ type Result<T, E = string> =
 
 The boundary returns a `Result`; the consumer pattern-matches once. No `if (result.data)` defensive chains downstream.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "But fetching libraries return `isLoading`, `data`, `error` — that's the pattern"
 
@@ -157,7 +157,7 @@ JSON understands objects with discriminant fields fine. `{ status: 'loading' }` 
 
 Convert at the boundary. The external shape is wire-level; your type is domain-level. The conversion is one function, in one place.
 
-## Red Flags
+## Red flags
 
 - Three or more boolean fields named in the same type
 - A type with `?` on more than two sibling fields
@@ -168,7 +168,7 @@ Convert at the boundary. The external shape is wire-level; your type is domain-l
 
 **All of these mean: the type has illegal states. Collapse into a union.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

@@ -11,7 +11,7 @@ description: Use when reaching for `handleStuff`, `getData`, `doProcess`, `manag
 
 Names are the most-read part of any codebase. A good name eliminates the need to read the implementation; a bad name forces re-parsing on every encounter.
 
-## The Default Rule
+## The default rule
 
 ```
 A name should reveal its intent without needing the surrounding code — that
@@ -24,7 +24,7 @@ If you have to read the body to know what the function does, the name is wrong �
 
 **The one framework carve-out:** a convention boundary that supplies the context is fine — JSX `onSubmit={handleSubmit}` reads clearly because the prop names the event (see Pressure Resistance).
 
-## The Pattern: Action + High Context + Low Context
+## The pattern: action + high context + low context
 
 Read left-to-right, the name answers: *what does it do, on what, in which scope?*
 
@@ -100,7 +100,7 @@ function format(x: Date): string { /* ... */ }
 function formatInvoiceDate(d: Date): string { /* ... */ }
 ```
 
-## Worked Examples
+## Worked examples
 
 ```ts
 // Pure derivations — compute / format
@@ -130,7 +130,7 @@ function parseEnv(raw: unknown): Env { /* ... */ }
 function handleSubmit(e: FormEvent) { /* ... */ }
 ```
 
-## Pressure Resistance
+## Pressure resistance
 
 **"The context makes it clear."** Context decays. The PR author has full context; the reviewer has half; the bug-fixer six months later has none. Name for the bug-fixer.
 
@@ -142,7 +142,7 @@ function handleSubmit(e: FormEvent) { /* ... */ }
 
 **"The framework uses `handle` without qualifiers."** Framework conventions override at framework boundaries — `<form onSubmit={handleSubmit}>` is fine because the JSX provides the LC. A `handleSubmit` *exported from a module*, on the other hand, is too vague.
 
-## Common Mistakes
+## Common mistakes
 
 | Smell | Fix |
 |---|---|
@@ -155,7 +155,7 @@ function handleSubmit(e: FormEvent) { /* ... */ }
 | Abbreviations: `btn`, `usr`, `cfg`, `mgr`, `svc` | Spell it out |
 | `get*` that hits the wire on *every* call (no memoization) | Rename to `fetch*`. Memoized/amortized lookups (`getCurrentUser`, `getSession`) stay `get*` |
 
-## The Bottom Line
+## The bottom line
 
 **A name is a contract with the next reader. Make it complete.**
 

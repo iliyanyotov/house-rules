@@ -3,7 +3,7 @@ name: test-observable-behavior-not-implementation
 description: Use when writing a unit test and choosing what to assert. Use when a refactor breaks tests even though external behavior didn't change. Use when reviewing a PR whose tests are mostly `expect(spy).toHaveBeenCalledWith(...)`. Use when the first instinct is to spy on a private helper. Use when the test setup is longer than the production code it tests.
 ---
 
-# Test Observable Behavior, Not Implementation
+# Test observable behavior, not implementation
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when writing a unit test and choosing what to assert. Use when 
 
 Refactor-resistance is the test for the test: if you can restructure the unit's internals without breaking the test, the test asserts behavior. If a no-op rename breaks it, the test asserts implementation.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER assert on internal helpers, private methods, or internal call order — only on observable outcomes.
@@ -42,7 +42,7 @@ You are violating the rule if any of these are true:
 - A test's setup constructs more mocks than the unit has external dependencies.
 - A test asserts on the *order* internal helpers ran.
 
-## The Pattern
+## The pattern
 
 The "through the door" lens — imagine the unit has one front door (the exported function), and the rest is opaque. What can you observe from outside?
 
@@ -160,7 +160,7 @@ test('clicking add increments the displayed count', async () => {
 
 `internalCount` is a refactor target. The displayed `1` is what the user came for.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "But I need to verify the helper is called"
 
@@ -182,7 +182,7 @@ You don't — directly. Private logic is exercised *through* the public interfac
 
 The helper's args are *closer* to your fingers — they're inside the same module. They're also coupled to today's implementation choice. "Easy to write" is not the right axis; "still meaningful after a refactor" is.
 
-## Red Flags
+## Red flags
 
 - A test file that imports private helpers from the module-under-test.
 - `spyOn(...)` on any internal helper module the unit imports — `spyOn(internalHelperModule, 'fn')`, not just same-file `spyOn(thisModule, 'someHelper')`.
@@ -193,7 +193,7 @@ The helper's args are *closer* to your fingers — they're inside the same modul
 
 **All of these mean: the test is asserting implementation, not behavior — rewrite it.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

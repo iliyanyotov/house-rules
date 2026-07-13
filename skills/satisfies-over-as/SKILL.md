@@ -11,7 +11,7 @@ description: Use when reaching for `as` to convince the TypeScript compiler. Use
 
 `as` asserts without checking (and lies if needed). `satisfies` checks without widening (and refuses to lie).
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER use `as` to silence the compiler. Use `satisfies` to check, or fix the type.
@@ -43,7 +43,7 @@ You are violating the rule if any of these are true:
 
 Note: `as const` is a different operator. It freezes a literal's type and is *fine* — this rule is about `as Type`.
 
-## The Pattern
+## The pattern
 
 ### Const objects — preserve literals with `satisfies`
 
@@ -178,7 +178,7 @@ const allKeys = Object.keys(SORT_KEYS) as SortKey[];
 
 This is *not* a violation. Same applies to `Object.entries` and `Object.fromEntries`.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "I know the type is correct, the compiler is just being annoying"
 
@@ -200,7 +200,7 @@ Yes — `as const` is a different operator. It freezes the value's literal type.
 
 That's the bug, not the fix. If a function expects `Foo` and the caller has `Partial<Foo>`, either the function signature is wrong or the caller hasn't built a complete value. `as Foo` smuggles incomplete data into a contract that promises complete data.
 
-## Red Flags
+## Red flags
 
 - `as Foo` where the source is already typed (not `unknown`).
 - `as unknown as Foo` — the double-cast is an admission that the compiler refused once.
@@ -212,7 +212,7 @@ That's the bug, not the fix. If a function expects `Foo` and the caller has `Par
 
 **All of these mean: the `as` is hiding a check — switch to `satisfies` or fix the type.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

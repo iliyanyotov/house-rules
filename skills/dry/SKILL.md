@@ -3,7 +3,7 @@ name: dry
 description: Use when reviewing code with apparent duplication. Use when tempted to extract a helper to avoid repeating two or three lines. Use when designing a shared utility module. Use when reviewing a "DRY refactor" PR that introduces parameters or branches to unify previously-separate code paths. Use when the words "since we're duplicating this anyway" come up.
 ---
 
-# DRY — Deduplicate *Knowledge*, Not Lines
+# DRY — deduplicate *knowledge*, not lines
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when reviewing code with apparent duplication. Use when tempted
 
 The signal that demands DRY is *"if this rule changes, we'd need to update both places for the same reason."* Without that signal, looking-alike is not duplication.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER deduplicate code that only looks alike. Deduplicate when the same knowledge is repeated.
@@ -34,7 +34,7 @@ The common misreading is "any two identical lines must be extracted." That misre
 
 Sandi Metz's operative phrase: **"Duplication is far cheaper than the wrong abstraction."**
 
-## Detection — Two Directions
+## Detection — two directions
 
 You can violate the rule in either direction.
 
@@ -54,7 +54,7 @@ Under-DRY's real cost isn't maintenance — it's *silent divergence into a corre
 - A base class whose subclasses override most methods, sharing only setup boilerplate.
 - A utility named `processItem` called from three different features doing fundamentally different things.
 
-## The Pattern
+## The pattern
 
 ### Real DRY — extract the knowledge
 
@@ -190,7 +190,7 @@ expect(elapsed).toBeLessThan(REQUEST_TIMEOUT_MS);
 
 The knowledge — *our timeout is 30 seconds* — has one home.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "There's duplication, we should DRY it up"
 
@@ -214,7 +214,7 @@ Sometimes. A well-named function (`isInvoiceOverdue`) does. A `processData(items
 
 You hit a wrong abstraction. The fix is to *un-extract* — inline the function back into both callers, then extract differently, or accept the duplication. Sandi Metz: *"Sometimes the right answer is to put back the duplication."*
 
-## Red Flags
+## Red flags
 
 - A function with a boolean parameter that switches between two unrelated implementations.
 - A "shared" utility with growing parameters as each new caller adds their special case.
@@ -226,7 +226,7 @@ You hit a wrong abstraction. The fix is to *un-extract* — inline the function 
 
 **All of these mean: the abstraction is wrong — either un-extract or accept the duplication.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

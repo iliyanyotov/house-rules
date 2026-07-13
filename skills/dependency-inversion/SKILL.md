@@ -3,7 +3,7 @@ name: dependency-inversion
 description: Use when a pure-logic file imports a network client, a database driver, a logger, an SDK, or any infrastructure module. Use when changing your DB provider or moving from REST to GraphQL would require editing the domain code. Use when business logic and infrastructure are intertwined in the same file. Use when designing the boundary between domain and adapters.
 ---
 
-# Dependency Inversion
+# Dependency inversion
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a pure-logic file imports a network client, a database dri
 
 Imports flow in one direction: **outer → inner, never the reverse.**
 
-## The Default Rule
+## The default rule
 
 ```
 Prefer keeping domain code from importing infrastructure at runtime. The domain
@@ -53,7 +53,7 @@ You are violating the rule if any of these are true:
 - A unit test for a domain function requires a real DB, real network, or module-mocking.
 - The same function appears in both a server context and a client context but can't be shared because it imports server-only infrastructure.
 
-## The Pattern
+## The pattern
 
 ### The domain declares the interface it needs
 
@@ -193,7 +193,7 @@ The rule applies when **the domain has enough volume to deserve its own layer**.
 
 Don't DIP-ify speculatively. DIP-ify when the second adapter appears.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's so simple to just call `db` directly"
 
@@ -215,7 +215,7 @@ If you find 15 narrow interfaces for 15 functions, group them. `ProductReader + 
 
 You don't. Apply DIP to *new* code; leave existing code alone until you touch it. The codebase converges over months, not in one PR.
 
-## Red Flags
+## Red flags
 
 - A file in `src/domain/`, `src/lib/`, or `src/utils/` with `import { db }`, an HTTP client, or a vendor SDK.
 - A unit test that needs the real DB or module-mocking to run.
@@ -226,7 +226,7 @@ You don't. Apply DIP to *new* code; leave existing code alone until you touch it
 
 **All of these mean: the import direction is inverted — declare the port in the domain, push the import into an adapter.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

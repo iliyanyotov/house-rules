@@ -3,7 +3,7 @@ name: paginate-unbounded-reads
 description: Use when a query has no `LIMIT` and the table grows with usage. Use when a list endpoint returns every matching row. Use when a `findMany()` has no `take`/cursor. Use when an endpoint that was instant in dev times out in production months later. Use when an export or batch job loads an entire table into memory. Use when a client renders "all" of anything user-generated.
 ---
 
-# Paginate Unbounded Reads
+# Paginate unbounded reads
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when a query has no `LIMIT` and the table grows with usage. Use
 
 This is one of three sibling resource bounds: `n-plus-one-prevention` bounds how many queries a request makes, `cap-async-fan-out` bounds how many run at once, and this bounds how much a single query returns.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER ship a read whose result size grows with usage without an explicit bound.
@@ -58,7 +58,7 @@ You are violating the rule if any of these are true:
 - `.map`/`.filter`/`.reduce` in memory over "all rows" to compute something the database could aggregate.
 - A list endpoint that is noticeably slower in production than staging — data-size-dependent latency is this smell in motion.
 
-## The Pattern
+## The pattern
 
 ### Bound the API: default, maximum, and a signal for more
 
@@ -110,7 +110,7 @@ for (;;) {
 
 If the unbounded read exists to compute a count, a sum, or a "latest per group", the bound isn't pagination — it's pushing the aggregation into SQL (`COUNT`, `SUM`, `DISTINCT ON`, window functions) so the result set is small by definition.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "There isn't much data yet"
 
@@ -128,7 +128,7 @@ Admin tools query the *biggest* aggregates (all users, all orders) with the leas
 
 A `nextCursor` loop is a dozen lines, written once per client. The alternative complexity — timeouts, OOMs, and a page that renders 200k DOM nodes — is unbounded.
 
-## Red Flags
+## Red flags
 
 - `findMany()` with no `take` on a usage-growing table.
 - `SELECT ... WHERE org_id = $1` with no `LIMIT` in a request path.
@@ -139,7 +139,7 @@ A `nextCursor` loop is a dozen lines, written once per client. The alternative c
 
 **All of these mean: state the bound — clamp the page, cursor the rest, aggregate in the database.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

@@ -39,8 +39,8 @@ name: parse-dont-validate
 description: Use when accepting external input. Use when tempted to call `z.parse()` more than once in a request path.
 ---
 
-# Parse, Don't Validate
-## The Iron Rule
+# Parse, don't validate
+## The iron rule
 **At every system boundary, transform `unknown` into a narrowed, branded type — once.**
 ...
 ```

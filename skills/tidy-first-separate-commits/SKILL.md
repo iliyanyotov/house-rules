@@ -3,7 +3,7 @@ name: tidy-first-separate-commits
 description: Use when about to refactor, rename, extract, reformat, or reorganize code in the same change as a behavior modification or bug fix. Use when staging a commit that includes both "I cleaned up X" and "I added/fixed Y." Use when reviewing a PR whose diff mixes whitespace, renames, and logic changes. Use when a commit message has "and" between two verbs.
 ---
 
-# Tidy First, Separate Commits
+# Tidy first, separate commits
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when about to refactor, rename, extract, reformat, or reorganiz
 
 A tidying *should* preserve behavior: rename, extract, inline, reformat, reorder. A behavior change *should* alter what the program does. The git log should be able to tell which is which at a glance.
 
-## When to Use
+## When to use
 
 - Staging a commit that mixes a refactor with a bug fix or feature
 - A PR description that says "refactored X and added Y"
@@ -19,7 +19,7 @@ A tidying *should* preserve behavior: rename, extract, inline, reformat, reorder
 - A reformat or lint sweep about to land in the same commit as a feature
 - A rename across the project bundled with the work that prompted it
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER mix a tidying with a behavior change in the same commit.
@@ -31,7 +31,7 @@ NEVER mix a tidying with a behavior change in the same commit.
 - Not for "I'll squash on merge anyway"
 - Not for "the tidy was trivial"
 
-## Detection: The "And" Smell
+## Detection: the "and" smell
 
 If the commit message needs the word "and" between a tidying and a change, STOP and split:
 
@@ -57,7 +57,7 @@ perf(trpc): narrow duplicate include to select
 
 The security fix in particular should never have ridden in behind "remove console.log" — buried in a cleanup commit, it's invisible to reviewers and to `git log --grep`.
 
-## Why This Matters
+## Why this matters
 
 On a **squash-merge** workflow the *PR* — not the individual commit — is the bisect/revert unit on `main`, so the `git bisect` / revert benefits below apply at *review time* (and on main only where commits survive the merge). That's not a reason to skip splitting: a clean split still makes review tractable, and a clear PR title/body becomes the durable record on main. Where commits *do* survive (merge or rebase workflows), the benefits extend to `main` too.
 
@@ -69,7 +69,7 @@ On a **squash-merge** workflow the *PR* — not the individual commit — is the
 | Revert drags unrelated tidying back to broken state | Revert touches one concern |
 | Merge conflict has to untangle both classes of change | Tidy commit rebases cleanly; only the change conflicts |
 
-## The Pattern
+## The pattern
 
 ### Split a mixed working tree
 
@@ -128,7 +128,7 @@ When uncertain, ask: *would a reasonable test for the old code still pass after 
 
 One trap for this test: **type-only changes are erased at runtime**, so the old test passes even when behavior shifted. Adding types is tidy *only* when no `@ts-expect-error`/`@ts-ignore` is removed and no runtime cast (`as`, `!`, a parse/coerce) changes. Removing a suppression can surface a real behavior change at a boundary — split it out as a `fix:`, not a tidy.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### 1. "It's all one logical unit"
 
@@ -170,7 +170,7 @@ One trap for this test: **type-only changes are erased at runtime**, so the old 
 
 **Action:** Commit it separately. The triviality is the win, not the excuse.
 
-## Red Flags
+## Red flags
 
 - The word "and" in a commit message between a noun and a verb
 - A commit's diff stat shows files unrelated to the change goal
@@ -182,7 +182,7 @@ One trap for this test: **type-only changes are erased at runtime**, so the old 
 
 **All of these mean: split before pushing.**
 
-## Quick Reference
+## Quick reference
 
 | Situation | Action |
 |---|---|
@@ -192,7 +192,7 @@ One trap for this test: **type-only changes are erased at runtime**, so the old 
 | Refactor + new feature | Tidy first (one commit), feature on top (another) |
 | Lint/format sweep | Its own commit, never with a feature |
 
-## Common Rationalizations (All Invalid)
+## Common rationalizations (all invalid)
 
 | Excuse | Reality |
 |---|---|
@@ -203,7 +203,7 @@ One trap for this test: **type-only changes are erased at runtime**, so the old 
 | "It's not worth the discipline for small changes" | Small changes are easiest to split. Discipline costs least there. |
 | "Reverting is rare anyway" | Bisecting isn't. Splitting saves you the next time a bug surfaces. |
 
-## The Bottom Line
+## The bottom line
 
 **Tidy commits are known-safe. Change commits get the careful review. Mixed commits are neither.**
 

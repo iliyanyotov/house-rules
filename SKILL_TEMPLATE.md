@@ -32,18 +32,18 @@ For rules that fire on every line or every PR. Examples: `tdd`, `kiss`, `yagni`,
 
 ```
 ## Overview          — 2 lines: punch + supporting
-## When to Use       — 3-5 concrete triggers
-## The Iron Rule     — headline rule; label at its true strength (see below):
-##                     `## The Iron Rule` (invariant, code-fence "NEVER ..." + No exceptions),
-##                     `## The Default Rule` (default, "Prefer ..." + "When this doesn't apply"),
-##                     or `## The Heuristic` (smell, "Treat ... as a signal" + "What doesn't trip it")
-## Detection: The "<X>" Smell — one before/after example
-## Why <This> Wins   — 2-column table
-## Pressure Resistance — 3-5 entries, each "Pressure / Response / Action"
-## Red Flags         — bullet list
-## Quick Reference   — situation → action table
-## Common Rationalizations — excuse → reality table
-## The Bottom Line   — one punch line + 2-sentence closer
+## When to use       — 3-5 concrete triggers
+## The iron rule     — headline rule; label at its true strength (see below):
+##                     `## The iron rule` (invariant, code-fence "NEVER ..." + No exceptions),
+##                     `## The default rule` (default, "Prefer ..." + "When this doesn't apply"),
+##                     or `## The heuristic` (smell, "Treat ... as a signal" + "What doesn't trip it")
+## Detection: the "<x>" smell — one before/after example
+## Why <this> wins   — 2-column table
+## Pressure resistance — 3-5 entries, each "Pressure / Response / Action"
+## Red flags         — bullet list
+## Quick reference   — situation → action table
+## Common rationalizations — excuse → reality table
+## The bottom line   — one punch line + 2-sentence closer
 ## Related           — genuine neighbors, backticked names + reason (omit if none)
 ## Reference         — 2-4 citations
 ```
@@ -54,15 +54,15 @@ For rules whose value is the pattern itself: naming conventions, type-design con
 
 ```
 ## Overview
-## The Iron Rule / Default Rule / Heuristic   — headline rule at its true strength
-## The Pattern: <name>
+## The iron rule / default rule / heuristic   — headline rule at its true strength
+## The pattern: <name>
 ### <Sub-rule 1>  — tables or short examples
 ### <Sub-rule 2>
 ### <Sub-rule 3>
-## Worked Examples  — one consolidated block of short, real-looking examples
-## Pressure Resistance  — bold prose, not numbered (saves space)
-## Common Mistakes  — one consolidated smell → fix table
-## The Bottom Line
+## Worked examples  — one consolidated block of short, real-looking examples
+## Pressure resistance  — bold prose, not numbered (saves space)
+## Common mistakes  — one consolidated smell → fix table
+## The bottom line
 ## Related           — genuine neighbors, backticked names + reason (omit if none)
 ## Reference
 ```
@@ -73,16 +73,16 @@ For skills where the rule needs several sub-patterns to be useful: resilience, t
 
 ```
 ## Overview
-## The Iron Rule / Default Rule / Heuristic   — headline rule at its true strength
+## The iron rule / default rule / heuristic   — headline rule at its true strength
 ## Why              — 1-2 paragraphs on the concrete failure mode
 ## Detection        — bullet list of signals
-## The Pattern
+## The pattern
 ### <Sub-pattern 1>  — one short before/after example
 ### <Sub-pattern 2>
 ### <Sub-pattern 3>
-## Pressure Resistance
-## Red Flags
-## Common Rationalizations
+## Pressure resistance
+## Red flags
+## Common rationalizations
 ## Related           — genuine neighbors, backticked names + reason (omit if none)
 ## Reference
 ```

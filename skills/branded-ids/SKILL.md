@@ -11,7 +11,7 @@ description: Use when declaring a function that takes IDs as parameters, or acce
 
 `UserId` is not `OrgId` even though both are strings. The compiler must enforce this.
 
-## The Default Rule
+## The default rule
 
 ```
 Prefer branded ID types over raw `string`/`number` for domain identifiers.
@@ -41,7 +41,7 @@ You are violating the rule if any of these are true:
 - A function called `getInvoice(id: string)` accepts an `OrgId` and silently returns nothing.
 - The phrase "make sure to pass the right ID" appears in any code comment.
 
-## The Pattern
+## The pattern
 
 ### The brand helper — ship once
 
@@ -167,7 +167,7 @@ async function loadUser(id: UserId): Promise<{ id: UserId }> {
 
 The brand is minted in exactly two named boundaries — the generator and the transform. Everywhere else `UserId` flows untouched. Swap `UserId` for `OrderId` at any hop and the compiler stops you.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's just a string, this is overengineering"
 
@@ -189,7 +189,7 @@ You convert *once* at the system boundary. Inside the system, the brand flows. I
 
 Translate at the seam. Inside your code, types are branded. At the library boundary, you `parse` or `as`-cast — once, in a named place. The library doesn't know about your domain; that's correct.
 
-## Red Flags
+## Red flags
 
 - A function signature: `(a: string, b: string, c: string) => ...` **or** `(a: number, b: number) => ...` — same-typed positional IDs swap with no compile error.
 - A schema column with no type annotation for an ID column.
@@ -200,7 +200,7 @@ Translate at the seam. Inside your code, types are branded. At the library bound
 
 **All of these mean: the brand is missing — declare the type and parse at the boundary.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

@@ -3,7 +3,7 @@ name: dead-letter-and-replay
 description: Use when consuming an at-least-once event stream you don't control — provider webhooks (payments, auth, messaging), a message queue, a pub/sub topic. Use when a handler that throws causes the event to be lost, or to be retried forever by the producer. Use when "we missed a webhook and the data is now out of sync" or "a poison message is jamming the queue" appears in an incident. Use when a consumer has retries but no place for the events that exhaust them.
 ---
 
-# Dead-Letter and Replay
+# Dead-letter and replay
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when consuming an at-least-once event stream you don't control 
 
 This pairs with two sibling skills: dedupe each delivery on arrival (`idempotency-keys-on-writes`, consumer side), and when the failure is a *downstream* dependency being down, fail fast on it (`circuit-breaker-on-flaky-deps`) — then dead-letter what you couldn't process.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER let a failed inbound event vanish or retry unbounded. Persist the raw event, cap retries, make replay idempotent.
@@ -45,7 +45,7 @@ You are violating the rule if any of these are true:
 - There's a dead-letter table but no tested way to replay from it.
 - Replaying an event would double-apply its side effects (no idempotency).
 
-## The Pattern
+## The pattern
 
 ### Sub-pattern 1 — Dedupe on arrival, then process
 
@@ -145,7 +145,7 @@ Expose replay as an operator action (admin endpoint, CLI) and/or an automated sw
 
 The dead-letter store grows; left alone it grows forever. Delete on successful replay, and run a retention sweep for resolved/expired rows. (This is `steady-state-purge-unbounded-growth` applied to the safety net.)
 
-## Pressure Resistance
+## Pressure resistance
 
 **"The provider already retries — storing the event is redundant."** The provider retries on *its* schedule and gives up on *its* budget, neither of which you control or can see. When it gives up, the event is gone for good. And a poison event the provider keeps redelivering is a denial-of-service on your handler until you can quarantine it. Your durable copy is the only recovery mechanism you own.
 
@@ -157,7 +157,7 @@ The dead-letter store grows; left alone it grows forever. Delete on successful r
 
 **"Adding a dead-letter table and replay is a lot of machinery."** It's one table (raw payload, source, error, attempts, timestamps) and one function that re-invokes the existing handler. The idempotency you need for replay you already need for at-least-once delivery. The marginal cost is small; the cost of a silently lost financial event is not.
 
-## Red Flags
+## Red flags
 
 - A webhook/queue handler whose `catch` neither persists the event nor re-throws to a framework that will.
 - A consumer with no durable record of events that failed processing.
@@ -170,7 +170,7 @@ The dead-letter store grows; left alone it grows forever. Delete on successful r
 
 **All of these mean: the event can be lost or double-applied — persist it raw, cap retries, make replay idempotent, and test it.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

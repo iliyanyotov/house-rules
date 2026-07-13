@@ -3,7 +3,7 @@ name: evolve-wire-contracts-additively
 description: Use when changing the shape of an API response, webhook body, or event payload consumed by a party whose deploys you don't control — removing, renaming, or re-typing a field. Use when a consumer schema uses `.strict()` or a closed `z.enum` on a payload another party produces, and a new field or variant starts rejecting every message. Use when "we checked, nobody uses that field" justifies a removal. Use when a partner integration breaks after a deploy that "only cleaned up the API".
 ---
 
-# Evolve Wire Contracts Additively
+# Evolve wire contracts additively
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when changing the shape of an API response, webhook body, or ev
 
 "Published" means consumed by a party whose deploys you don't control — a partner, a mobile build in the wild, another team's service, webhook receivers. Within that scope the rule is an invariant; an interface where you own both sides and both deploys is governed by the cheaper expand/contract discipline instead (see `## Related`). A contract explicitly documented as unstable/preview is also out of scope — that documentation is the one honest way to reserve the right to break.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER remove, rename, or re-type a field in place in a published contract.
@@ -41,7 +41,7 @@ You are violating the rule if any of these are true:
 - A consumer parses another party's status field with a closed `z.enum` and no fallback — the producer's next additive variant rejects every message.
 - The rollout plan for a contract change is "announce it in the changelog and email the partners".
 
-## The Pattern
+## The pattern
 
 ### Producer — add beside, never mutate
 
@@ -147,7 +147,7 @@ Skipping silently would hide a growing blind spot — the log and counter make "
 
 Persist and forward only the fields you consumed, not the whole payload. Passing the raw payload through to your own consumers couples *them* to a contract you don't control, and turns you into an unversioned proxy of someone else's API.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "Nobody uses that field"
 
@@ -169,7 +169,7 @@ You regenerate *your* clients. The partner's hand-rolled integration, the mobile
 
 It does accumulate — deprecated fields are the rent on a boundary you don't control. The pressure valve is versioning with real sunset enforcement, not in-place deletion. Cruft is ugly; a partner outage is expensive.
 
-## Red Flags
+## Red flags
 
 - A serializer diff for a public endpoint that deletes or renames a key.
 - A field whose unit or semantics changed while its name stayed.
@@ -181,7 +181,7 @@ It does accumulate — deprecated fields are the rent on a boundary you don't co
 
 **All of these mean: a break is crossing a boundary you don't control — make it additive, or give it a version.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

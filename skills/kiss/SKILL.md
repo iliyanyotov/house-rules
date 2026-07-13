@@ -3,7 +3,7 @@ name: kiss
 description: Use when explicitly reviewing code for unnecessary complexity. Use when reaching for a type-level construct, a deep method chain, or a "smart" one-liner where a plain approach would do. Use when a reviewer asks "why is this so complex?" and a straightforward version would make the intent obvious.
 ---
 
-# KISS (Keep It Simple, Stupid)
+# KISS (keep it simple, stupid)
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when explicitly reviewing code for unnecessary complexity. Use 
 
 Code is read far more often than it's written. Cleverness is a cost paid by every future reader, including future-you at 3am.
 
-## When to Use
+## When to use
 
 - Choosing between a direct approach and a clever one
 - Tempted to use a deeply chained expression or a one-liner
@@ -19,7 +19,7 @@ Code is read far more often than it's written. Cleverness is a cost paid by ever
 - Writing code that requires re-parsing to understand
 - A reviewer's first question would be "what does this do?"
 
-## The Heuristic
+## The heuristic
 
 ```
 Treat "clever over clear" as a signal to simplify, not a law to cite. When a
@@ -34,7 +34,7 @@ The posture is strong — simple wins, and elegance is never a reason to ship so
 - A genuinely-needed abstraction that removes more complexity than it adds.
 - Brevity that is *also* clearer than the long form. The rule is against clever-*instead-of*-clear, not against concise.
 
-## Detection: The "Clever" Smell
+## Detection: the "clever" smell
 
 If you're proud of how clever your code is, simplify it:
 
@@ -56,7 +56,7 @@ for (const invoice of invoices) {
 
 The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cleverness is an optimization that has to earn its place.
 
-## Why Simple Wins
+## Why simple wins
 
 | Clever code | Simple code |
 |---|---|
@@ -66,7 +66,7 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 | Hostile error messages from type magic | Hand-readable errors from hand-written types |
 | Survives only as long as its author | Survives team turnover |
 
-## Pressure Resistance
+## Pressure resistance
 
 ### 1. "It's more elegant"
 
@@ -110,7 +110,7 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 
 **Action:** Rewrite. If a colleague needs to puzzle out your code during an incident, you owe them an apology.
 
-## Red Flags
+## Red flags
 
 - A line that takes longer to read than to copy-paste
 - Nested ternaries over un-named conditions (`x ? a : y ? b : c`) — the offense is the inlined logic, not the ternary form; name the conditions or extract a lookup
@@ -122,7 +122,7 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 
 **All of these mean: rewrite simply.**
 
-## Quick Reference
+## Quick reference
 
 | Symptom | Action |
 |---|---|
@@ -135,7 +135,7 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 | Magic numbers | Named constants |
 | Pride in cleverness | Rewrite simply |
 
-## Common Rationalizations (All Invalid)
+## Common rationalizations (all invalid)
 
 | Excuse | Reality |
 |---|---|
@@ -145,7 +145,7 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 | "It's a small project, who cares" | Small projects grow. The reader six months from now has no context. |
 | "We need to look modern" | The most sophisticated code looks boring. Boring enables fast change. |
 
-## The Bottom Line
+## The bottom line
 
 **Simple beats clever. Clear beats concise. Obvious beats elegant.**
 

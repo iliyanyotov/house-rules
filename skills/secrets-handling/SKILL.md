@@ -3,7 +3,7 @@ name: secrets-handling
 description: Use when accepting an API key, database URL, signing secret, webhook signature, OAuth token, or any other credential. Use when configuring `process.env.X` reads or a typed env loader. Use when adding a field to an error tracker `captureException` payload, a `console.log`, an error message, or an error response body. Use when committing a file that touches `.env`, `.env.example`, or anything in `src/config/`. Use when a credential might end up in a URL, a query parameter, a JWT body, or a log line.
 ---
 
-# Secrets Handling
+# Secrets handling
 
 ## Overview
 
@@ -11,7 +11,7 @@ description: Use when accepting an API key, database URL, signing secret, webhoo
 
 A leaked secret can't be fixed, only rotated. The work to prevent the leak is always cheaper than the work to rotate after a breach.
 
-## The Iron Rule
+## The iron rule
 
 ```
 A credential goes to exactly ONE place — the authenticated request to the system that owns it.
@@ -47,7 +47,7 @@ You are violating the rule if any of these are true:
 - A client-side bundle environment variable (anything client-readable) includes something that *isn't* meant to be public.
 - A secret is sent as a URL query parameter rather than an `Authorization` header.
 
-## The Pattern
+## The pattern
 
 ### Parse all secrets at module load via a typed schema
 
@@ -259,7 +259,7 @@ Stripping `context` isn't enough — some error *messages and causes* carry secr
 
 No layer is sufficient alone: a branded type doesn't stop a committed secret; a vault ref doesn't stop a value being logged into the wrong field; an allowlisted egress doesn't stop the wrong `string` reaching the key slot. Together they make a single slip survivable.
 
-## Pressure Resistance
+## Pressure resistance
 
 ### "It's a dev/staging key, it doesn't matter"
 
@@ -281,7 +281,7 @@ Encryption-at-rest doesn't help once a secret is in a process. The rule is about
 
 It's a smaller hassle than the breach. Secret managers make rotation a 5-minute operation. Practice rotation quarterly so it's routine, not panicked.
 
-## Red Flags
+## Red flags
 
 - Any literal that looks like a secret in source (`sk_live_*`, `AIza*`, `ghp_*`, `xoxb-*`, `eyJhbGc*`).
 - `process.env.X` outside a typed env file.
@@ -295,7 +295,7 @@ It's a smaller hassle than the breach. Secret managers make rotation a 5-minute 
 
 **All of these mean: rotate the secret if it shipped; fix the leak before the next commit.**
 
-## Common Rationalizations
+## Common rationalizations
 
 | Excuse | Reality |
 |---|---|

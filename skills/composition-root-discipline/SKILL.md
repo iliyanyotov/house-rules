@@ -3,7 +3,7 @@ name: composition-root-discipline
 description: Use when wiring a dependency-injection graph by hand — a `Context`, `container`, `createApp`, or `buildServices` factory that instantiates every service, repository, and client. Use when that factory has grown past a few dozen entries and the constructor takes 20+ parameters. Use when a "used before it was defined" or circular-dependency error appears in startup wiring. Use when tempted to instantiate a service somewhere other than the one wiring file, or to reach for a reflection-based DI framework "because the wiring is getting big."
 ---
 
-# Composition Root Discipline
+# Composition root discipline
 
 ## Overview
 
@@ -13,7 +13,7 @@ The load-bearing invariant is **no construction outside a composition root**, no
 
 `dependency-inversion` tells you *what* to depend on (abstractions, injected). This skill governs *where* the injection is assembled. A hand-wired root is a legitimate, framework-free choice — but only if it stays disciplined.
 
-## The Iron Rule
+## The iron rule
 
 ```
 NEVER instantiate a service, repository, or client outside a composition root (one in a small app; a handful of per-feature roots in a large one — never inline in the consumers).
@@ -25,7 +25,7 @@ NEVER instantiate a service, repository, or client outside a composition root (o
 - Not "it's easier to `new` it inline for now"
 - Not "a DI framework would be cleaner" (until hand-wiring genuinely hurts — and then prefer an explicit token container, see Sub-rule 5)
 
-## The Pattern: each root dependency-ordered, layer-grouped
+## The pattern: each root dependency-ordered, layer-grouped
 
 The composition root is a factory (often `createContext()` or `Context.fromEnv(env)`): it reads validated config, instantiates every dependency in topological order, and returns one container object. Most nodes are constructed **once and shared** (a singleton) — resolution may be eager at boot or lazy on first request, but never per-call inside business logic. The mistake to prevent is re-instantiating the graph on every request, not the timing of the first build. (Some nodes are legitimately *scoped* — per request, transaction, or tenant — see Sub-rule 3.5.)
 
@@ -126,7 +126,7 @@ Adopt a container when *manual wiring itself* starts costing you — the same su
 
 What matters is *which kind* of container. An **explicit, token-based** container — where you still pass each class's dependencies as an explicit token list (`bind(token).toClass(Service, [DEP_A, DEP_B])`) — keeps the wiring visible and compile-time-checked; it's a fine choice and preserves everything this skill values. A **reflection/decorator** container (annotations, runtime metadata, autowiring) is the one to be wary of: it hides ordering and cycles and turns a compile-time "you forgot a dependency" into a runtime failure. Prefer hand-wiring or an explicit token container; reach for reflection-based magic last, if ever. (This is `yagni` applied to your own infrastructure.)
 
-## Worked Examples
+## Worked examples
 
 ```ts
 // ❌ No root at all — the dominant real-world failure. Every handler `new`s its own
@@ -179,7 +179,7 @@ static fromEnv(env: Env): Context {
 }
 ```
 
-## Pressure Resistance
+## Pressure resistance
 
 **"It's just one leaf service, constructing it inline is harmless."** It is never one. The first inline `new` legitimizes the second; six months later the object graph has no single source of truth and a dependency swap means hunting construction sites. The rule is binary because the exception is unbounded.
 
@@ -191,7 +191,7 @@ static fromEnv(env: Env): Context {
 
 **"Tests construct services directly — so the 'one root' rule is already broken."** Tests are not the application's composition root. A unit test wiring a service with stubs is isolating the unit; it has no bearing on the production graph. The rule is about *application* construction.
 
-## Common Mistakes
+## Common mistakes
 
 | Smell | Fix |
 |---|---|
@@ -205,7 +205,7 @@ static fromEnv(env: Env): Context {
 | Some deps come from a container, others hand-`new`ed in the same handler (hybrid) | Move the inline `new`s into the root too; one wiring authority per feature, not two. |
 | Reaching for a *reflection/decorator* DI framework early | Stay hand-wired by default; if wiring genuinely hurts, an explicit token-based container is the measured step. |
 
-## The Bottom Line
+## The bottom line
 
 A root builds the graph; everything else receives it. One root in a small app, a handful of per-feature roots in a large one — never construction smeared into the consumers. The wiring list gets long — that's the cost of being able to see a subsystem's shape in one place, and it's a bargain. Keep it ordered, keep it logic-free, and don't trade it for *reflection-based* runtime magic; an explicit token container is the measured step when hand-wiring finally hurts.
 
