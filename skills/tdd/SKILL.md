@@ -9,7 +9,7 @@ description: Use when explicitly following test-driven development. Use when ask
 
 **Write the test first. Watch it fail. Then write the code.**
 
-TDD is not about testing — it's about design. Writing tests first forces you to think about the interface before the implementation.
+TDD is a design practice, not a testing one. Writing tests first forces you to think about the interface before the implementation.
 
 ## When to Use
 

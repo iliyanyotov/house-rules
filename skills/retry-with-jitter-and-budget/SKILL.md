@@ -32,7 +32,7 @@ Retries are deceptive — they feel like resilience but, done wrong, they *cause
 - **Duplicate side effects.** Retrying `POST /charge` without idempotency = double-charging customers. Idempotency keys make retries safe.
 - **Stack starvation.** Unbounded retries hold workers and connections; eventually the system can't accept new work.
 
-The discipline isn't "retry less" — it's *retry with the right shape*. Three properly-jittered retries with a budget recover gracefully; three eager retries take a system down.
+The discipline is to retry with the right shape. Three properly-jittered retries with a budget recover gracefully; three eager retries take a system down.
 
 ## Detection
 

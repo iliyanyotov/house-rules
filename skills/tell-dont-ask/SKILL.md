@@ -35,7 +35,7 @@ When the module owns the operation, the rule has one home. Callers say *what the
 3. **Refactors localize.** Change the rule once; every consumer benefits without edits.
 4. **Tests test the rule, not the consumer's interpretation of the rule.**
 
-This is *not* an object-oriented thing — it's a *cohesion* thing. The rule applies to functional modules, free functions, and entities equally. The point is: **the module that owns the data also owns the operations on it**.
+This is a *cohesion* concern, not an object-oriented one. The rule applies to functional modules, free functions, and entities equally. The point is: **the module that owns the data also owns the operations on it**.
 
 ## Detection
 

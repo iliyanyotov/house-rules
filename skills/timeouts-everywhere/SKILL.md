@@ -29,7 +29,7 @@ A call without a timeout is a call that *might never return*. In a serverless wo
 
 The most common production outages aren't bugs — they're a downstream service being slow, and *the absence of timeouts* turning slowness into total unavailability. A 200ms timeout on a slow endpoint produces a fast failure that can be retried, fallen back from, or surfaced to the user. A missing timeout produces a hang that takes the whole system with it.
 
-Timeouts are the single most leverage-per-line discipline in distributed systems. Every call. Every time.
+A timeout is a few characters of code that turn an unbounded hang into a fast, recoverable failure. Every call. Every time.
 
 ## Detection
 

@@ -279,7 +279,7 @@ A type variable (`<T>`) is a feature of every modern language. If `<T>` is confu
 
 | Excuse | Reality |
 |---|---|
-| "TypeScript can't infer this" | Then say `unknown` and narrow. `any` is not "I can't infer"; it's "I'm not checking." |
+| "TypeScript can't infer this" | Then say `unknown` and narrow. `any` silently turns off checking; that's a choice, not failed inference. |
 | "It's an internal function" | Internal functions are consumed by other internal functions. The `any` propagates. |
 | "I need to handle arbitrary JSON" | `unknown` + parse. The arbitrary part lives at the boundary; the body has typed data. |
 | "It's just for this one line" | Lines never stay one. The inferred-`any` downstream is the real cost. |

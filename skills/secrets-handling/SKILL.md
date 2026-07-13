@@ -9,7 +9,7 @@ description: Use when accepting an API key, database URL, signing secret, webhoo
 
 **Secrets enter the process through the narrowest intake available — ideally none at all — are read once at startup through a typed schema, and never leave that boundary** — not in logs, not in error messages, not in URLs, not in error response bodies, not in client bundles, not in `git`. The intake half is a preference ladder (below); the egress half is an invariant.
 
-A leaked secret is not a bug you fix — it's a secret you rotate. The work to prevent the leak is always cheaper than the work to rotate after a breach.
+A leaked secret can't be fixed, only rotated. The work to prevent the leak is always cheaper than the work to rotate after a breach.
 
 ## The Iron Rule
 

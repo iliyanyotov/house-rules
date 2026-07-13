@@ -278,6 +278,6 @@ Pick the tool by the anomaly: atomic `UPDATE` for one-row counters, `FOR UPDATE`
 
 ## Reference
 
-- Martin Kleppmann, *Designing Data-Intensive Applications* (2017), ch. 7 ("Transactions") — the definitive treatment of isolation levels, the anomalies each permits, and write skew in particular. The source for this skill's framing.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (2017), ch. 7 ("Transactions") — covers isolation levels, the anomalies each permits, and write skew in particular. The source for this skill's framing.
 - [PostgreSQL docs — Transaction Isolation](https://www.postgresql.org/docs/current/transaction-iso.html) — the exact guarantees of each level on Postgres, and how Serializable Snapshot Isolation (SSI) detects conflicts.
 - Peter Bailis et al., ["Highly Available Transactions: Virtues and Limitations"](http://www.bailis.org/papers/hat-vldb2014.pdf) (2014) — what isolation levels real databases actually provide versus what the standard says, and why the defaults are weak.

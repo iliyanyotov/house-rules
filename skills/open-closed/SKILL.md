@@ -99,7 +99,7 @@ function handleEvent(event: InvoiceEvent) {
 }
 ```
 
-The difference is subtle but important: in the second form, **adding `refunded` is a change to the *type* and a change to the *consumer*, in lockstep**. The compiler refuses to ship one without the other. In the first form, adding a new event type meant editing the function body — and if you forgot to update a *second* consumer of the same event type elsewhere in the codebase, the bug shipped.
+In the second form, **adding `refunded` is a change to the *type* and a change to the *consumer*, in lockstep**. The compiler refuses to ship one without the other. In the first form, adding a new event type meant editing the function body — and if you forgot to update a *second* consumer of the same event type elsewhere in the codebase, the bug shipped.
 
 ### Registry / handler-map as the extension point
 

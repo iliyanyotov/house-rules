@@ -27,7 +27,7 @@ NEVER leave a superseded path reachable without a deprecation marker, a guard ag
 
 Two implementations of one concept is the most expensive state a codebase can be in — more expensive than either the old way *or* the new way alone. Every reader must learn both. Every change risks being applied to the wrong one. New code copies whichever the author happened to see first, so the old path keeps *growing* even after it's "deprecated." Bugs get fixed in one and not the other. The two drift until they behave differently, and now the fork is load-bearing — too risky to remove because nobody's sure what depends on the old behavior.
 
-"Use the new way for new code" is not a plan; it's a hope. Hope doesn't stop the next engineer — who never read the doc — from extending the old path. The only things that actually halt the bleed are a *machine-enforced* guard and a *scheduled* removal with an owner. A migration without a finish line isn't a migration; it's a permanent second way of doing everything.
+"Use the new way for new code" is only a hope. Hope doesn't stop the next engineer — who never read the doc — from extending the old path. The only things that actually halt the bleed are a *machine-enforced* guard and a *scheduled* removal with an owner. A migration without a finish line isn't a migration; it's a permanent second way of doing everything.
 
 ## Detection
 
