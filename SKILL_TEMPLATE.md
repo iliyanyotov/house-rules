@@ -127,7 +127,7 @@ So `yagni` yields to a resilience skill on a real safety control; a naming heuri
 - [ ] No project-specific proper nouns or domain entities lifted from real code
 - [ ] Examples use universal-sounding domains (`User`, `Invoice`, `Order`)
 - [ ] Not baked into one framework's mental model
-- [ ] Headline uses the heading that matches its true strength — `## The iron rule` (invariant), `## The default rule` (default), or `## The heuristic` (heuristic); at least one example; Pressure resistance; References — all present
+- [ ] Headline uses the heading that matches its true strength — `## The iron rule` (invariant), `## The default rule` (default), or `## The heuristic` (heuristic); at least one example; Pressure resistance; Reference — all present
 - [ ] `## Related` lists genuine neighbors by backticked name (or is omitted if the skill stands alone) — no `[[wiki]]` or markdown file links, which don't resolve
 - [ ] No decorative emoji (❌/✅ comparators are allowed)
 - [ ] `description` triggers are failure-shaped and specific, not broad postures (high-signal, so the skill doesn't collide on every task)
