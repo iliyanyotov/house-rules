@@ -1,6 +1,6 @@
 ---
 name: race-conditions
-description: Use when writing code where multiple async operations touch the same state. Use when a `useEffect` performs a fetch. Use when a timer or interval mutates state. Use when a handler reads-then-writes a row. Use when calling `setState` inside a `setTimeout`, `setInterval`, or any callback that may fire after unmount. Use when "it works most of the time, but occasionally returns stale data" appears in a bug report.
+description: Use when writing code where multiple async operations touch the same state. Use when a `useEffect` fetch lacks cancellation or an out-of-order guard. Use when a timer or interval mutates state. Use when a handler reads-then-writes a row. Use when calling `setState` inside a `setTimeout`, `setInterval`, or any callback that may fire after unmount. Use when "it works most of the time, but occasionally returns stale data" appears in a bug report.
 ---
 
 # Race conditions

@@ -11,17 +11,22 @@ description: Use when tempted to use class inheritance or `extends`. Use when su
 
 Inheritance creates rigid hierarchies and tight coupling: every parent change ripples through every child, and you can only inherit from one parent. Composition creates flexible, swappable behavior: each piece is its own type, callers wire them together, and the same building block can be reused across unrelated contexts.
 
-## The iron rule
+## The default rule
 
 ```
-NEVER use inheritance when composition would work. Default to composition; reach for inheritance only when a true subtype relationship exists.
+Prefer composition. Reach for inheritance only when a true, substitutable
+is-a relationship exists or the framework requires a base class.
 ```
 
-**No exceptions:**
-- Not for "it's the OOP way"
-- Not for an *assumed* "is-a relationship" (a true is-a that passes the substitutability test is the legitimate exception — see "When inheritance *is* the right tool")
-- Not for "code reuse via extends"
-- Not for "polymorphism"
+**When this doesn't apply:**
+- A true is-a that passes the substitutability test — see "When inheritance *is* the right tool"
+- A framework-required base class (`extends Error`, a framework-provided component base)
+
+**What still isn't an exception:**
+- "It's the OOP way"
+- An *assumed* is-a relationship that hasn't passed the substitutability test
+- "Code reuse via extends"
+- "Polymorphism" — interfaces and unions give polymorphism without a hierarchy
 
 ## Why
 

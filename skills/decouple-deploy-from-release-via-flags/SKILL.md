@@ -221,7 +221,7 @@ The removal discipline below applies to flags that exist to *ship a change*. But
 | **Kill switch** | Cut a risky subsystem fast in an incident | **Permanent** |
 | **Permission** | Gate a feature to a plan/role/entitlement | **Permanent** — it's product config, not debt |
 
-Production systems make this a first-class field — a `type` enum on the flag row (`RELEASE | EXPERIMENT | OPERATIONAL | KILL_SWITCH | PERMISSION`). The staleness rule and the Red Flags below apply to **release and experiment** toggles only; the rest are not bugs for living long.
+Production systems make this a first-class field — a `type` enum on the flag row (`RELEASE | EXPERIMENT | OPERATIONAL | KILL_SWITCH | PERMISSION`). The staleness rule and the red flags below apply to **release and experiment** toggles only; the rest are not bugs for living long.
 
 ### Removal is part of the plan (for release & experiment flags)
 

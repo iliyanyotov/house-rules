@@ -97,7 +97,7 @@ const direction = dir === 'desc' ? desc : asc;
 await db.select().from(users).orderBy(direction(column));
 ```
 
-This is not a walk-back of the Iron Rule — the untrusted string never enters the query. A trusted constant, *selected by* the input, does. The allowlist exists because an identifier genuinely is query structure and therefore can't be bound.
+This is not a walk-back of the iron rule — the untrusted string never enters the query. A trusted constant, *selected by* the input, does. The allowlist exists because an identifier genuinely is query structure and therefore can't be bound.
 
 ### Shell: pass arguments as an array, never a command string
 

@@ -1,6 +1,6 @@
 ---
 name: make-illegal-states-unrepresentable
-description: Use when designing state shapes for components, server responses, form state, or domain entities. Use when tempted to model state with parallel booleans (`isLoading`, `isError`, `isSuccess`), optional fields that should travel together, or "either/or" data encoded as two nullable fields. Use when reviewing a type that has more impossible combinations than possible ones. Use when a comment says "only set when X is true."
+description: Use when a state shape can represent combinations the domain forbids. Use when tempted to model state with parallel booleans (`isLoading`, `isError`, `isSuccess`), optional fields that should travel together, or "either/or" data encoded as two nullable fields. Use when reviewing a type that has more impossible combinations than possible ones. Use when a comment says "only set when X is true."
 ---
 
 # Make illegal states unrepresentable

@@ -173,7 +173,7 @@ Use `cause`. The chain is preserved across the await. Node and most error tracke
 - A `try/catch` whose catch body has no `throw` and no log.
 - A `?.` chain on a value whose type says it's defined.
 - A function that returns `null` or `[]` from inside a catch.
-- A catch that logs *and* returns a sentinel (`[]`, `null`, `''`) with a comment claiming "graceful degradation" — the log and comment make it *look* deliberate, but the caller still proceeds on missing data. A real graceful-degradation fallback is a designed boundary (see Pressure Resistance), not a leaf return.
+- A catch that logs *and* returns a sentinel (`[]`, `null`, `''`) with a comment claiming "graceful degradation" — the log and comment make it *look* deliberate, but the caller still proceeds on missing data. A real graceful-degradation fallback is a designed boundary (see Pressure resistance), not a leaf return.
 - An env-var fallback to a hardcoded placeholder (`'localhost'`, `'sk_test_dummy'`).
 - A test that asserts a function "doesn't throw" for clearly invalid input — that test enshrines the bug.
 - The phrases "just in case", "for safety", or "defensive" without a documented failure mode.

@@ -1,6 +1,6 @@
 ---
 name: walking-skeleton
-description: Use when starting a new project or feature that spans UI, API, and database and has no thin end-to-end slice wired up yet. Use when the team has been "building the foundation" for two weeks without any end-to-end demo. Use when a design doc proposes building the database layer first, then the API, then the UI — in sequence. Use when a teammate says "we'll integrate it all at the end." Use when the first user-visible result is many sprints away.
+description: Use when a new project or feature spans UI, API, and database and no thin end-to-end slice is wired up yet. Use when the team has been "building the foundation" for two weeks without any end-to-end demo. Use when a design doc proposes building the database layer first, then the API, then the UI — in sequence. Use when a teammate says "we'll integrate it all at the end." Use when the first user-visible result is many sprints away.
 ---
 
 # Walking skeleton

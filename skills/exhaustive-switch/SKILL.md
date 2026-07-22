@@ -47,13 +47,13 @@ function label(status: 'idle' | 'loading' | 'success'): string {
 }
 ```
 
-In this form, the Iron Rule is *already enforced by the type system*. Adding `default: assertNever(status)` is still a good habit:
+In this form, the iron rule is *already enforced by the type system*. Adding `default: assertNever(status)` is still a good habit:
 
 - It produces a **clearer error message** when a variant is added (TS points to the `assertNever` line, not "function may not return").
 - It adds a **runtime alarm** for the case where types lie (e.g., raw JSON parsed without a schema).
 - It makes the intent explicit to readers who don't track which branches return.
 
-But it's *not strictly required* in this form. The Iron Rule applies most strictly to the cases below, where TS *won't* save you.
+But it's *not strictly required* in this form. The iron rule applies most strictly to the cases below, where TS *won't* save you.
 
 ## Detection
 

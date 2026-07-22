@@ -19,7 +19,7 @@ The skills load automatically and fire on relevance from then on. To update, run
 
 Type-driven correctness, module shape, resilience, testing discipline, security (authorization, injection, supply chain), observability (structured logging, health checks, metric cardinality), async correctness, data and migrations (expand/contract, transaction isolation, N+1, the outbox pattern), change management, and the meta-principles (KISS, YAGNI, naming). Examples lean TypeScript / Bun / Node.js / Postgres; the rules are language-agnostic.
 
-Each rule is labeled at its honest strength — an **Iron Rule** (a genuine invariant), **the Default Rule** (right unless named exceptions apply), or **a Heuristic** (a smell worth investigating) — so a rule you can't actually hold everywhere doesn't pretend to be one.
+Each rule is labeled at its honest strength — an **iron rule** (a genuine invariant), **a default rule** (right unless named exceptions apply), or **a heuristic** (a smell worth investigating) — so a rule you can't actually hold everywhere doesn't pretend to be one.
 
 ## Running the whole skillset on a project
 
@@ -49,7 +49,7 @@ Claude Code indexes the `description:` of every installed skill and loads the ma
 
 ## Writing or fixing one
 
-Every skill follows [`SKILL_TEMPLATE.md`](./SKILL_TEMPLATE.md): trigger-only frontmatter, a headline rule labeled at its honest strength (`## The Iron Rule`, `## The Default Rule`, or `## The Heuristic`), generic examples, and 2–4 citations. Run new skills through the checklist at the bottom of the template before opening a PR.
+Every skill follows [`SKILL_TEMPLATE.md`](./SKILL_TEMPLATE.md): trigger-only frontmatter, a headline rule labeled at its honest strength (`## The iron rule`, `## The default rule`, or `## The heuristic`), generic examples, and 2–4 citations. Run new skills through the checklist at the bottom of the template before opening a PR.
 
 Bar for changes: show me the code where this rule would have prevented the bug.
 

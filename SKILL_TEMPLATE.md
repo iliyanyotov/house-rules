@@ -106,7 +106,7 @@ A skill's headline rule sits at one of three strengths. Label it honestly — do
 - **Default** — the right call unless *named* conditions apply. Write it as "Prefer X; the exceptions are A, B, C" and then actually list them. Don't write `NEVER … / No exceptions` and then spend a later section on exceptions.
 - **Heuristic** — a diagnostic signal needing judgment ("a `switch` with 8+ cases is a smell"). Frame it as a smell to investigate, not a law.
 
-Test: if the body later says "except when…", the headline was a *default*, not an invariant — reword the headline, or fold the case into the No-exceptions list as a genuine non-exception. A rule you have to walk back isn't an Iron Rule.
+Test: if the body later says "except when…", the headline was a *default*, not an invariant — reword the headline, or fold the case into the No-exceptions list as a genuine non-exception. A rule you have to walk back isn't an iron rule.
 
 ## When skills conflict — the priority order
 
@@ -127,11 +127,11 @@ So `yagni` yields to a resilience skill on a real safety control; a naming heuri
 - [ ] No project-specific proper nouns or domain entities lifted from real code
 - [ ] Examples use universal-sounding domains (`User`, `Invoice`, `Order`)
 - [ ] Not baked into one framework's mental model
-- [ ] Headline uses the heading that matches its true strength — `## The Iron Rule` (invariant), `## The Default Rule` (default), or `## The Heuristic` (heuristic); at least one example; Pressure Resistance; References — all present
+- [ ] Headline uses the heading that matches its true strength — `## The iron rule` (invariant), `## The default rule` (default), or `## The heuristic` (heuristic); at least one example; Pressure resistance; References — all present
 - [ ] `## Related` lists genuine neighbors by backticked name (or is omitted if the skill stands alone) — no `[[wiki]]` or markdown file links, which don't resolve
 - [ ] No decorative emoji (❌/✅ comparators are allowed)
 - [ ] `description` triggers are failure-shaped and specific, not broad postures (high-signal, so the skill doesn't collide on every task)
-- [ ] Headline rule is labeled at its true strength — a `## The Iron Rule` with `NEVER … / No exceptions` contains no case the body later walks back (else make it `## The Default Rule` with a "When this doesn't apply" list, or `## The Heuristic` with a "What doesn't trip it" list)
+- [ ] Headline rule is labeled at its true strength — a `## The iron rule` with `NEVER … / No exceptions` contains no case the body later walks back (else make it `## The default rule` with a "When this doesn't apply" list, or `## The heuristic` with a "What doesn't trip it" list)
 
 ## Reference
 

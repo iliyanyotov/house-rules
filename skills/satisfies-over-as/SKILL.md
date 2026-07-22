@@ -20,7 +20,7 @@ NEVER use `as` to silence the compiler. Use `satisfies` to check, or fix the typ
 **No exceptions:**
 - Not for "I know the type is correct, the compiler is just being annoying"
 - Not for "it's a one-liner test, who cares"
-- Not for scattering `as` because "external library types are wrong" — isolate it to one wrapping seam instead (see Pressure Resistance)
+- Not for scattering `as` because "external library types are wrong" — isolate it to one wrapping seam instead (see Pressure resistance)
 - Not for "I want to pass `Partial<Foo>` as `Foo`"
 
 ## Why

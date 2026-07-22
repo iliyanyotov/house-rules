@@ -267,7 +267,7 @@ function toProblemResponse(e: unknown): Response {
       { status: e.status, headers: { 'content-type': 'application/problem+json' } },
     );
   }
-  log.error('unhandled', { cause: e });   // a genuine bug — fail-fast territory
+  log.error('unhandled', { causeKind: classifySafeCause(e) });   // a genuine bug — fail-fast territory; still never serialize an uncontrolled error
   return json(
     { type: 'about:blank', title: 'Internal Server Error', status: 500 },
     { status: 500, headers: { 'content-type': 'application/problem+json' } },

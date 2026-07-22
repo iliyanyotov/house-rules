@@ -22,7 +22,7 @@ consistency, not because they are cross-language law.
 
 If you have to read the body to know what the function does, the name is wrong — that part holds everywhere. But the *particular* conventions this skill teaches are choices: the Action/High-Context/Low-Context ordering is one popular convention (not an industry standard); the `get` vs `fetch` memoization distinction is a house rule (much of the JS ecosystem's `getUser`/`getServerSession` hit the wire); boolean `is`/`has`/`should` prefixes are a strong TS/JS default but other languages differ (Ruby's `?` suffix, Python's bare adjectives). Within this codebase, apply them consistently; across languages, keep the intent-revealing invariant and adapt the surface.
 
-**The one framework carve-out:** a convention boundary that supplies the context is fine — JSX `onSubmit={handleSubmit}` reads clearly because the prop names the event (see Pressure Resistance).
+**The one framework carve-out:** a convention boundary that supplies the context is fine — JSX `onSubmit={handleSubmit}` reads clearly because the prop names the event (see Pressure resistance).
 
 ## The pattern: action + high context + low context
 
