@@ -81,7 +81,7 @@ The key is that the *concept's identity* is preserved — "consultation" is a sp
 If the domain distinguishes between "customer" and "account holder" — say a business where multiple users share one account — then the code must distinguish too:
 
 ```ts
-// ❌ Conflates two domain entities.
+// ❌ Treats two domain entities as one.
 type User = {
   id: string;
   email: string;
@@ -128,7 +128,7 @@ export const consultations = pgTable('consultations', {
 
 The DB column names will appear in monitoring dashboards, support queries, ad-hoc analytics, schema migrations. Domain language there pays off forever.
 
-Casing (`starts_at` vs `startsAt`) is a *separate*, orthogonal convention — follow your stack's norm (Prisma defaults to camelCase columns; many Drizzle/Postgres setups use snake_case). Ubiquitous language is about the *word*, not the case: `starts` over `start_dt`, `presentingComplaint` over `cc`. Both `starts_at` and `startsAt` satisfy this rule; `start_dt` doesn't.
+Casing (`starts_at` vs `startsAt`) is a *separate* convention — follow your stack's norm (Prisma defaults to camelCase columns; many Drizzle/Postgres setups use snake_case). Ubiquitous language is about the *word*, not the case: `starts` over `start_dt`, `presentingComplaint` over `cc`. Both `starts_at` and `startsAt` satisfy this rule; `start_dt` doesn't.
 
 ### Routes mirror domain entities, not implementation
 
@@ -153,7 +153,7 @@ The pattern:
 3. Search the codebase: comments, error messages, log fields, test fixtures. All of them.
 4. Update the domain glossary doc (if it exists) so newcomers learn the new term.
 
-If the migration is too painful to do all at once — DB renames are sometimes legitimately gnarly — at minimum, ban the old term from *new* code immediately, and convert the old term in user-facing files where it's visible.
+If the migration is too painful to do all at once — DB renames are sometimes legitimately messy — at minimum, ban the old term from *new* code immediately, and convert the old term in user-facing files where it's visible.
 
 ### Domain glossary as a living doc
 
@@ -186,7 +186,7 @@ Yes — and the code follows. The cost of one rename across a codebase that uses
 
 ### "Naming is hard, let's just ship"
 
-Naming is hard *because it's important*. A name that lasts the project's life is worth ten minutes of thought now. The thought is one of the highest-leverage activities in software engineering.
+Naming is hard *because it's important*. A name that lasts the project's life is worth ten minutes of thought now. Few things you can spend ten minutes on pay back as much.
 
 ### "I'll rename later when the business is sure about the term"
 

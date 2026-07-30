@@ -14,7 +14,7 @@ This is the complement to `dead-code-deletion-on-sight`. That skill deletes code
 ## The iron rule
 
 ```
-NEVER leave a superseded path reachable without a deprecation marker, a guard against new uses, and a removal trigger.
+NEVER leave a replaced path reachable without a deprecation marker, a guard against new uses, and a removal trigger.
 ```
 
 **No exceptions:**

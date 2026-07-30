@@ -297,7 +297,7 @@ Apply incrementally. Next time you'd write `if (entity.x === ...)` outside the e
 - A `validators/` directory disconnected from the types it validates.
 - A workflow function whose body is a long `if/else` over entity state.
 - A bug post-mortem where "we forgot to check X in one place." The rule was duplicated; only one copy got fixed.
-- **The flag-bag half-measure:** `isConfirmed` / `isCancelled` booleans extracted into a context object — but computed in a *caller* (a UI component, a context-builder) rather than the entity's domain module, while other code still re-reads raw `entity.status`. The tell is that the flags and the raw checks coexist with no single owner. The fix is still a per-entity domain module — but the booleans must *originate* there, not be derived ad hoc upstream.
+- **The flag-bag half-measure:** `isConfirmed` / `isCancelled` booleans extracted into a context object — but computed in a *caller* (a UI component, a context-builder) rather than the entity's domain module, while other code still re-reads raw `entity.status`. The tell is that the flags and the raw checks coexist with no single owner. The fix is still a per-entity domain module — but the booleans must *originate* there, not be derived case-by-case upstream.
 - A "feature envy" smell — function uses another module's fields more than its own arguments.
 
 **All of these mean: the decision belongs in the module that owns the data, not in the caller.**

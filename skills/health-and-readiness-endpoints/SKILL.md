@@ -9,7 +9,7 @@ description: Use when a service's only health endpoint is an unconditional 200 s
 
 **A long-running service exposes two different answers to two different questions: liveness ("is this process wedged?" — process-local, never checks a dependency) and readiness ("should traffic route here right now?" — critical dependencies usable, not draining).** They exist because the orchestrator reacts differently: a failed liveness probe restarts the instance; a failed readiness probe only stops routing to it.
 
-Conflate them, or stub them, and the probes act on wrong information — which means restarts that fix nothing and traffic sent to instances that can't serve it.
+Answer both questions with one check, or stub them, and the probes act on wrong information — which means restarts that fix nothing and traffic sent to instances that can't serve it.
 
 ## The default rule
 

@@ -59,7 +59,7 @@ The security fix in particular should never have ridden in behind "remove consol
 
 ## Why this matters
 
-On a **squash-merge** workflow the *PR* — not the individual commit — is the bisect/revert unit on `main`, so the `git bisect` / revert benefits below apply at *review time* (and on main only where commits survive the merge). That's not a reason to skip splitting: a clean split still makes review tractable, and a clear PR title/body becomes the durable record on main. Where commits *do* survive (merge or rebase workflows), the benefits extend to `main` too.
+On a **squash-merge** workflow the *PR* — not the individual commit — is the bisect/revert unit on `main`, so the `git bisect` / revert benefits below apply at *review time* (and on main only where commits survive the merge). That's not a reason to skip splitting: a clean split still keeps review manageable, and a clear PR title/body becomes the durable record on main. Where commits *do* survive (merge or rebase workflows), the benefits extend to `main` too.
 
 | Mixed commit | Split commits |
 |---|---|

@@ -27,7 +27,7 @@ interpolated prose string. Every variable is a field on a structured event.
 - Not for scripts and workers — anything that runs against production emits logs, not prints
 - Local pretty-printing is not an exception: it's a rendering transport over the same structured call site
 
-Within the rule, one strong _default_ rather than invariant: keep the message itself constant. Duplicating a field into the message for readability (`` `invoice ${id} sent` `` with `invoiceId` also in fields) doesn't lose data, but it defeats grouping — a constant message is what lets the aggregator count "how many of _these_". Prefer constant.
+Within the rule, one strong _default_ rather than an invariant: keep the message itself constant. Duplicating a field into the message for readability (`` `invoice ${id} sent` `` with `invoiceId` also in fields) doesn't lose data, but it defeats grouping — a constant message is what lets the aggregator count "how many of _these_". Prefer constant.
 
 ## Why
 

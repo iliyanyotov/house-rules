@@ -136,7 +136,7 @@ One-off scripts run against production data with production credentials, and are
 |---|---|
 | "Node is single-threaded, it can't overload anything" | The event loop is single-threaded; the 10k sockets and pool checkouts it opens are not. |
 | "We tested with realistic data" | Realistic today. The fan-out scales with the table; the pool doesn't. |
-| "allSettled means failures are handled" | It handles *rejections*, not load. Concurrency is orthogonal to failure semantics. |
+| "allSettled means failures are handled" | It handles *rejections*, not load. How many run at once and what happens when one fails are two separate problems. |
 | "We need it as fast as possible" | Unbounded isn't fastest — it's pool-thrashing, retry-amplifying, and OOM-prone. Tune the cap. |
 | "The ORM manages connections for us" | It manages a *pool* — a fixed budget your fan-out spends all at once. |
 

@@ -31,7 +31,7 @@ You control your own writes; you can re-run them. You do **not** control a third
 
 The fix is structural. Store the **raw, unparsed** event the moment processing fails, with enough metadata to replay it. Bound in-line retries so a poison event can't loop. Make the handler idempotent so replay — manual or automated — is always safe. The dead-letter table becomes the durable record of "things we received but couldn't yet process", and replay turns a lost event into a recoverable one.
 
-There's a rung-ordering worth naming before you have any of this: if you have **no** dead-letter store yet, returning a 5xx so the provider retries is *strictly better* than catch-log-return-200. The 5xx is lossy only if the provider's own retry budget exhausts; ACK-and-drop is lossy immediately. The fully-correct state is persist-then-2xx — but never let "we return 500" be mistaken for the worst case. The worst case is the silent 200.
+There's a ranking worth naming before you have any of this: if you have **no** dead-letter store yet, returning a 5xx so the provider retries is *strictly better* than catch-log-return-200. The 5xx is lossy only if the provider's own retry budget exhausts; ACK-and-drop is lossy immediately. The fully-correct state is persist-then-2xx — but never let "we return 500" be mistaken for the worst case. The worst case is the silent 200.
 
 ## Detection
 
@@ -184,7 +184,7 @@ The dead-letter store grows; left alone it grows forever. Delete on successful r
 
 ## Related
 
-- `idempotency-keys-on-writes` — dedup on arrival before processing
+- `idempotency-keys-on-writes` — dedupe on arrival before processing
 - `retry-with-jitter-and-budget` — bound in-line attempts, then dead-letter
 - `steady-state-purge-unbounded-growth` — the dead-letter table needs a retention policy
 - `outbox-for-atomic-write-and-publish` — the outbox guarantees the event is sent; this catches the ones that fail after delivery

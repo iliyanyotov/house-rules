@@ -81,7 +81,7 @@ One catch: `allSettled` waits for *every* leaf to settle — a garnish call with
 
 ### Partial success over a collection
 
-When the leaves are *homogeneous* and partial success is acceptable (sending N notifications, syncing N rows), keep the fulfilled results and log the rejected count — the operation degrades to "most of it worked" instead of all-or-nothing:
+When the leaves are *all the same kind of work* and partial success is acceptable (sending N notifications, syncing N rows), keep the fulfilled results and log the rejected count — the operation degrades to "most of it worked" instead of all-or-nothing:
 
 ```ts
 // allSettled fixes failure semantics, not concurrency — for input-sized
@@ -192,7 +192,7 @@ They will — from logs, metrics, breaker state. They don't need to know via *ev
 
 ### "I'll add a try/catch around it"
 
-A bare `try { ... } catch { return null; }` collapses three states (loading, broken, empty) into one. The caller can't tell what happened. Push the criticality decision into the *fan-out shape*, not into ad-hoc try/catch.
+A bare `try { ... } catch { return null; }` collapses three states (loading, broken, empty) into one. The caller can't tell what happened. Push the criticality decision into the *fan-out shape*, not into case-by-case try/catch.
 
 ### "We built a fallback path, so we're covered"
 

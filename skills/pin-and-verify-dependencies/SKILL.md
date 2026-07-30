@@ -84,7 +84,7 @@ npm ci --ignore-scripts     # CI (local: npm install --ignore-scripts)
 # ❌ npm install — postinstall from any dependency (or transitive dep) runs immediately.
 ```
 
-Most dependencies don't need a post-install script at all; the ones that do (native builds) are a short, reviewable list. Note that npm's `--ignore-scripts` also skips your *own* project's lifecycle scripts (`prepare`, `postinstall`) — run those explicitly as a separate build step where needed (Bun's default only gates *dependency* scripts, so this caveat doesn't apply there).
+Most dependencies don't need a post-install script at all; the ones that do (native builds) are a short, reviewable list. Note that npm's `--ignore-scripts` also skips your *own* project's lifecycle scripts (`prepare`, `postinstall`) — run those explicitly as a separate build step where needed (Bun's default only gates *dependency* scripts, so this warning doesn't apply there).
 
 ### Vet a dependency before it enters the tree
 

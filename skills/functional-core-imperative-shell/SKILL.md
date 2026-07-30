@@ -9,7 +9,7 @@ description: Use when a function under test requires mocking the DB, the clock, 
 
 **Prefer pure functions for business decisions**—data in, data out, with no I/O, clock, randomness, or network. Keep orchestration and effects in an imperative shell.
 
-The split is a design default, not a demand to extract every trivial transformation. Extract the decision-making core when logic and effects are tangled, independently useful, or hard to test through the public boundary.
+The split is a design default, not a demand to extract every trivial transformation. Extract the decision-making core when logic and effects are tangled, when the logic is independently useful, or when it's hard to test through the public boundary.
 
 ## The default rule
 
@@ -158,7 +158,7 @@ Yes. It's also honest. The verbosity is a *signal* about how much code depends o
 
 ### "Mocking is fine, tests work"
 
-Tests that pass with mocks tell you the mocks work. They don't tell you the system works. Pure-function tests, by contrast, exercise actual logic with actual inputs. The difference is the difference between proof and theater.
+Tests that pass with mocks tell you the mocks work. They don't tell you the system works. Pure-function tests, by contrast, exercise actual logic with actual inputs. That's the difference between proof and theater.
 
 ### "Some things can't be pure — DB queries, network calls"
 

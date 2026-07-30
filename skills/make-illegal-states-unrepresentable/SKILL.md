@@ -38,7 +38,7 @@ You are violating the rule if any of these are true:
 - A component reads `if (loading) ...; if (error) ...; if (data) ...` and the branches aren't exhaustive.
 - A form state has `editingId: string | null` paired with `editingDraft: T | null` that must be set/unset together.
 - A type description uses the words "if X then Y is set" — that's the rule that should be in the type.
-- A component with multiple correlated `useState` calls: `isSubmitting`, `isSubmitted`, `submitStatus` — the illegal combos (`isSubmitting && isSubmitted`) are bugs waiting to surface.
+- A component with multiple correlated `useState` calls: `isSubmitting`, `isSubmitted`, `submitStatus` — the illegal combinations (`isSubmitting && isSubmitted`) are bugs waiting to surface.
 
 ## The pattern
 
@@ -87,7 +87,7 @@ const [submitStatus, setSubmitStatus] = useState<{
   message: string;
 }>({ type: null, message: '' });
 
-// Illegal combos the compiler can't catch:
+// Illegal combinations the compiler can't catch:
 //   isSubmitting && isSubmitted
 //   submitStatus.type === 'success' && !isSubmitted
 //   isSubmitted && submitStatus.type === null
@@ -104,7 +104,7 @@ const [state, setState] = useState<SubmitState>({ kind: 'idle' });
 
 The transition `idle → submitting → success | error` is encoded in the type. The component cannot render in an impossible state because impossible states don't exist.
 
-Collapse *correlated* state, not *orthogonal* state. In a multi-step form the wizard step is its own union (`WizardStep`) and the submit lifecycle is a *second* union (`SubmitState`) — they vary independently, so forcing them into one union creates impossible-product noise, not safety. The rule is "one union per axis of variation", not "one union per component."
+Collapse state that moves *together*, not state that moves *independently*. In a multi-step form the wizard step is its own union (`WizardStep`) and the submit lifecycle is a *second* union (`SubmitState`) — they vary independently, so forcing them into one union creates a noisy cross-product of variants, not safety. The rule is "one union per axis of variation", not "one union per component."
 
 ### "Either A or B" — never two correlated optionals
 
@@ -139,7 +139,7 @@ The boundary returns a `Result`; the consumer pattern-matches once. No `if (resu
 
 ### "But fetching libraries return `isLoading`, `data`, `error` — that's the pattern"
 
-That's their *projection* for ergonomic destructuring, and they also expose a `status` discriminant for exactly this reason. Internally, those libraries model the state as a discriminated union; the parallel booleans are derived. When *you* design types, model the union. When you consume their types, use the `status` field.
+That's a convenience view for easy destructuring, and they also expose a `status` discriminant for exactly this reason. Internally, those libraries model the state as a discriminated union; the parallel booleans are derived. When *you* design types, model the union. When you consume their types, use the `status` field.
 
 ### "Discriminated unions are awkward to spread or partially update"
 

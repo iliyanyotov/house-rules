@@ -187,7 +187,7 @@ Tests work *until* you change the upstream type. Then every test that mocked it 
 
 ### "Hand-written interfaces are a maintenance burden"
 
-Less than the alternative. The interface is a few lines; it's stable across SDK upgrades; it's a documented contract. The full type is dependent on the SDK author's choices and breaks tests on minor version bumps.
+Less than the alternative. The interface is a few lines; it's stable across SDK upgrades; it's a documented contract. The full type depends on the SDK author's choices and breaks tests on minor version bumps.
 
 ### "It's the same `db` instance — what's the point of pretending it's smaller?"
 

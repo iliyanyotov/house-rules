@@ -171,7 +171,7 @@ The cost is one function call in a path that, by construction, can't execute. If
 
 ### "My union has 20 variants, the switch is too long"
 
-That's a different problem. Either the union is over-faceted (split into nested unions) or the consumer is doing too much (split the function). The exhaustiveness check is right; the abstraction below it is wrong.
+That's a different problem. Either the union bundles too many dimensions (split into nested unions) or the consumer is doing too much (split the function). The exhaustiveness check is right; the abstraction below it is wrong.
 
 ## Red flags
 

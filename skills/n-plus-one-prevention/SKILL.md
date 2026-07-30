@@ -137,7 +137,7 @@ const [customerList, itemList] = orderList.length === 0
 // Then stitch in memory — O(N) work, but bounded by query count.
 ```
 
-The pattern is **page, fetch each relation by ID list, stitch in memory**. This example uses three fixed round trips for one bounded page. It does not claim three queries have the same latency or data cost as one join—only that query count no longer grows once per item. If a page can exceed the database's bind-parameter limit, reduce the page size or chunk against a documented maximum; never send an unbounded `IN (...)` list.
+The pattern is **page, fetch each relation by ID list, stitch in memory**. This example uses three fixed round trips for one bounded page. It does not claim three queries have the same latency or data cost as one join — only that query count no longer grows once per item. If a page can exceed the database's bind-parameter limit, reduce the page size or chunk against a documented maximum; never send an unbounded `IN (...)` list.
 
 A bonus: the batch rewrite also fixes an ordering bug the loop version often hides. `Promise.all(items.map(async ...))` that `push`es results resolves in *completion* order, not input order — so the output is non-deterministically shuffled. Stitching in memory by mapping over the *original* list (looking each relation up by ID) preserves order for free.
 

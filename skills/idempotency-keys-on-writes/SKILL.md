@@ -94,7 +94,7 @@ async function handleCreateOrder(req: Request) {
   }
 
   // status === 'owned' — a fresh insert, or we reclaimed an expired lease. `generation`
-  // is a monotonically increasing fencing token: a stale owner can never complete generation N
+  // is a fencing token that can only increase: a stale owner can never complete generation N
   // after a reclaimer has advanced the row to N+1.
   const generation = reservation.generation;
   const result = await db.transaction(async (tx) => {

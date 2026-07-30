@@ -29,7 +29,7 @@ NEVER ship a read whose result size grows with usage without an explicit bound.
 Michael Nygard catalogs this as the **Unbounded Result Sets** stability antipattern: the application trusts the database not to return too much, and the database — asked for everything — cheerfully complies. The failure arrives on three axes at once:
 
 1. **Memory.** Rows × row width × the copies your stack makes (driver buffer, ORM objects, JSON serialization) — a full-table read materializes all of it simultaneously. The OOM kills the whole process, not just the greedy request.
-2. **Latency.** The endpoint's response time is now a function of table size. It degrades monotonically, slowly enough that no deploy is to blame, until it crosses the timeout and becomes an outage.
+2. **Latency.** The endpoint's response time is now a function of table size. It only ever gets worse, slowly enough that no deploy is to blame, until it crosses the timeout and becomes an outage.
 3. **Everything else.** A long scan holds a pooled connection and floods the network; concurrent requests queue behind it — one unbounded read is a self-inflicted load spike (`shed-load-under-overload`'s problem, caused from inside).
 
 ```ts
@@ -114,7 +114,7 @@ If the unbounded read exists to compute a count, a sum, or a "latest per group",
 
 ### "There isn't much data yet"
 
-That's precisely the condition under which unbounded reads get written — they only *stay* safe if the product fails. The bound costs a few lines now; retrofitting pagination onto a shipped API contract later costs a versioned API-contract migration, with every existing consumer to carry through it.
+That's precisely the condition under which unbounded reads get written — they only *stay* safe if the product fails. The bound costs a few lines now; retrofitting pagination onto a shipped API contract later costs a versioned migration, with every existing consumer carried through it.
 
 ### "The client needs the full list for its search/filter UI"
 

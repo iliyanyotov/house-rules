@@ -126,12 +126,12 @@ const [user, setUser] = useState(null);
 const [user, setUser] = useState<User | null>(null);
 ```
 
-Rule of thumb: if inference produces the right type, don't annotate. If it produces something degenerate — `null`, `[]`, and `{}` collapse to `null`/`never[]`/`{}` — annotate to state the real intent. If inference is already correct but you want a compile-time validity check, reach for `satisfies`.
+Rule of thumb: if inference produces the right type, don't annotate. If it produces something too broad or too narrow to be useful — `null`, `[]`, and `{}` collapse to `null`/`never[]`/`{}` — annotate to state the real intent. If inference is already correct but you want a compile-time validity check, reach for `satisfies`.
 
-### Exported `const` — annotate to fix degenerate inference, `satisfies` to check
+### Exported `const` — annotate to fix a useless inferred type, `satisfies` to check
 
 ```ts
-// ❌ Inference is degenerate — `{ attempts: number; lastError: null }`.
+// ❌ The inferred type is useless — `{ attempts: number; lastError: null }`.
 //    `lastError` is now pinned to `null` and can never hold an error.
 export const RETRY_CONFIG = { attempts: 3, lastError: null };
 

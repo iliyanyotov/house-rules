@@ -165,6 +165,6 @@ Observation ≠ serialization. Start work concurrently, then observe it together
 
 ## Reference
 
-- [`@typescript-eslint/no-floating-promises`](https://typescript-eslint.io/rules/no-floating-promises/) — the lint rule (in the recommended type-checked config); its docs cover the `void` caveat. Companions: `no-misused-promises` and `return-await` (the `return await`-inside-`try` refinement above).
+- [`@typescript-eslint/no-floating-promises`](https://typescript-eslint.io/rules/no-floating-promises/) — the lint rule (in the recommended type-checked config); its docs cover the exception for `void`. Companions: `no-misused-promises` and `return-await` (the `return await`-inside-`try` refinement above).
 - [Node.js `process` events — `unhandledRejection` / `rejectionHandled`](https://nodejs.org/api/process.html#event-unhandledrejection) — the runtime semantics: no handler within one event-loop turn → unhandled.
 - [Node.js v15.0.0 release notes](https://nodejs.org/en/blog/release/v15.0.0) — the default mode change from `warn` to `throw`: unhandled rejections are fatal by default on every Node since.

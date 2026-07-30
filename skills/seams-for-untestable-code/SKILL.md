@@ -365,5 +365,5 @@ If your seam-extraction produced a 10-parameter function, that's a *signal* the 
 
 ## Reference
 
-- Michael Feathers, *Working Effectively with Legacy Code* (2004) — the canonical book on this discipline. The chapter on Seams is the source. Feathers names three seam types (preprocessing, link, object); in modern JS/TS the practical taxonomy maps to the three above (parameter, constructor, module-import).
+- Michael Feathers, *Working Effectively with Legacy Code* (2004) — the canonical book on this discipline. The chapter on Seams is the source. Feathers names three seam types (preprocessing, link, object); in modern JS/TS those map to the three above (parameter, constructor, module-import).
 - Steve Freeman & Nat Pryce, *Growing Object-Oriented Software, Guided by Tests* (2009) — frames the same idea from the *forward* direction: when writing new code, design it with seams from the start. Their term is "ports" — interfaces that the domain depends on, with adapters that implement them.

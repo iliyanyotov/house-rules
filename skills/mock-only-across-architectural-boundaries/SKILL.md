@@ -265,7 +265,7 @@ Tools enable; they don't recommend. Module-level mocking is a sharp tool. The ru
 
 ## Related
 
-- `test-observable-behavior-not-implementation` — the corollary: assert outcomes, not internals
+- `test-observable-behavior-not-implementation` — the other side of the same coin: assert outcomes, not internals
 - `functional-core-imperative-shell` — mocks live only in the shell
 - `seams-for-untestable-code` — seams give mocks a legitimate boundary to sit at
 
@@ -273,5 +273,5 @@ Tools enable; they don't recommend. Module-level mocking is a sharp tool. The ru
 
 - Vladimir Khorikov, *Unit Testing: Principles, Practices, and Patterns* (2020), ch. 5, ch. 8 — *"Use mocks only for unmanaged dependencies."* Distinguishes managed vs unmanaged.
 - Steve Freeman & Nat Pryce, *Growing Object-Oriented Software, Guided by Tests* (2009) — "mock roles, not objects." Mock at ports (adapters), not at internal collaborators.
-- Martin Fowler, ["Mocks Aren't Stubs"](https://martinfowler.com/articles/mocksArentStubs.html) (2007) — the original taxonomy. Classical-vs-London framing. Still the clearest treatment of when each style fits.
+- Martin Fowler, ["Mocks Aren't Stubs"](https://martinfowler.com/articles/mocksArentStubs.html) (2007) — the original classification of test doubles. Classical-vs-London framing. Still the clearest treatment of when each style fits.
 - Gary Bernhardt, "Boundaries" (2012) — functional-core / imperative-shell. A pure core has nothing to mock.

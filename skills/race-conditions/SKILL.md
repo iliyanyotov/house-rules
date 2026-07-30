@@ -27,7 +27,7 @@ NEVER assume async operations land in the order you issued them. Cancel obsolete
 
 JavaScript is single-threaded but **not race-free.** Every `await` is a suspension point where another callback can run. Every `setTimeout` callback can fire after its component has unmounted. Every handler can be invoked twice before the first finishes. Every `useEffect` cleanup can race with the effect it's cleaning up.
 
-Races are pernicious because they almost always *work* during development. The bug surfaces in production with one user out of ten thousand, when the network is slow, or after a deploy when the function instance is warm. By then the developer has moved on and the original `console.log` has aged out.
+Races are especially dangerous because they almost always *work* during development. The bug surfaces in production with one user out of ten thousand, when the network is slow, or after a deploy when the function instance is warm. By then the developer has moved on and the original `console.log` has aged out.
 
 The fix shape is consistent: **name the concurrent operations explicitly, cancel obsolete ones, and prevent stale writes.**
 
@@ -35,7 +35,7 @@ The fix shape is consistent: **name the concurrent operations explicitly, cancel
 
 You are violating the rule if any of these are true:
 
-- A `useEffect` fetches data and calls `setState` without checking that the effect hasn't been superseded.
+- A `useEffect` fetches data and calls `setState` without checking that a newer effect hasn't already replaced it.
 - A `setTimeout` / `setInterval` callback calls `setState` without a cleanup that cancels the timer.
 - A handler does `select` → mutate-in-memory → `update` without a transaction or atomic operation.
 - A button calls a mutation and doesn't disable itself; rapid double-click submits twice.
@@ -213,7 +213,7 @@ If the race silently corrupts data, the user doesn't see an error — that's the
 |---|---|
 | "JS is single-threaded" | Concurrency ≠ parallelism. The event loop interleaves continuations. |
 | "I tested it, it works" | You tested the happy interleaving. Races appear under timing pressure. |
-| "It's a UI issue, not a backend one" | Both layers race in JS. UI races stale-overwrite state; backend races corrupt data. |
+| "It's a UI issue, not a backend one" | Both layers race in JS. UI races overwrite fresh state with stale data; backend races corrupt data. |
 | "Optimistic locking is overkill" | For some operations, sure. For money / inventory / identity, never. |
 | "We use Postgres, it handles this" | Postgres handles consistent writes *within* a transaction. Reads-then-writes split across two queries don't get the benefit unless wrapped. |
 | "I'll add error handling for the corrupt state" | The corrupt state is the bug. Detection-and-recovery is more expensive than prevention. |
@@ -226,5 +226,5 @@ If the race silently corrupts data, the user doesn't see an error — that's the
 ## Reference
 
 - Dan Abramov, ["A Complete Guide to useEffect"](https://overreacted.io/a-complete-guide-to-useeffect/) — why effects + state are inherently racy and how cleanup eliminates the race.
-- Martin Kleppmann, *Designing Data-Intensive Applications* (2017), ch. 7 — lost updates and write skew: the database-side taxonomy of read-then-write races.
+- Martin Kleppmann, *Designing Data-Intensive Applications* (2017), ch. 7 — lost updates and write skew: the database-side classification of read-then-write races.
 - [Postgres docs on transaction isolation levels](https://www.postgresql.org/docs/current/transaction-iso.html) — required reading before claiming "the DB handles it."

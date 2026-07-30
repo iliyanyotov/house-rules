@@ -20,7 +20,7 @@ prefix conventions below are this codebase's house style: follow them for team
 consistency, not because they are cross-language law.
 ```
 
-If you have to read the body to know what the function does, the name is wrong — that part holds everywhere. But the *particular* conventions this skill teaches are choices: the Action/High-Context/Low-Context ordering is one popular convention (not an industry standard); the `get` vs `fetch` memoization distinction is a house rule (much of the JS ecosystem's `getUser`/`getServerSession` hit the wire); boolean `is`/`has`/`should` prefixes are a strong TS/JS default but other languages differ (Ruby's `?` suffix, Python's bare adjectives). Within this codebase, apply them consistently; across languages, keep the intent-revealing invariant and adapt the surface.
+If you have to read the body to know what the function does, the name is wrong — that part holds everywhere. But the *particular* conventions this skill teaches are choices: the Action/High-Context/Low-Context ordering is one popular convention (not an industry standard); the `get` vs `fetch` memoization distinction is a house rule (across much of the JS ecosystem, `getUser`/`getServerSession` hit the wire); boolean `is`/`has`/`should` prefixes are a strong TS/JS default but other languages differ (Ruby's `?` suffix, Python's bare adjectives). Within this codebase, apply them consistently; across languages, keep the intent-revealing invariant and adapt the surface.
 
 **The one framework carve-out:** a convention boundary that supplies the context is fine — JSX `onSubmit={handleSubmit}` reads clearly because the prop names the event (see Pressure resistance).
 
@@ -80,7 +80,7 @@ const user = await db.users.findUnique({ where: { id } });
 
 A function returning a collection ends in plural (`getInvoices`); a function returning a scalar uses singular (`getInvoice`).
 
-### Context — enough to disambiguate, no more
+### Context — enough to tell things apart, no more
 
 ```ts
 // ❌ Over-named — duplicates surrounding context.
@@ -138,7 +138,7 @@ function handleSubmit(e: FormEvent) { /* ... */ }
 
 **"Long names are ugly."** Wrong is uglier. `markInvoiceAsPaid` is two more words than `update` and infinitely clearer at the call site. Editors autocomplete; you type the long name once.
 
-**"`get` and `fetch` are interchangeable."** In casual JS, yes. In a disciplined codebase, the distinction tells the reader whether to expect a per-call network hit. Reserving the verbs is cheap; conflating them is permanent ambiguity.
+**"`get` and `fetch` are interchangeable."** In casual JS, yes. In a disciplined codebase, the distinction tells the reader whether to expect a per-call network hit. Reserving the verbs is cheap; using them interchangeably is permanent ambiguity.
 
 **"The framework uses `handle` without qualifiers."** Framework conventions override at framework boundaries — `<form onSubmit={handleSubmit}>` is fine because the JSX provides the LC. A `handleSubmit` *exported from a module*, on the other hand, is too vague.
 

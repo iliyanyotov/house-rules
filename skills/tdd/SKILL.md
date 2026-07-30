@@ -103,7 +103,7 @@ function calculateShipping(weight: number, distance: number): number {
 
 **Pressure:** "Writing tests takes extra time."
 
-**Response:** A failing test localizes the defect to the lines you just wrote; debugging later means re-deriving that context from scratch. Industrial studies (Nagappan et al. 2008; Fucci et al. 2017) find lower defect density for moderately more upfront time.
+**Response:** A failing test localizes the defect to the lines you just wrote; debugging later means re-deriving that context from scratch. Industrial studies (Nagappan et al. 2008; Fucci et al. 2017) find lower defect density in exchange for moderately more upfront time.
 
 **Action:** The test you write now saves hours of debugging later.
 
@@ -115,7 +115,7 @@ function calculateShipping(weight: number, distance: number): number {
 
 **Action:** Pull the pure logic out. Inject dependencies. Test the core, integration-test the shell.
 
-**Caveat:** this is about functions mixing *logic* with I/O. Once the logic is extracted, the remaining thin **orchestration shell** — the handler that just calls repo, service, webhook in order — has little logic of its own and is legitimately tested by stubbing those collaborators (or with an integration test). Many stubs in a *shell* test is expected; many stubs in a test that should be exercising *pure logic* is the smell.
+**Where this stops applying:** the smell is about functions mixing *logic* with I/O. Once the logic is extracted, the remaining thin **orchestration shell** — the handler that just calls repo, service, webhook in order — has little logic of its own and is legitimately tested by stubbing those collaborators (or with an integration test). Many stubs in a *shell* test are expected; many stubs in a test that should be exercising *pure logic* are the smell.
 
 ## Red flags
 
@@ -126,7 +126,7 @@ function calculateShipping(weight: number, distance: number): number {
 - Tests that pass immediately (you never saw them fail)
 - A test of *pure business logic* mocks more than one module — that core should be extracted and tested without mocks. (An orchestration/handler shell whose whole job is coordinating several collaborators legitimately stubs each one; the smell is mocks where pure logic should be.)
 - A *unit* test of pure logic reaches for a real DB, network, or filesystem — extract the logic and test it directly. (Exercising the real DB is correct in an *integration* test: the DB is a managed dependency, run live — see `mock-only-across-architectural-boundaries`.)
-- A test hand-monkey-patches `Date.now`; use runner-controlled time or an explicit clock seam
+- A test monkey-patches `Date.now` by hand; use runner-controlled time or an explicit clock seam
 
 **All of these mean: stop. Write the test first.**
 

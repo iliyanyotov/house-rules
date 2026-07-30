@@ -141,7 +141,7 @@ The chain isn't *wrong* — it's the *default reach*. Boring is the baseline; cl
 |---|---|
 | "It's a one-liner, that's the point" | One-liners that take 30s to read are compressed, not concise. |
 | "Functional style is cleaner" | Sometimes. When it's not, switch styles in that function. |
-| "Smart types are self-documenting" | Only to whoever wrote them. To everyone else, they're opaque. |
+| "Smart types are self-documenting" | Only to whoever wrote them. To everyone else, they're unreadable. |
 | "It's a small project, who cares" | Small projects grow. The reader six months from now has no context. |
 | "We need to look modern" | The most sophisticated code looks boring. Boring enables fast change. |
 

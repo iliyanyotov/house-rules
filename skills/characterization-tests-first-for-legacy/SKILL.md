@@ -25,7 +25,7 @@ NEVER change unfamiliar code without first pinning its current behavior in tests
 
 ## Why
 
-Untested legacy code is opaque. Every line you change is a roll of the dice — you might fix the bug, you might break a feature whose tests don't exist. The fix becomes a discovery process that finishes when QA or production tells you what else broke.
+Untested legacy code is a black box. Every line you change is a roll of the dice — you might fix the bug, you might break a feature whose tests don't exist. The fix becomes a discovery process that finishes when QA or production tells you what else broke.
 
 The characterization test inverts that. You spend an hour up front discovering what the code does. The test suite that comes out is *ugly* — it asserts on weird edge cases, off-by-one quirks, suspicious-looking outputs. It documents the lived behavior, not the intended behavior. That's the point: now you can change the code, and the test tells you exactly what you altered. **The bug fix becomes a *deliberate* test failure, not a *surprise* production incident.**
 
@@ -127,7 +127,7 @@ You don't need to characterize every function in the codebase. Characterize the 
 
 Prefer **explicit assertions** (`toEqual`, `objectContaining`) by default, even for complex objects — they document the intent ("these fields, these values") and fail with a readable diff. Pin a complex array-of-objects with `expect(rows).toEqual([objectContaining({ start, end, source })])`, not a blanket snapshot.
 
-Reach for a **snapshot** only in two cases: (a) the output has many structurally-similar variants (e.g. a redactor checked across a dozen field-name shapes), where hand-writing each assertion is noise; or (b) the exact serialized form *is* the contract and writing it by hand is pure transcription. The snapshot *is* the assertion — read it, confirm it matches reality, commit it.
+Reach for a **snapshot** only in two cases: (a) the output has many structurally similar variants (e.g. a redactor checked across a dozen field-name shapes), where hand-writing each assertion is noise; or (b) the exact serialized form *is* the contract and writing it by hand is pure transcription. The snapshot *is* the assertion — read it, confirm it matches reality, commit it.
 
 ```ts
 test('parseInvoice produces this exact shape today', () => {

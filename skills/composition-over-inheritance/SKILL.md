@@ -212,7 +212,7 @@ Square *has* an area; it isn't *a kind of* Rectangle. The hierarchy looked right
 
 ### "It's the standard OOP approach"
 
-OOP-with-inheritance is one paradigm among several. Modern codebases — especially in TypeScript — lean on capability interfaces and function composition because they scale better. The fact that a textbook uses inheritance doesn't make inheritance the right tool for your code.
+OOP-with-inheritance is one style among several. Modern codebases — especially in TypeScript — lean on capability interfaces and function composition because they scale better. The fact that a textbook uses inheritance doesn't make inheritance the right tool for your code.
 
 ### "It's a true is-a relationship"
 

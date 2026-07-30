@@ -9,7 +9,7 @@ description: Use when shipping a risky feature — schema migration, payment int
 
 **Code is deployed; *features* are released.** A deploy is the platform-mediated act of getting binaries into production; a release is the operator-mediated act of letting users see new behavior. The two must be separable, so that risky behavior can be turned on by a flag flip (seconds, reversible) instead of a re-deploy (minutes, requires CI, and may carry unrelated changes).
 
-The release surface is a **typed flag**, not a free-form env var. Two things are typed, and they're orthogonal:
+The release surface is a **typed flag**, not a free-form env var. Two things are typed, and they vary independently:
 
 - **The flag keyspace** — *which flags exist*. A bounded union of flag identifiers (`type FeatureId = keyof typeof FLAGS`, or a string-literal union of names) so a typo'd slug is a compile error, not a silent always-off. This is the load-bearing invariant, and it holds whether each flag is a boolean or a richer value.
 - **The per-flag value** — a simple `boolean` is the common, fully-valid case. A multi-state union (`'classic' | 'v2-shadow' | …`) is worth it only when the *consumer* must branch differently per stage in code.
@@ -39,7 +39,7 @@ Coupling them means every deploy carries every new behavior. The blast radius of
 
 Flags decouple these. The deploy is benign — new code is in production but the new behavior is *off*. The release is the flag flip — a few users at a time, then all users, with the ability to flip back to *off* in seconds without a re-deploy.
 
-This is core to the DORA framing of "deployment frequency" being a *leading* indicator of organizational health: teams that decouple deploy from release deploy more often *and* break things less often, because the deploys are smaller, mostly-benign, and recoverable independent of CI.
+This is core to the DORA framing of "deployment frequency" being a *leading* indicator of organizational health: teams that decouple deploy from release deploy more often *and* break things less often, because the deploys are smaller, mostly-benign, and recoverable independently of CI.
 
 ## Detection
 
@@ -48,7 +48,7 @@ You are violating the rule if any of these are true:
 - A risky feature ships by re-deploying main with the feature on; rollback plan is "revert and re-deploy."
 - A feature flag is a free-form env var like `ENABLE_NEW_CHECKOUT=true` with no typed wrapper — the flag *name* isn't drawn from a bounded keyspace, so a typo reads as silently-off. (A boolean value is fine; an *untyped* flag identifier is the smell.)
 - A flag is set in code (`const USE_NEW_FLOW = true;`) and "released" by editing the constant and re-deploying.
-- A *release/experiment* flag has no documented owner, no removal plan, and has been in the codebase >6 months. (Operational/kill-switch/permission flags are permanent by design — see the taxonomy below.)
+- A *release/experiment* flag has no documented owner, no removal plan, and has been in the codebase >6 months. (Operational/kill-switch/permission flags are permanent by design — see the table of flag kinds below.)
 - "Rollback" of a new feature requires editing data (because the old code can't read the new shape).
 - A feature was reverted by re-deploying an older commit, and that re-deploy lost an unrelated fix.
 - The codebase has 20+ accumulated flags from old launches, none of them removed.
@@ -121,7 +121,7 @@ Each stage is a flag flip or a cohort widening — seconds, no deploy. Note the 
 ### Consuming the flag — discriminated branch with shared parsing
 
 ```ts
-// ❌ Branching on an *untyped* ad-hoc boolean — no bounded keyspace, no default discipline.
+// ❌ Branching on an *untyped* one-off boolean — no bounded keyspace, no default discipline.
 //    (A typed boolean flag is fine; the smell is the free-form `useNewCheckout` with no registry.)
 if (useNewCheckout) {
   return placeOrderV2(input);
@@ -211,7 +211,7 @@ The metadata isn't busywork — it's the *only* thing that prevents a release fl
 
 ### Not every flag is transient — classify by kind
 
-The removal discipline below applies to flags that exist to *ship a change*. But Hodgson's taxonomy (cited in the Reference) names kinds with different lifespans, and conflating them makes the ">6 months = bug" rule fire on flags that are permanent **by design**:
+The removal discipline below applies to flags that exist to *ship a change*. But Hodgson's classification (cited in the Reference) names kinds with different lifespans, and treating them as one makes the ">6 months = bug" rule fire on flags that are permanent **by design**:
 
 | Kind | Purpose | Lifespan |
 |---|---|---|
@@ -285,7 +285,7 @@ You have env vars. Start there. Migrate to a config service when you need runtim
 
 ### "Flags become permanent debt"
 
-Only if you let them. The rule's removal-plan half is *equally important* as the introduction half. Document the target removal date; track it in your issue tracker; treat a 6-months-old *release/experiment* flag as a bug. (Classify the flag first — operational, kill-switch, and permission flags are permanent and don't count as debt.)
+Only if you let them. The rule's removal-plan half is *just as important* as the introduction half. Document the target removal date; track it in your issue tracker; treat a 6-months-old *release/experiment* flag as a bug. (Classify the flag first — operational, kill-switch, and permission flags are permanent and don't count as debt.)
 
 ### "We need the new feature on for everyone immediately"
 

@@ -260,7 +260,7 @@ That's expand/contract with a JSON column as the "new shape." Same rule; just me
 
 - A PR titled like "rename X → Y" with one migration file and code changes both.
 - A *deploy* that ships a `DROP`/`RENAME`/narrowing migration together with the code that depends on the new shape — regardless of how many files the SQL is split across. (Multiple DDL statements in one file is *not* itself the smell; coupling a destructive change with its dependent code in one deploy is.)
-- A code review comment "let's also bump the type to be stricter" — the bump and the strictening should be separate deploys.
+- A code review comment "let's also bump the type to be stricter" — the bump and the tightening should be separate deploys.
 - A migration file with no corresponding stabilization window plan in the PR description.
 - The phrase "shouldn't be any traffic during deploy" in a PR description.
 - An enum change that removes a value, in any form.
@@ -276,7 +276,7 @@ That's expand/contract with a JSON column as the "new shape." Same rule; just me
 | "We have backups" | Backups recover *data*; they don't unbreak *traffic during the rollover window*. |
 | "One PR is cleaner" | One PR is cleaner *to write*. The split PRs are cleaner *to operate*. |
 | "We can pause traffic" | On any modern serverless or multi-region stack, you can't reliably pause traffic. |
-| "I'll do the migration manually after deploy" | Manual ad-hoc DDL is the version of expand/contract with no review and no test — strictly worse. |
+| "I'll do the migration manually after deploy" | Manual one-off DDL is the version of expand/contract with no review and no test — strictly worse. |
 
 ## Related
 

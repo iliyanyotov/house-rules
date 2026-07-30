@@ -186,7 +186,7 @@ Yes. Those are the ones to throw. The test: "Could a reasonable caller produce t
 
 ### "My function does I/O — it has to be able to fail"
 
-Two failure modes, two treatments. Validation failures (user input, schema mismatch) → return tagged result. Infrastructure failures (DB unreachable, timeout, OOM) → throw. The point of this rule is to stop conflating them.
+Two failure modes, two treatments. Validation failures (user input, schema mismatch) → return tagged result. Infrastructure failures (DB unreachable, timeout, OOM) → throw. The point of this rule is to stop treating the two as one.
 
 ## Red flags
 

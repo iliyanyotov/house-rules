@@ -135,7 +135,7 @@ A bare `// HACK` is just a warning sign; one with context is *information* — t
 async function placeOrder(/* ... */) { /* ... */ }
 ```
 
-This is the *good* kind of block comment. It explains a non-trivial *design decision* the code alone can't communicate — and which the next reader might otherwise "improve" by making (2) atomic with (1), breaking the recovery property.
+This is the *good* kind of block comment. It explains a *design decision* the code alone can't communicate — and which the next reader might otherwise "improve" by making (2) atomic with (1), breaking the recovery property.
 
 ### 7. Module-level orientation — when the file has quirks
 

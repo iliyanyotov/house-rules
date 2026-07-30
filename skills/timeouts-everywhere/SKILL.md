@@ -71,7 +71,7 @@ try {
 
 The discipline is the deadline, not the specific API.
 
-An abort signal is cooperative. `fetch` observes it, but an arbitrary SDK may ignore it. A timeout wrapper can guarantee that the caller regains control by the deadline; it cannot guarantee ignored underlying work stopped. Prefer adapters with real cancellation, and keep writes idempotent in case work finishes after the caller times out.
+An abort signal is cooperative. `fetch` observes it, but an arbitrary SDK may ignore it. A timeout wrapper can guarantee that the caller regains control by the deadline; it cannot guarantee that the ignored underlying work has stopped. Prefer adapters with real cancellation, and keep writes idempotent in case work finishes after the caller times out.
 
 ### Composing timeouts with user cancellation
 

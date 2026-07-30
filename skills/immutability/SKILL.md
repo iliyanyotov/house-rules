@@ -178,7 +178,7 @@ You are *now*. The next person on the codebase is not. The signature lies; their
 
 ### "But the function name is `updateUser`, mutation is implied"
 
-Rename: `withUpdatedUser`, `updatedUser`, or use a verb-noun convention that returns the new value. Names that imply mutation lie about the type system; either fix the name or fix the implementation.
+Rename: `withUpdatedUser`, `updatedUser`, or use a verb-noun convention that returns the new value. Names that imply mutation contradict the signature; either fix the name or fix the implementation.
 
 ## Red flags
 

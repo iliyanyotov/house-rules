@@ -277,7 +277,7 @@ function toProblemResponse(e: unknown): Response {
 
 This is `instanceof AppError` at exactly *one* site against a sealed base — a completely different thing from the `instanceof` chains in Detection, which branch on many ad-hoc error classes scattered across interior callers. Here the interior never discriminates; the boundary does it once.
 
-In a real app that boundary usually fans *in* several foreign taxonomies you don't own — a schema parser's error, an ORM's, a payment SDK's — so it won't be a single `instanceof YourBase`; it's a handful of type-guards mapping each foreign shape to a `code`. The discipline is that this fan-in lives at *exactly one site* and the interior never branches — not that everything extends one base.
+In a real app that boundary usually fans *in* several foreign error families you don't own — a schema parser's error, an ORM's, a payment SDK's — so it won't be a single `instanceof YourBase`; it's a handful of type-guards mapping each foreign shape to a `code`. The discipline is that this fan-in lives at *exactly one site* and the interior never branches — not that everything extends one base.
 
 The line both strategies refuse to cross is the stringly-typed one. `throw new Error('invoice not found')` answered by `if (e.message.includes('not found'))` is the failure mode — whether you return or throw, the discriminant must be a typed `kind`/`type`, never a message. Pick `Result` or typed-throw by where the decision lives; never pick bare strings.
 

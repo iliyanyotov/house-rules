@@ -118,7 +118,7 @@ Making a transaction- or tenant-scoped node a singleton leaks state across reque
 
 ### Sub-rule 4 — Adding a dependency touches exactly the root
 
-A new service is wired in one file, in (typically) two-to-three spots: the factory `new`, the constructor parameter, and the constructor call. Make that a checklist so it's never half-wired. If adding a dependency makes you edit five files, the graph isn't centralized.
+A new service is wired in one file, in (typically) two to three spots: the factory `new`, the constructor parameter, and the constructor call. Make that a checklist so it's never half-wired. If adding a dependency makes you edit five files, the graph isn't centralized.
 
 ### Sub-rule 5 — Reach for a container when wiring becomes the pain, not at a fixed count
 

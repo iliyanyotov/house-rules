@@ -44,7 +44,7 @@ You are violating the rule if any of these are true:
 
 ## The pattern
 
-The "through the door" lens — imagine the unit has one front door (the exported function), and the rest is opaque. What can you observe from outside?
+The "through the door" lens — imagine the unit has one front door (the exported function), and the rest is hidden from view. What can you observe from outside?
 
 - What it **returns** (or throws)
 - What it **writes** — to the DB, to an HTTP call out, to a queue

@@ -48,7 +48,7 @@ You are violating the rule if any of these are true:
 - A switch statement has 8+ cases and grows whenever the domain grows.
 - A function signature gets a new optional parameter every time a new use case appears.
 - A constructor or factory function takes a `type: string` and branches on it internally.
-- A "Manager" or "Service" class accretes methods every time the domain adds an entity.
+- A "Manager" or "Service" class gains methods every time the domain adds an entity.
 - A configuration object grows a new field for every new behavior toggle.
 - The phrase "add another flag to the function" appears in code review.
 

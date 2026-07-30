@@ -1,26 +1,26 @@
 ---
 name: circuit-breaker-on-flaky-deps
-description: Use when integrating with an external dependency that has a non-trivial failure rate — payment processors, LLM APIs, third-party search, partner services, internal services with known intermittency. Use when a slow dependency is degrading unrelated parts of the system. Use when log dashboards show a flat-top of timeouts during an upstream outage.
+description: Use when integrating with an external dependency that fails often enough to matter — payment processors, LLM APIs, third-party search, partner services, internal services with known intermittency. Use when a slow dependency is degrading unrelated parts of the system. Use when log dashboards show a flat-top of timeouts during an upstream outage.
 ---
 
 # Circuit breaker on flaky dependencies
 
 ## Overview
 
-**Any external dependency with non-trivial failure rate is called through a circuit breaker** with explicit open / half-open thresholds. When the breaker is open, the system fails fast with a documented fallback — it does not wait for the dependency.
+**Any external dependency that fails often enough to matter is called through a circuit breaker** with explicit open / half-open thresholds. When the breaker is open, the system fails fast with a documented fallback — it does not wait for the dependency.
 
 The breaker is a per-dependency state machine. Tripping it is automatic. Recovering from it is deliberate.
 
 ## The default rule
 
 ```
-Any dependency with a non-trivial failure rate gets a breaker with thresholds,
+Any dependency that fails often enough to matter gets a breaker with thresholds,
 cooldowns, and a named fallback — do not call a flaky dependency directly. The
 scope is "flaky", defined below.
 ```
 
 **When this doesn't apply:**
-- **The rule is scoped to *flaky* dependencies** — payment providers, LLM APIs, partner services, third-party search, any internal service with known intermittency, anything with a non-trivial failure rate. Those get a breaker; the exceptions here are about what *doesn't*.
+- **The rule is scoped to *flaky* dependencies** — payment providers, LLM APIs, partner services, third-party search, any internal service with known intermittency, anything that fails often enough to matter. Those get a breaker; the exceptions here are about what *doesn't*.
 - **A dependency with no meaningful failure rate doesn't need one** — a healthy in-process call, a local well-behaved database on the same host. Adding a breaker there is machinery guarding against a failure mode that doesn't occur. When in doubt about a *networked* dependency, wrap it: the qualifier is "flaky", and most cross-network calls qualify.
 
 ## Why
@@ -198,7 +198,7 @@ The breaker is *shared* across all calls to that dependency. One breaker per pro
 
 Key the breaker **by destination**, but **bound the registry** with LRU or TTL eviction so it can't grow without limit. One dead endpoint must not trip healthy ones, and stale breakers must age out. (This is `bound-cardinality-in-keys` applied to breaker state — the destination is exactly the unbounded key that skill warns about.)
 
-### What "non-trivial failure rate" means
+### What "often enough to matter" means
 
 Not every dependency needs a breaker:
 
